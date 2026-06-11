@@ -24,7 +24,19 @@ jobs:
       - name: Ensure wrapper is executable
         run: chmod +x ./mvnw
 
-      - name: Build and test
-      # Runs compilation and unit tests.
-      # Later we will add Checkstyle here (mvn checkstyle:check)
+      - name: Build, test and Quality Checks
+      #This single command runs:
+      # 1. Compilations
+      # 2. Unit Tests (JUnit 5)
+      # 3. Checkstyle (Google Java style)
+      # 4. SpotBugs (static bug analysis)
+      # 5. Jacoco (test coverage check)
         run: ./mvnw clean verify
+
+      - name: Upload jacoco coverage report
+        uses: actions/upload-artifact@v4
+        if: always() #Upload even if previous step fails
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+      
