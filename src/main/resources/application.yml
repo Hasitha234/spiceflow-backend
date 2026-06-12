@@ -1,8 +1,6 @@
 spring:
   application:
     name: spiceflow-backend
-  profiles:
-    active: local
 
 server:
   port: 8080
