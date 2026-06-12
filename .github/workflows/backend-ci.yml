@@ -25,13 +25,16 @@ jobs:
         run: chmod +x ./mvnw
 
       - name: Build, test and Quality Checks
-      #This single command runs:
-      # 1. Compilations
-      # 2. Unit Tests (JUnit 5)
-      # 3. Checkstyle (Google Java style)
-      # 4. SpotBugs (static bug analysis)
-      # 5. Jacoco (test coverage check)
+        # This single command runs:
+        # 1. Compilation
+        # 2. Unit Tests (JUnit 5)
+        # 3. Checkstyle (Google Java style)
+        # 4. SpotBugs (static bug analysis)
+        # 5. JaCoCo (test coverage check)
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: ./mvnw clean verify
+
 
       - name: Upload jacoco coverage report
         uses: actions/upload-artifact@v4
