@@ -1,5 +1,5 @@
 package com.spiceflow.backend.auth.repository;
 
-public class TenentRepository {
+public class TenantRepository {
 
 }
