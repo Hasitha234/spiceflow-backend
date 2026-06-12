@@ -21,3 +21,7 @@ logging:
   level:
     com.spiceflow: DEBUG
     org.hibernate.SQL: DEBUG
+
+app:
+  jwt:
+    secret: localDevSecretKeyMustBeAtLeast256BitsLongForHmacSha256Algorithm!
