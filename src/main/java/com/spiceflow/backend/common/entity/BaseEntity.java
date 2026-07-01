@@ -15,11 +15,15 @@ import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
+
 /**
  * Base class for all entities in the system.
  * Provides standard audit and soft-delete columns.
  */
 @MappedSuperclass
+@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "tenantId", type = Long.class)})
 @Getter
 @Setter
 @EntityListeners(AuditingEntityListener.class)

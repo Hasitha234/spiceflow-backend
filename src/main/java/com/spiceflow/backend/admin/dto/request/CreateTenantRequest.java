@@ -1,6 +1,6 @@
 package com.spiceflow.backend.admin.dto.request;
 
-import com.spiceflow.backend.common.enums.BusinessType;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,9 +15,9 @@ public class CreateTenantRequest {
     @NotBlank(message = "Business name is required")
     private String businessName;
 
-    @Schema(description = "The type of the business", example = "MANUFACTURER")
-    @NotNull(message = "Business type is required")
-    private BusinessType businessType;
+    @Schema(description = "The ID of the business type", example = "1")
+    @NotNull(message = "Business type ID is required")
+    private Long businessTypeId;
 
     @Schema(description = "The email address of the business owner (used for initial login)", example = "owner@spiceflow.com")
     @NotBlank(message = "Owner email is required")

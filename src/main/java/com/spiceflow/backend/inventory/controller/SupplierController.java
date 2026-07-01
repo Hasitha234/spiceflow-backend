@@ -9,6 +9,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -31,10 +35,14 @@ public class SupplierController {
     private final SupplierService supplierService;
 
     @GetMapping
-    @Operation(summary = "List all suppliers", description = "Returns all suppliers for the authenticated tenant")
+    @Operation(summary = "List all suppliers (with pagination and search)", description = "Returns suppliers for the authenticated tenant")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT')")
-    public ResponseEntity<List<SupplierResponse>> getAllSuppliers(@AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(supplierService.getAllSuppliers(currentUser.getTenantId()));
+    public ResponseEntity<Page<SupplierResponse>> getSuppliers(
+            @AuthenticationPrincipal User currentUser,
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20, sort = "name") Pageable pageable) {
+        Page<SupplierResponse> page = supplierService.getSuppliers(currentUser.getTenantId(), search, pageable);
+        return ResponseEntity.ok(page);
     }
 
     @GetMapping("/{id}")
@@ -47,13 +55,12 @@ public class SupplierController {
     }
 
     @PostMapping
-    @Operation(summary = "Create a new supplier")
-    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'PURCHASING_AGENT')")
+    @Operation(summary = "Create supplier", description = "Creates a new supplier for the authenticated tenant")
+    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT')")
     public ResponseEntity<SupplierResponse> createSupplier(
-            @Valid @RequestBody SupplierRequest request,
-            @AuthenticationPrincipal User currentUser) {
-        SupplierResponse response = supplierService.createSupplier(currentUser.getTenantId(), request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody SupplierRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(supplierService.createSupplier(currentUser.getTenantId(), request));
     }
 
     @PutMapping("/{id}")
@@ -67,11 +74,11 @@ public class SupplierController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a supplier (Soft Delete)")
-    @PreAuthorize("hasRole('TENANT_OWNER')")
+    @Operation(summary = "Delete supplier", description = "Soft deletes a supplier")
+    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER')")
     public ResponseEntity<Void> deleteSupplier(
-            @PathVariable Long id,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long id) {
         supplierService.deleteSupplier(currentUser.getTenantId(), id);
         return ResponseEntity.noContent().build();
     }

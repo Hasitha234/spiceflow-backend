@@ -1,4 +1,13 @@
--- Suppliers
+-- ===========================================================================
+-- Migration: V9__init_inventory_domain
+-- Description: Creates the core tables for the Inventory and Distribution domain.
+-- Includes tables for suppliers, warehouses, product catalog, and stock items.
+-- ===========================================================================
+
+-- ---------------------------------------------------------------------------
+-- Table: suppliers
+-- Description: Stores vendor/supplier information for procurement.
+-- ---------------------------------------------------------------------------
 CREATE TABLE suppliers (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -15,9 +24,17 @@ CREATE TABLE suppliers (
     CONSTRAINT fk_supplier_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
 );
 
+COMMENT ON TABLE suppliers IS 'Stores vendor and supplier information for procurement.';
+COMMENT ON COLUMN suppliers.id IS 'Primary key';
+COMMENT ON COLUMN suppliers.name IS 'Name of the supplier';
+COMMENT ON COLUMN suppliers.tenant_id IS 'Tenant reference for multi-tenancy';
+
 CREATE INDEX idx_suppliers_tenant ON suppliers(tenant_id);
 
--- Warehouses
+-- ---------------------------------------------------------------------------
+-- Table: warehouses
+-- Description: Physical or logical locations where inventory is stored.
+-- ---------------------------------------------------------------------------
 CREATE TABLE warehouses (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -32,9 +49,18 @@ CREATE TABLE warehouses (
     CONSTRAINT fk_warehouse_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
 );
 
+COMMENT ON TABLE warehouses IS 'Physical or logical locations where inventory is stored.';
+COMMENT ON COLUMN warehouses.id IS 'Primary key';
+COMMENT ON COLUMN warehouses.name IS 'Name of the warehouse';
+COMMENT ON COLUMN warehouses.capacity IS 'Maximum capacity of the warehouse';
+COMMENT ON COLUMN warehouses.tenant_id IS 'Tenant reference for multi-tenancy';
+
 CREATE INDEX idx_warehouses_tenant ON warehouses(tenant_id);
 
--- Product Categories
+-- ---------------------------------------------------------------------------
+-- Table: product_categories
+-- Description: Hierarchical classification for products.
+-- ---------------------------------------------------------------------------
 CREATE TABLE product_categories (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -50,9 +76,19 @@ CREATE TABLE product_categories (
     CONSTRAINT fk_category_parent FOREIGN KEY (parent_category_id) REFERENCES product_categories(id)
 );
 
-CREATE INDEX idx_categories_tenant ON product_categories(tenant_id);
+COMMENT ON TABLE product_categories IS 'Hierarchical classification for products.';
+COMMENT ON COLUMN product_categories.id IS 'Primary key';
+COMMENT ON COLUMN product_categories.name IS 'Category name';
+COMMENT ON COLUMN product_categories.parent_category_id IS 'Reference to parent category if nested';
+COMMENT ON COLUMN product_categories.tenant_id IS 'Tenant reference for multi-tenancy';
 
--- Products
+CREATE INDEX idx_categories_tenant ON product_categories(tenant_id);
+CREATE INDEX idx_categories_parent ON product_categories(parent_category_id);
+
+-- ---------------------------------------------------------------------------
+-- Table: products
+-- Description: The master catalog of all distinct items.
+-- ---------------------------------------------------------------------------
 CREATE TABLE products (
     id BIGSERIAL PRIMARY KEY,
     sku VARCHAR(100) NOT NULL,
@@ -73,10 +109,22 @@ CREATE TABLE products (
     CONSTRAINT fk_product_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
 );
 
-CREATE UNIQUE INDEX idx_products_sku_tenant ON products(sku, tenant_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_products_tenant ON products(tenant_id);
+COMMENT ON TABLE products IS 'The master catalog of all distinct items available.';
+COMMENT ON COLUMN products.id IS 'Primary key';
+COMMENT ON COLUMN products.sku IS 'Stock Keeping Unit, unique per tenant';
+COMMENT ON COLUMN products.name IS 'Name of the product';
+COMMENT ON COLUMN products.base_price IS 'Default price of the product';
+COMMENT ON COLUMN products.tenant_id IS 'Tenant reference for multi-tenancy';
 
--- Inventory Items
+CREATE UNIQUE INDEX idx_products_sku_tenant ON products(sku, tenant_id);
+CREATE INDEX idx_products_tenant ON products(tenant_id);
+CREATE INDEX idx_products_category ON products(category_id);
+CREATE INDEX idx_products_supplier ON products(supplier_id);
+
+-- ---------------------------------------------------------------------------
+-- Table: inventory_items
+-- Description: Tracks actual stock levels of a product in a specific warehouse.
+-- ---------------------------------------------------------------------------
 CREATE TABLE inventory_items (
     id BIGSERIAL PRIMARY KEY,
     product_id BIGINT NOT NULL,
@@ -97,10 +145,23 @@ CREATE TABLE inventory_items (
     CONSTRAINT fk_inventory_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
 );
 
+COMMENT ON TABLE inventory_items IS 'Tracks actual stock levels of a product in a specific warehouse.';
+COMMENT ON COLUMN inventory_items.id IS 'Primary key';
+COMMENT ON COLUMN inventory_items.product_id IS 'Reference to the product';
+COMMENT ON COLUMN inventory_items.warehouse_id IS 'Reference to the warehouse';
+COMMENT ON COLUMN inventory_items.quantity_available IS 'Quantity physically available';
+COMMENT ON COLUMN inventory_items.quantity_reserved IS 'Quantity reserved for pending orders';
+COMMENT ON COLUMN inventory_items.tenant_id IS 'Tenant reference for multi-tenancy';
+
 CREATE INDEX idx_inventory_tenant ON inventory_items(tenant_id);
 CREATE INDEX idx_inventory_warehouse_product ON inventory_items(warehouse_id, product_id);
+CREATE INDEX idx_inventory_product ON inventory_items(product_id);
+CREATE INDEX idx_inventory_warehouse ON inventory_items(warehouse_id); -- Added FK Index
 
--- Inventory Transactions
+-- ---------------------------------------------------------------------------
+-- Table: inventory_transactions
+-- Description: Immutable ledger of all stock movements and adjustments.
+-- ---------------------------------------------------------------------------
 CREATE TABLE inventory_transactions (
     id BIGSERIAL PRIMARY KEY,
     inventory_item_id BIGINT NOT NULL,
@@ -117,6 +178,13 @@ CREATE TABLE inventory_transactions (
     CONSTRAINT fk_tx_inventory FOREIGN KEY (inventory_item_id) REFERENCES inventory_items(id),
     CONSTRAINT fk_tx_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
 );
+
+COMMENT ON TABLE inventory_transactions IS 'Immutable ledger of all stock movements and adjustments.';
+COMMENT ON COLUMN inventory_transactions.id IS 'Primary key';
+COMMENT ON COLUMN inventory_transactions.inventory_item_id IS 'Reference to the inventory item';
+COMMENT ON COLUMN inventory_transactions.transaction_type IS 'Type of movement: IN, OUT, ADJUST, RESERVE, RELEASE';
+COMMENT ON COLUMN inventory_transactions.quantity IS 'Amount added or removed';
+COMMENT ON COLUMN inventory_transactions.tenant_id IS 'Tenant reference for multi-tenancy';
 
 CREATE INDEX idx_inv_tx_tenant ON inventory_transactions(tenant_id);
 CREATE INDEX idx_inv_tx_item ON inventory_transactions(inventory_item_id);

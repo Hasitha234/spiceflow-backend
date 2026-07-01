@@ -1,6 +1,7 @@
 package com.spiceflow.backend.admin.dto.request;
 
-import com.spiceflow.backend.common.enums.BusinessType;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -14,8 +15,8 @@ public class UpdateTenantRequest {
     @NotBlank(message = "Business name is required")
     private String businessName;
 
-    @NotNull(message = "Business type is required")
-    private BusinessType businessType;
+    @Schema(description = "The ID of the business type", example = "1")
+    private Long businessTypeId;
 
     @NotBlank(message = "Status is required")
     private String status;

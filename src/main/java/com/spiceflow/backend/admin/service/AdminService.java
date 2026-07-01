@@ -16,8 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.spiceflow.backend.admin.entity.BusinessType;
+import com.spiceflow.backend.admin.repository.BusinessTypeRepository;
 import org.springframework.transaction.annotation.Transactional;
-import com.spiceflow.backend.admin.dto.request.UpdateTenantRequest;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -40,15 +41,17 @@ public class AdminService {
     private final PasswordEncoder passwordEncoder;
     private final PermissionRepository permissionRepository;
     private final RoleRepository roleRepository;
+    private final BusinessTypeRepository businessTypeRepository;
 
     public AdminService(TenantRepository tenantRepository, UserRepository userRepository,
         PasswordEncoder passwordEncoder, PermissionRepository permissionRepository,
-        RoleRepository roleRepository) {
+        RoleRepository roleRepository, BusinessTypeRepository businessTypeRepository) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.permissionRepository = permissionRepository;
         this.roleRepository = roleRepository;
+        this.businessTypeRepository = businessTypeRepository;
     }
 
 
@@ -63,10 +66,13 @@ public class AdminService {
             throw new ResourceConflictException("Email is already registered to a business");
         }
 
+        BusinessType businessType = businessTypeRepository.findById(request.getBusinessTypeId())
+            .orElseThrow(() -> new ResourceNotFoundException("Business Type not found with id: " + request.getBusinessTypeId()));
+
         // 2. Create the Tenant
         Tenant tenant = Tenant.builder()
             .businessName(request.getBusinessName())
-            .businessType(request.getBusinessType())
+            .businessType(businessType)
             .email(request.getOwnerEmail())
             .status("ACTIVE")
             .plan("BASIC")
@@ -96,13 +102,14 @@ public class AdminService {
         userRepository.save(owner);
 
         log.info("Platform Admin created new {} business: {} with owner {}", 
-            request.getBusinessType(), request.getBusinessName(), request.getOwnerEmail());
+            businessType.getName(), request.getBusinessName(), request.getOwnerEmail());
 
         // 5. Map the newly created tenant back to a safe Response DTO
         return TenantResponse.builder()
             .id(tenant.getId())
             .businessName(tenant.getBusinessName())
-            .businessType(tenant.getBusinessType())
+            .businessTypeId(tenant.getBusinessType().getId())
+            .businessTypeName(tenant.getBusinessType().getName())
             .email(tenant.getEmail())
             .status(tenant.getStatus())
             .plan(tenant.getPlan())
@@ -120,7 +127,8 @@ public class AdminService {
     Page<TenantResponse> responsePage = tenants.map(t -> TenantResponse.builder()
             .id(t.getId())
             .businessName(t.getBusinessName())
-            .businessType(t.getBusinessType())
+            .businessTypeId(t.getBusinessType().getId())
+            .businessTypeName(t.getBusinessType().getName())
             .email(t.getEmail())
             .status(t.getStatus())
             .plan(t.getPlan())
@@ -142,7 +150,8 @@ public class AdminService {
     return TenantResponse.builder()
         .id(tenant.getId())
         .businessName(tenant.getBusinessName())
-        .businessType(tenant.getBusinessType())
+        .businessTypeId(tenant.getBusinessType().getId())
+        .businessTypeName(tenant.getBusinessType().getName())
         .email(tenant.getEmail())
         .status(tenant.getStatus())
         .plan(tenant.getPlan())
@@ -157,8 +166,11 @@ public class AdminService {
         .filter(t -> t.getDeletedAt() == null)
         .orElseThrow(() -> new ResourceNotFoundException("Tenant not found with id: " + id));
 
+    BusinessType businessType = businessTypeRepository.findById(request.getBusinessTypeId())
+        .orElseThrow(() -> new ResourceNotFoundException("Business Type not found with id: " + request.getBusinessTypeId()));
+
     tenant.setBusinessName(request.getBusinessName());
-    tenant.setBusinessType(request.getBusinessType());
+    tenant.setBusinessType(businessType);
     tenant.setStatus(request.getStatus());
     tenant.setPlan(request.getPlan());
     tenantRepository.save(tenant);
@@ -168,7 +180,8 @@ public class AdminService {
     return TenantResponse.builder()
         .id(tenant.getId())
         .businessName(tenant.getBusinessName())
-        .businessType(tenant.getBusinessType())
+        .businessTypeId(tenant.getBusinessType().getId())
+        .businessTypeName(tenant.getBusinessType().getName())
         .email(tenant.getEmail())
         .status(tenant.getStatus())
         .plan(tenant.getPlan())

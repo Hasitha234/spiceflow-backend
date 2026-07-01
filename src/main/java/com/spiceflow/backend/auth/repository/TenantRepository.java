@@ -12,12 +12,12 @@ import org.springframework.data.domain.Pageable;
 public interface TenantRepository extends JpaRepository<Tenant, Long> {
     Optional<Tenant> findByEmail(String email);
     boolean existsByEmail(String email);
+    
     /** Find a tenant by email, excluding soft-deleted ones. */
     Optional<Tenant> findByEmailAndDeletedAtIsNull(String email);
 
     /** Returns all active tenants for platform admins, with pagination. */
     Page<Tenant> findAllByDeletedAtIsNull(Pageable pageable);
     
-    
-
+    long countByBusinessTypeId(Long businessTypeId);
 }

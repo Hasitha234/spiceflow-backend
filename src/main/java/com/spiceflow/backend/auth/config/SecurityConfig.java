@@ -15,6 +15,10 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.beans.factory.annotation.Qualifier;
 import com.spiceflow.backend.security.config.RateLimitFilter;
 
 
@@ -42,6 +46,7 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
+        .cors(Customizer.withDefaults()) // Enable CORS
         .csrf(AbstractHttpConfigurer::disable) // Stateless JWT — CSRF not needed
         .headers(headers -> headers
             .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))
@@ -60,12 +65,11 @@ public class SecurityConfig {
                 "/api/v1/auth/reset-password"
             ).permitAll()
             .requestMatchers(
-                "/actuator/health",
-                "/actuator/info",
                 "/swagger-ui/**",
                 "/swagger-ui.html",
                 "/v3/api-docs/**"
             ).permitAll()
+            .requestMatchers("/actuator/**").hasRole("ADMIN")
             // Everything else requires a valid JWT
             .anyRequest().authenticated()
         )

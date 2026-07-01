@@ -39,7 +39,6 @@ import org.hibernate.annotations.SQLRestriction;
 /** Application user - maps to the users table and implements Spring Security Userdetails. */
 @Entity
 @Table(name = "users")
-@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "tenantId", type = Long.class)})
 @Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @Getter
 @Setter

@@ -9,6 +9,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -31,10 +35,13 @@ public class WarehouseController {
     private final WarehouseService warehouseService;
 
     @GetMapping
-    @Operation(summary = "List all warehouses", description = "Returns all warehouses for the authenticated tenant")
+    @Operation(summary = "List all warehouses (with pagination and search)", description = "Returns warehouses for the authenticated tenant")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'WAREHOUSE_STAFF')")
-    public ResponseEntity<List<WarehouseResponse>> getAllWarehouses(@AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(warehouseService.getAllWarehouses(currentUser.getTenantId()));
+    public ResponseEntity<Page<WarehouseResponse>> getAllWarehouses(
+            @AuthenticationPrincipal User currentUser,
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(warehouseService.getAllWarehouses(currentUser.getTenantId(), search, pageable));
     }
 
     @GetMapping("/{id}")
@@ -47,13 +54,12 @@ public class WarehouseController {
     }
 
     @PostMapping
-    @Operation(summary = "Create a new warehouse")
+    @Operation(summary = "Create warehouse", description = "Creates a new warehouse for the authenticated tenant")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER')")
     public ResponseEntity<WarehouseResponse> createWarehouse(
-            @Valid @RequestBody WarehouseRequest request,
-            @AuthenticationPrincipal User currentUser) {
-        WarehouseResponse response = warehouseService.createWarehouse(currentUser.getTenantId(), request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody WarehouseRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(warehouseService.createWarehouse(currentUser.getTenantId(), request));
     }
 
     @PutMapping("/{id}")
@@ -67,11 +73,11 @@ public class WarehouseController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a warehouse (Soft Delete)")
+    @Operation(summary = "Delete warehouse", description = "Soft deletes a warehouse")
     @PreAuthorize("hasRole('TENANT_OWNER')")
     public ResponseEntity<Void> deleteWarehouse(
-            @PathVariable Long id,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long id) {
         warehouseService.deleteWarehouse(currentUser.getTenantId(), id);
         return ResponseEntity.noContent().build();
     }

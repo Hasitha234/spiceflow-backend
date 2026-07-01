@@ -17,9 +17,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import com.spiceflow.backend.common.enums.BusinessType;
+import com.spiceflow.backend.admin.entity.BusinessType;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import com.spiceflow.backend.common.entity.BaseEntity;
@@ -59,7 +60,7 @@ public class Tenant extends BaseEntity {
     @Column(name = "trial_end_date")
     private LocalDate trialEndDate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "business_type", nullable = false, length = 50)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "business_type_id", nullable = false)
     private BusinessType businessType;
 }

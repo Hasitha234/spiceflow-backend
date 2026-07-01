@@ -16,7 +16,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import com.spiceflow.backend.common.entity.BaseEntity;
+import org.hibernate.annotations.CreationTimestamp;
 
 /**
  * Stores refresh tokens for both tenant users and platform admins.
@@ -28,7 +28,11 @@ import com.spiceflow.backend.common.entity.BaseEntity;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RefreshToken extends BaseEntity {
+public class RefreshToken {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id") // Nullable because it could be a platform admin
@@ -46,10 +50,13 @@ public class RefreshToken extends BaseEntity {
     @Column(name = "revoked_at")
     private OffsetDateTime revokedAt;
 
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
     /** Checks if the token is still valid (not expired, not revoked, not soft-deleted) */
     public boolean isValid() {
         return revokedAt == null
-            && expiresAt.isAfter(OffsetDateTime.now())
-            && getDeletedAt() == null;
+            && expiresAt.isAfter(OffsetDateTime.now());
     }
 }

@@ -2,7 +2,8 @@ package com.spiceflow.backend.common.database;
 
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
-import com.spiceflow.backend.common.enums.BusinessType;
+import com.spiceflow.backend.admin.entity.BusinessType;
+import com.spiceflow.backend.admin.repository.BusinessTypeRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,6 +20,9 @@ class DatabaseLayerIntegrationTest {
 
     @Autowired
     private TenantRepository tenantRepository;
+    
+    @Autowired
+    private BusinessTypeRepository businessTypeRepository;
 
     @Test
     void shouldSoftDeleteTenantAndSetAuditFields() {
@@ -26,7 +30,12 @@ class DatabaseLayerIntegrationTest {
         Tenant tenant = Tenant.builder()
                 .businessName("Test Business")
                 .email("test.business@example.com")
-                .businessType(BusinessType.RESTAURANT)
+                .businessType(businessTypeRepository.findByName("RESTAURANT").orElseGet(() -> 
+                    businessTypeRepository.save(BusinessType.builder()
+                        .name("RESTAURANT")
+                        .description("Restaurant and catering services")
+                        .build())
+                ))
                 .status("ACTIVE")
                 .plan("PRO")
                 .build();

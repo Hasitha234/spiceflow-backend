@@ -71,12 +71,6 @@ public class GlobalExceptionHandler {
     return buildResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Validation failed", fieldErrors);
   }
 
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<ApiResponse<Object>> handleAll(Exception ex, HttpServletRequest request) {
-    log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
-    return buildResponse(
-        HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "An unexpected error occurred", null);
-  }
 
   private ResponseEntity<ApiResponse<Object>> buildResponse(
       HttpStatus status, String code, String message,
@@ -114,5 +108,15 @@ public class GlobalExceptionHandler {
     return buildResponse(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Full authentication is required to access this resource.", null);
   }
 
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<ApiResponse<Object>> handleAll(Exception ex, HttpServletRequest request) {
+    if (ex.getClass().getSimpleName().equals("PropertyReferenceException")) {
+      log.error("Invalid property reference at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+      return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_SORT_PARAMETER", ex.getMessage(), null);
+    }
+    log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+    return buildResponse(
+        HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "An unexpected error occurred", null);
+  }
 
 }
