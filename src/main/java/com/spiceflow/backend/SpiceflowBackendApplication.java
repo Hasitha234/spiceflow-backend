@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class SpiceflowBackendApplicationTests {
+public class SpiceflowBackendApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(SpiceflowBackendApplicationTests.class, args);
+		SpringApplication.run(SpiceflowBackendApplication.class, args);
 	}
 
 }
