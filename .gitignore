@@ -33,3 +33,18 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Build
+*.class
+*.jar
+
+# Environment
+*.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
