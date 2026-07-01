@@ -24,6 +24,9 @@ jobs:
       - name: Ensure wrapper is executable
         run: chmod +x ./mvnw
 
+      - name: Remove Dependency Check Lock (if exists)
+        run: find ~/.m2/repository/org/owasp/dependency-check-data/ -name "odc.update.lock" -delete || true
+
       - name: Build, test and Quality Checks
         # This single command runs:
         # 1. Compilation
