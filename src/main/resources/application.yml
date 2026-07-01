@@ -5,9 +5,20 @@ spring:
     multipart:
       max-file-size: 5MB
       max-request-size: 10MB
+  datasource:
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 30000
 
 server:
   port: 8080
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
 
 management:
   endpoints:
@@ -21,7 +32,6 @@ management:
     metrics:
       export:
         enabled: true
-
 
 logging:
   level:

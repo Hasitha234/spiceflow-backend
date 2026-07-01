@@ -37,7 +37,6 @@ import org.hibernate.annotations.SQLRestriction;
  */
 @Entity
 @Table(name = "roles")
-@FilterDef(name = "tenantFilter", parameters = {@ParamDef(name = "tenantId", type = Long.class)})
 @Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @Getter
 @Setter

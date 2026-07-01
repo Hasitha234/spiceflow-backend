@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/roles")
 @Tag(name = "Tenant Roles", description = "Role management for tenant owners")
-@SecurityRequirement(name = "BearerAuth")
 public class RoleController {
 
     private final RoleService roleService;
