@@ -33,7 +33,7 @@ jobs:
         # 5. JaCoCo (test coverage check)
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-        run: ./mvnw clean verify
+        run: ./mvnw clean verify -Dspring.profiles.active=test
 
 
       - name: Upload jacoco coverage report
