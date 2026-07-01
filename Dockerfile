@@ -1,5 +1,5 @@
 # ── Stage 1: Build ──────────────────────────────────────────
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:21-jdk-jammy AS builder
 WORKDIR /app
 # Copy Maven wrapper and POM first (for Docker layer caching)
 COPY .mvn/ .mvn/
@@ -11,10 +11,10 @@ COPY src/ src/
 RUN ./mvnw clean package -DskipTests -B
 
 # ── Stage 2: Run ────────────────────────────────────────────
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:21-jre-jammy AS runtime
 WORKDIR /app
 # Security: Run as non-root user
-RUN addgroup -S spiceflow && adduser -S spiceflow -G spiceflow
+RUN groupadd -r spiceflow && useradd -r -g spiceflow spiceflow
 USER spiceflow
 # Copy the built JAR from the builder stage
 COPY --from=builder /app/target/*.jar app.jar
@@ -22,6 +22,6 @@ COPY --from=builder /app/target/*.jar app.jar
 EXPOSE 8080
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
 # Run with production profile
 ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=prod"]
