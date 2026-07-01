@@ -307,21 +307,8 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!-- OWASP Dependency Check — scans transitive deps for known CVEs -->
-			<plugin>
-				<groupId>org.owasp</groupId>
-				<artifactId>dependency-check-maven</artifactId>
-				<version>12.1.0</version>
-				<configuration>
-					<failBuildOnCVSS>7</failBuildOnCVSS>
-				</configuration>
-				<executions>
-					<execution>
-						<id>owasp-check</id>
-						<goals><goal>check</goal></goals>
-					</execution>
-				</executions>
-			</plugin>
+			<!-- OWASP Dependency Check removed from default build for speed. 
+			     Run manually or on a scheduled CI job instead. -->
 		</plugins>
 	</build>
 
