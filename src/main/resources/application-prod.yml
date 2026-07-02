@@ -39,9 +39,10 @@ management:
     health:
       show-details: when_authorized
 
-# P0 Security: Disable Swagger UI and API docs in production
+# Swagger UI enabled for frontend developer collaboration
+# API endpoints are already protected by JWT authentication
 springdoc:
   swagger-ui:
-    enabled: false
+    enabled: true
   api-docs:
-    enabled: false
+    enabled: true
