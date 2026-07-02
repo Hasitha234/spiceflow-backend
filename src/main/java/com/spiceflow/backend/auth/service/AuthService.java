@@ -73,7 +73,7 @@ public class AuthService {
    * Authenticates a user by email and password.
    * Enforces account lockout after 5 failed attempts.
    */
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
 public LoginResponse login(LoginRequest request) {
   // Check platform_admins table first
   Optional<PlatformAdmin> adminOpt =
@@ -140,7 +140,7 @@ public LoginResponse login(LoginRequest request) {
       .build();
 }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
   public LoginResponse refresh(TokenRefreshRequest request) {
     String tokenHash = sha256(request.getRefreshToken());
 
@@ -182,7 +182,7 @@ public LoginResponse login(LoginRequest request) {
   /**
    * Revokes the given refresh token and blacklists the access token.
    */
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
   public void logout(String rawRefreshToken, String accessToken) {
     String tokenHash = sha256(rawRefreshToken);
     refreshTokenRepository.findByTokenHash(tokenHash).ifPresent(token -> {
@@ -202,7 +202,7 @@ public LoginResponse login(LoginRequest request) {
    * Changes the authenticated user's password.
    * Revokes ALL existing refresh tokens to force re-login on all devices.
    */
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
   public void changePassword(User currentUser, ChangePasswordRequest request) {
     if (!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPasswordHash())) {
       throw new BusinessRuleViolationException("Current password is incorrect");

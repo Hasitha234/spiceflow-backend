@@ -1,5 +1,6 @@
 package com.spiceflow.backend.inventory.controller;
 
+import org.springframework.validation.annotation.Validated;
 import com.spiceflow.backend.auth.entity.User;
 import com.spiceflow.backend.inventory.dto.request.ProductRequest;
 import com.spiceflow.backend.inventory.dto.response.ProductResponse;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
+@Validated
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
 @Tag(name = "Products", description = "Endpoints for managing products (requires SETTINGS_PRODUCTS authority)")

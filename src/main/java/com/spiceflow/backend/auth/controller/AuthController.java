@@ -1,5 +1,6 @@
 package com.spiceflow.backend.auth.controller;
 
+import org.springframework.validation.annotation.Validated;
 import com.spiceflow.backend.auth.dto.request.ChangePasswordRequest;
 import com.spiceflow.backend.auth.dto.request.LoginRequest;
 import com.spiceflow.backend.auth.dto.request.TokenRefreshRequest;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -21,6 +23,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 /** REST endpoints for authentication — login, refresh, logout, change password. */
 @RestController
+@Validated
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 

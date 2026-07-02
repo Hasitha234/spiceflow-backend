@@ -15,9 +15,6 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import com.spiceflow.backend.common.dto.ApiResponse;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.AuthenticationException;
-
 
 
 /** Centralized exception handler — maps all exceptions to standard ErrorResponse JSON. */
@@ -29,21 +26,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<ApiResponse<Object>> handleNotFound(
       ResourceNotFoundException ex, HttpServletRequest request) {
-    log.error("Resource not found at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+    log.warn("Resource not found at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
     return buildResponse(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", ex.getMessage(), null);
   }
 
   @ExceptionHandler(ResourceConflictException.class)
   public ResponseEntity<ApiResponse<Object>> handleConflict(
       ResourceConflictException ex, HttpServletRequest request) {
-    log.error("Resource conflict at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+    log.warn("Resource conflict at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
     return buildResponse(HttpStatus.CONFLICT, "RESOURCE_CONFLICT", ex.getMessage(), null);
   }
 
     @ExceptionHandler(InvalidCredentialsException.class)
   public ResponseEntity<ApiResponse<Object>> handleInvalidCredentials(
       InvalidCredentialsException ex, HttpServletRequest request) {
-    log.error("Authentication failed at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+    log.warn("Authentication failed at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
     return buildResponse(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", ex.getMessage(), null);
   }
 
@@ -51,7 +48,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessRuleViolationException.class)
   public ResponseEntity<ApiResponse<Object>> handleBusinessRule(
       BusinessRuleViolationException ex, HttpServletRequest request) {
-    log.error("Business rule violation at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+    log.warn("Business rule violation at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
     return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, "BUSINESS_RULE_VIOLATION", ex.getMessage(), null);
   }
 
@@ -59,7 +56,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ApiResponse<Object>> handleValidation(
       MethodArgumentNotValidException ex, HttpServletRequest request) {
-    log.error("Validation failed at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+    log.warn("Validation failed at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
     List<ErrorResponse.FieldError> fieldErrors = ex.getBindingResult()
         .getFieldErrors()
         .stream()
@@ -86,7 +83,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(HttpMessageNotReadableException.class)
   public ResponseEntity<ApiResponse<Object>> handleMalformedJson(
       HttpMessageNotReadableException ex, HttpServletRequest request) {
-    log.error("Malformed JSON received at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+    log.warn("Malformed JSON received at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
     return buildResponse(
         HttpStatus.BAD_REQUEST, 
         "MALFORMED_JSON",
@@ -97,21 +94,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
   public ResponseEntity<ApiResponse<Object>> handleAccessDenied(
       AccessDeniedException ex, HttpServletRequest request) {
-    log.error("Access denied at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+    log.warn("Access denied at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
     return buildResponse(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "You do not have permission to access this resource.", null);
   }
 
   @ExceptionHandler(AuthenticationException.class)
   public ResponseEntity<ApiResponse<Object>> handleAuthenticationException(
       AuthenticationException ex, HttpServletRequest request) {
-    log.error("Unauthenticated request to {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+    log.warn("Unauthenticated request to {}: {}", request.getRequestURI(), ex.getMessage(), ex);
     return buildResponse(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Full authentication is required to access this resource.", null);
   }
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<Object>> handleAll(Exception ex, HttpServletRequest request) {
     if (ex.getClass().getSimpleName().equals("PropertyReferenceException")) {
-      log.error("Invalid property reference at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+      log.warn("Invalid property reference at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
       return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_SORT_PARAMETER", ex.getMessage(), null);
     }
     log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);

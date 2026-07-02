@@ -1,5 +1,6 @@
 package com.spiceflow.backend.admin.controller;
 
+import org.springframework.validation.annotation.Validated;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.spiceflow.backend.admin.dto.request.CreateTenantRequest;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 import com.spiceflow.backend.admin.dto.request.UpdateTenantRequest;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 
 
 @RestController
+@Validated
 @RequestMapping("/api/v1/admin/tenants")
 @Tag(name = "1. Super Admin Operations", description = "Endpoints restricted to the Platform Admin")
 public class AdminController {

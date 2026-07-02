@@ -49,7 +49,7 @@ public class RoleService {
     }
 
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public RoleResponse createRole(RoleRequest request, User currentUser) {
         // Check if role name already exists for this tenant
         if (roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(currentUser.getTenantId(), request.getName()).isPresent()) {
@@ -75,7 +75,7 @@ public class RoleService {
         return mapToResponse(savedRole);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public RoleResponse updateRole(Long roleId, RoleRequest request, User currentUser) {
         Role role = roleRepository.findByIdAndTenantIdAndDeletedAtIsNull(roleId, currentUser.getTenantId())
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
@@ -107,7 +107,7 @@ public class RoleService {
     }
 
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void deleteRole(Long roleId, User currentUser) {
         Role role = roleRepository.findByIdAndTenantIdAndDeletedAtIsNull(roleId, currentUser.getTenantId())
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));

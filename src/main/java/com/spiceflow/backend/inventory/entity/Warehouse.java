@@ -36,6 +36,17 @@ public class Warehouse extends BaseEntity {
     private String location;
 
     private Integer capacity;
+    
+    @Column(name = "store_type", nullable = false, length = 30)
+    @Builder.Default
+    private String storeType = "CUSTOM";
+
+    @Column(name = "is_system_store", nullable = false)
+    @Builder.Default
+    private Boolean isSystemStore = false;
+
+    @Column(length = 255)
+    private String description;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "tenant_id", nullable = false)

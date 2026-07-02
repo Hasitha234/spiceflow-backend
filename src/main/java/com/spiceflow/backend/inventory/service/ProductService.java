@@ -51,6 +51,12 @@ public class ProductService {
                 .description(request.getDescription())
                 .basePrice(request.getBasePrice())
                 .unitOfMeasure(request.getUnitOfMeasure())
+                .netWeight(request.getNetWeight())
+                .unitType(request.getUnitType())
+                .boxConfiguration(request.getBoxConfiguration())
+                .itemsPerSoldUnit(request.getItemsPerSoldUnit())
+                .soldUnitsPerBox(request.getSoldUnitsPerBox())
+                .ratePerSoldUnit(request.getRatePerSoldUnit())
                 .category(category)
                 .supplier(supplier)
                 .tenant(tenant)
@@ -109,6 +115,12 @@ public class ProductService {
             product.setDescription(request.getDescription());
             product.setBasePrice(request.getBasePrice());
             product.setUnitOfMeasure(request.getUnitOfMeasure());
+            product.setNetWeight(request.getNetWeight());
+            product.setUnitType(request.getUnitType());
+            product.setBoxConfiguration(request.getBoxConfiguration());
+            product.setItemsPerSoldUnit(request.getItemsPerSoldUnit());
+            product.setSoldUnitsPerBox(request.getSoldUnitsPerBox());
+            product.setRatePerSoldUnit(request.getRatePerSoldUnit());
             product.setCategory(category);
             product.setSupplier(supplier);
             

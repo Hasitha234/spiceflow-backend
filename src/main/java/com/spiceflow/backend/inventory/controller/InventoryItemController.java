@@ -1,5 +1,6 @@
 package com.spiceflow.backend.inventory.controller;
 
+import org.springframework.validation.annotation.Validated;
 import com.spiceflow.backend.auth.entity.User;
 import com.spiceflow.backend.inventory.dto.request.InventoryItemRequest;
 import com.spiceflow.backend.inventory.dto.response.InventoryItemResponse;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
+@Validated
 @RequestMapping("/api/v1/inventory-items")
 @RequiredArgsConstructor
 @Tag(name = "Inventory Items", description = "Endpoints for managing warehouse inventory items (requires INVENTORY_VIEW/INVENTORY_TRANSFER authority)")
@@ -81,5 +83,27 @@ public class InventoryItemController {
         log.info("Received request to delete inventory item ID: {} by user: {}", id, currentUser.getId());
         inventoryItemService.deleteInventoryItem(id, currentUser.getTenantId());
         return ResponseEntity.noContent().build();
+    }
+    
+    @PostMapping("/transfer")
+    @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
+    @Operation(summary = "Transfer inventory", description = "Transfer products between warehouses")
+    public ResponseEntity<Void> transferInventory(
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody com.spiceflow.backend.inventory.dto.request.InventoryTransferRequest request) {
+        log.info("Received request to transfer inventory by user: {}", currentUser.getId());
+        inventoryItemService.transferInventory(currentUser.getTenantId(), request);
+        return ResponseEntity.ok().build();
+    }
+    
+    @PostMapping("/mark-damaged")
+    @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
+    @Operation(summary = "Mark inventory damaged", description = "Mark products as damaged and deduct from available stock")
+    public ResponseEntity<Void> markDamaged(
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody com.spiceflow.backend.inventory.dto.request.InventoryMarkDamagedRequest request) {
+        log.info("Received request to mark inventory damaged by user: {}", currentUser.getId());
+        inventoryItemService.markDamaged(currentUser.getTenantId(), request);
+        return ResponseEntity.ok().build();
     }
 }

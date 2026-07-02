@@ -1,5 +1,6 @@
 package com.spiceflow.backend.auth.controller;
 
+import org.springframework.validation.annotation.Validated;
 import com.spiceflow.backend.auth.dto.request.RoleRequest;
 import com.spiceflow.backend.auth.dto.response.RoleResponse;
 import com.spiceflow.backend.auth.entity.User;
@@ -24,8 +25,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 
 @RestController
+@Validated
 @RequestMapping("/api/v1/roles")
 @Tag(name = "Tenant Roles", description = "Role management for tenant owners")
 public class RoleController {

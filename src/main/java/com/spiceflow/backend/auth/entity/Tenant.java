@@ -60,7 +60,7 @@ public class Tenant extends BaseEntity {
     @Column(name = "trial_end_date")
     private LocalDate trialEndDate;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "business_type_id", nullable = false)
     private BusinessType businessType;
 }

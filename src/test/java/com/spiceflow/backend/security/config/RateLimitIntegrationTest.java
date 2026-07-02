@@ -47,7 +47,7 @@ public class RateLimitIntegrationTest {
             mockMvc.perform(post("/api/v1/auth/login")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(json)
-                            .header("X-Forwarded-For", "203.0.113.1"))
+                            .with(request -> { request.setRemoteAddr("203.0.113.1"); return request; }))
                     .andExpect(status().isUnauthorized()); // Assuming this IP is valid and passes filter
         }
 
@@ -55,14 +55,14 @@ public class RateLimitIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
-                        .header("X-Forwarded-For", "203.0.113.1"))
+                        .with(request -> { request.setRemoteAddr("203.0.113.1"); return request; }))
                 .andExpect(status().isTooManyRequests());
 
         // A request from a DIFFERENT IP should not be rate-limited
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
-                        .header("X-Forwarded-For", "203.0.113.2"))
+                        .with(request -> { request.setRemoteAddr("203.0.113.2"); return request; }))
                 .andExpect(status().isUnauthorized());
     }
 }

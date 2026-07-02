@@ -37,6 +37,8 @@ public class WarehouseService {
                     .name(request.getName())
                     .location(request.getLocation())
                     .capacity(request.getCapacity())
+                    .storeType(request.getStoreType() != null ? request.getStoreType() : "CUSTOM")
+                    .description(request.getDescription())
                     .tenant(tenant)
                     .build();
 
@@ -79,6 +81,10 @@ public class WarehouseService {
             warehouse.setName(request.getName());
             warehouse.setLocation(request.getLocation());
             warehouse.setCapacity(request.getCapacity());
+            if (request.getStoreType() != null) {
+                warehouse.setStoreType(request.getStoreType());
+            }
+            warehouse.setDescription(request.getDescription());
 
             Warehouse updatedWarehouse = warehouseRepository.save(warehouse);
             log.info("Successfully updated warehouse with ID: {} for tenantId: {}", updatedWarehouse.getId(), tenantId);
@@ -96,6 +102,9 @@ public class WarehouseService {
         log.debug("Deleting warehouse with ID: {} for tenantId: {}", warehouseId, tenantId);
         try {
             Warehouse warehouse = getWarehouseEntity(tenantId, warehouseId);
+            if (warehouse.getIsSystemStore() != null && warehouse.getIsSystemStore()) {
+                throw new BusinessRuleViolationException("Cannot delete a system store");
+            }
             warehouseRepository.delete(warehouse);
             log.info("Successfully deleted warehouse with ID: {} for tenantId: {}", warehouseId, tenantId);
         } catch (ResourceNotFoundException e) {

@@ -41,7 +41,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final BusinessTypeRepository businessTypeRepository;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void run(String... args) {
         log.info("Checking if Platform Admin needs to be seeded...");
         if (platformAdminRepository.count() == 0) {

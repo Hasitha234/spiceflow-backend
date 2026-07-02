@@ -9,8 +9,13 @@ import com.spiceflow.backend.inventory.dto.response.InventoryItemResponse;
 import com.spiceflow.backend.inventory.entity.InventoryItem;
 import com.spiceflow.backend.inventory.entity.Product;
 import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.entity.InventoryTransaction;
 import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
+import com.spiceflow.backend.inventory.repository.InventoryTransactionRepository;
 import com.spiceflow.backend.inventory.mapper.InventoryItemMapper;
+import com.spiceflow.backend.inventory.dto.request.InventoryTransferRequest;
+import com.spiceflow.backend.inventory.dto.request.InventoryMarkDamagedRequest;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class InventoryItemService {
 
     private final InventoryItemRepository inventoryItemRepository;
+    private final InventoryTransactionRepository inventoryTransactionRepository;
     private final TenantRepository tenantRepository;
     private final ProductService productService;
     private final WarehouseService warehouseService;
@@ -135,6 +141,100 @@ public class InventoryItemService {
             log.error("Failed to delete inventory item with ID: {} for tenantId: {}", id, tenantId, e);
             throw new BusinessRuleViolationException("Failed to delete inventory item due to existing dependencies");
         }
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public void transferInventory(Long tenantId, InventoryTransferRequest request) {
+        log.info("Transferring inventory product {} from warehouse {} to warehouse {}", request.getProductId(), request.getFromWarehouseId(), request.getToWarehouseId());
+        
+        if (request.getFromWarehouseId().equals(request.getToWarehouseId())) {
+            throw new BusinessRuleViolationException("Source and destination warehouses cannot be the same");
+        }
+        
+        Tenant tenant = tenantRepository.findById(tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+
+        InventoryItem sourceItem = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
+            request.getProductId(), request.getFromWarehouseId(), tenantId)
+            .orElseThrow(() -> new BusinessRuleViolationException("Product not found in source warehouse"));
+            
+        if (sourceItem.getQuantityAvailable() < request.getQuantity()) {
+            throw new BusinessRuleViolationException("Insufficient quantity in source warehouse");
+        }
+        
+        // Deduct from source
+        sourceItem.setQuantityAvailable(sourceItem.getQuantityAvailable() - request.getQuantity());
+        inventoryItemRepository.save(sourceItem);
+        
+        // Transaction OUT
+        InventoryTransaction outTx = InventoryTransaction.builder()
+            .inventoryItem(sourceItem)
+            .transactionType("TRANSFER_OUT")
+            .quantity(-request.getQuantity())
+            .referenceId("TO-" + request.getToWarehouseId())
+            .notes(request.getReason())
+            .tenant(tenant)
+            .build();
+        inventoryTransactionRepository.save(outTx);
+        
+        // Add to dest (create if not exists)
+        Optional<InventoryItem> destItemOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
+            request.getProductId(), request.getToWarehouseId(), tenantId);
+            
+        InventoryItem destItem;
+        if (destItemOpt.isPresent()) {
+            destItem = destItemOpt.get();
+            destItem.setQuantityAvailable(destItem.getQuantityAvailable() + request.getQuantity());
+        } else {
+            Product product = productService.getProductEntity(request.getProductId(), tenantId);
+            Warehouse destWarehouse = warehouseService.getWarehouseEntity(request.getToWarehouseId(), tenantId);
+            destItem = InventoryItem.builder()
+                .product(product)
+                .warehouse(destWarehouse)
+                .quantityAvailable(request.getQuantity())
+                .tenant(tenant)
+                .build();
+        }
+        destItem = inventoryItemRepository.save(destItem);
+        
+        // Transaction IN
+        InventoryTransaction inTx = InventoryTransaction.builder()
+            .inventoryItem(destItem)
+            .transactionType("TRANSFER_IN")
+            .quantity(request.getQuantity())
+            .referenceId("FROM-" + request.getFromWarehouseId())
+            .notes(request.getReason())
+            .tenant(tenant)
+            .build();
+        inventoryTransactionRepository.save(inTx);
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public void markDamaged(Long tenantId, InventoryMarkDamagedRequest request) {
+        log.info("Marking {} of product {} as damaged in warehouse {}", request.getQuantity(), request.getProductId(), request.getWarehouseId());
+        
+        Tenant tenant = tenantRepository.findById(tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+
+        InventoryItem item = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
+            request.getProductId(), request.getWarehouseId(), tenantId)
+            .orElseThrow(() -> new BusinessRuleViolationException("Product not found in warehouse"));
+            
+        if (item.getQuantityAvailable() < request.getQuantity()) {
+            throw new BusinessRuleViolationException("Insufficient quantity to mark as damaged");
+        }
+        
+        item.setQuantityAvailable(item.getQuantityAvailable() - request.getQuantity());
+        inventoryItemRepository.save(item);
+        
+        InventoryTransaction tx = InventoryTransaction.builder()
+            .inventoryItem(item)
+            .transactionType("DAMAGED_OUT")
+            .quantity(-request.getQuantity())
+            .notes(request.getNotes())
+            .tenant(tenant)
+            .build();
+        inventoryTransactionRepository.save(tx);
     }
     
     public InventoryItem getInventoryItemEntity(Long id, Long tenantId) {

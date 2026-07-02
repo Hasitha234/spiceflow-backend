@@ -1,5 +1,6 @@
 package com.spiceflow.backend.inventory.controller;
 
+import org.springframework.validation.annotation.Validated;
 import com.spiceflow.backend.auth.entity.User;
 import com.spiceflow.backend.inventory.dto.request.InventoryTransactionRequest;
 import com.spiceflow.backend.inventory.dto.response.InventoryTransactionResponse;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
+@Validated
 @RequestMapping("/api/v1/inventory-transactions")
 @RequiredArgsConstructor
 @Tag(name = "Inventory Transactions", description = "Endpoints for managing stock movements (requires INVENTORY_VIEW/INVENTORY_TRANSFER authority)")

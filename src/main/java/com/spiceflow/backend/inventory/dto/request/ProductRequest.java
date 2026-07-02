@@ -29,4 +29,11 @@ public class ProductRequest {
     
     @NotNull(message = "Supplier ID is required")
     private Long supplierId;
+
+    private String netWeight;
+    private String unitType;
+    private String boxConfiguration;
+    private Integer itemsPerSoldUnit;
+    private Integer soldUnitsPerBox;
+    private BigDecimal ratePerSoldUnit;
 }

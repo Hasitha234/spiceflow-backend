@@ -1,5 +1,6 @@
 package com.spiceflow.backend.inventory.controller;
 
+import org.springframework.validation.annotation.Validated;
 import com.spiceflow.backend.auth.entity.User;
 import com.spiceflow.backend.inventory.dto.request.WarehouseRequest;
 import com.spiceflow.backend.inventory.dto.response.WarehouseResponse;
@@ -25,8 +26,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 
 @RestController
+@Validated
 @RequestMapping("/api/v1/warehouses")
 @RequiredArgsConstructor
 @Tag(name = "Warehouses", description = "Endpoints for managing inventory warehouses")

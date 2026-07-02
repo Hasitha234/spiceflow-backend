@@ -1,5 +1,6 @@
 package com.spiceflow.backend.inventory.controller;
 
+import org.springframework.validation.annotation.Validated;
 import com.spiceflow.backend.auth.entity.User;
 import com.spiceflow.backend.inventory.dto.request.ProductCategoryRequest;
 import com.spiceflow.backend.inventory.dto.response.ProductCategoryResponse;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
+@Validated
 @RequestMapping("/api/v1/product-categories")
 @RequiredArgsConstructor
 @Tag(name = "Product Categories", description = "Endpoints for managing product categories (requires SETTINGS_PRODUCTS authority)")
