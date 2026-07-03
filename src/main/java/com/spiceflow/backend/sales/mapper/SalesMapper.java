@@ -17,7 +17,22 @@ public interface SalesMapper {
     @Mapping(source = "assignedRep.name", target = "assignedRepName")
     ShopResponse toShopResponse(Shop shop);
     
+    @Mapping(target = "assignedShopsCount", ignore = true)
     RepResponse toRepResponse(Rep rep);
+
+    @Mapping(target = "id", source = "rep.id")
+    @Mapping(target = "employeeId", source = "rep.employeeId")
+    @Mapping(target = "name", source = "rep.name")
+    @Mapping(target = "email", source = "rep.email")
+    @Mapping(target = "phone", source = "rep.phone")
+    @Mapping(target = "area", source = "rep.area")
+    @Mapping(target = "employmentDate", source = "rep.employmentDate")
+    @Mapping(target = "terminationDate", source = "rep.terminationDate")
+    @Mapping(target = "isActive", source = "rep.isActive")
+    @Mapping(target = "createdAt", source = "rep.createdAt")
+    @Mapping(target = "updatedAt", source = "rep.updatedAt")
+    @Mapping(target = "assignedShopsCount", source = "assignedShopsCount")
+    RepResponse toRepResponseWithCount(Rep rep, Long assignedShopsCount);
     
     DriverResponse toDriverResponse(Driver driver);
 }

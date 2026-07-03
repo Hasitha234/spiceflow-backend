@@ -6,7 +6,6 @@ import java.time.OffsetDateTime;
 
 @Builder
 public record ShopResponse(
-
     Long id,
     String name,
     String ownerName,
@@ -14,14 +13,12 @@ public record ShopResponse(
     String address,
     String area,
     String route,
-    
     Long assignedRepId,
     String assignedRepName,
-    
     BigDecimal outstandingLoan,
-    
+    BigDecimal latitude,
+    BigDecimal longitude,
+    Boolean isActive,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt
-
-
 ) {}
