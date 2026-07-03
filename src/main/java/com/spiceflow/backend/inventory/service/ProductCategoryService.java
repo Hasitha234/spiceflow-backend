@@ -31,19 +31,19 @@ public class ProductCategoryService {
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = "productCategories", allEntries = true)
     public ProductCategoryResponse createCategory(Long tenantId, ProductCategoryRequest request) {
-        log.debug("Creating product category for tenantId: {}, name: {}", tenantId, request.getName());
+        log.debug("Creating product category for tenantId: {}, name: {}", tenantId, request.name());
         try {
             Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant with ID " + tenantId + " not found"));
             
             ProductCategory parentCategory = null;
-            if (request.getParentCategoryId() != null) {
-                parentCategory = getCategoryEntity(request.getParentCategoryId(), tenantId);
+            if (request.parentCategoryId() != null) {
+                parentCategory = getCategoryEntity(request.parentCategoryId(), tenantId);
             }
             
             ProductCategory category = ProductCategory.builder()
-                .name(request.getName())
-                .description(request.getDescription())
+                .name(request.name())
+                .description(request.description())
                 .parentCategory(parentCategory)
                 .tenant(tenant)
                 .build();
@@ -87,14 +87,14 @@ public class ProductCategoryService {
         try {
             ProductCategory category = getCategoryEntity(id, tenantId);
             
-            category.setName(request.getName());
-            category.setDescription(request.getDescription());
+            category.setName(request.name());
+            category.setDescription(request.description());
             
-            if (request.getParentCategoryId() != null) {
-                if (request.getParentCategoryId().equals(id)) {
+            if (request.parentCategoryId() != null) {
+                if (request.parentCategoryId().equals(id)) {
                     throw new BusinessRuleViolationException("A category cannot be its own parent");
                 }
-                ProductCategory parentCategory = getCategoryEntity(request.getParentCategoryId(), tenantId);
+                ProductCategory parentCategory = getCategoryEntity(request.parentCategoryId(), tenantId);
                 category.setParentCategory(parentCategory);
             } else {
                 category.setParentCategory(null);

@@ -1,18 +1,20 @@
 package com.spiceflow.backend.sales.dto.request;
+import lombok.Builder;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 
-@Data
-@SuppressWarnings("NullAway.Init")
-public class DriverRequest {
+@Builder
+public record DriverRequest(
+
     
     @NotBlank(message = "Name is required")
-    private String name;
+    String name,
     
-    private String phone;
-    private String vehicleNo;
+    String phone,
+    String vehicleNo,
     
-    private Boolean isActive = true;
-}
+    Boolean isActive
 
+
+
+) {}

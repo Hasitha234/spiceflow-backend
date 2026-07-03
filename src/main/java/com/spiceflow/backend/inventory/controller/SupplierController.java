@@ -38,7 +38,7 @@ public class SupplierController {
     private final SupplierService supplierService;
 
     @GetMapping
-    @Operation(summary = "List all suppliers (with pagination and search)", description = "Returns suppliers for the authenticated tenant")
+    @Operation(summary = "List all suppliers (with pagination and search)", description = "Returns suppliers for the authenticated tenant", operationId = "getSuppliers")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT')")
     public ResponseEntity<Page<SupplierResponse>> getSuppliers(
             @AuthenticationPrincipal User currentUser,
@@ -49,7 +49,7 @@ public class SupplierController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get a supplier by ID")
+    @Operation(summary = "Get a supplier by ID", operationId = "getSupplier")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT')")
     public ResponseEntity<SupplierResponse> getSupplier(
             @PathVariable Long id,
@@ -58,7 +58,7 @@ public class SupplierController {
     }
 
     @PostMapping
-    @Operation(summary = "Create supplier", description = "Creates a new supplier for the authenticated tenant")
+    @Operation(summary = "Create supplier", description = "Creates a new supplier for the authenticated tenant", operationId = "createSupplier")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT')")
     public ResponseEntity<SupplierResponse> createSupplier(
             @AuthenticationPrincipal User currentUser,
@@ -67,7 +67,7 @@ public class SupplierController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update an existing supplier")
+    @Operation(summary = "Update an existing supplier", operationId = "updateSupplier")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'PURCHASING_AGENT')")
     public ResponseEntity<SupplierResponse> updateSupplier(
             @PathVariable Long id,
@@ -77,7 +77,7 @@ public class SupplierController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete supplier", description = "Soft deletes a supplier")
+    @Operation(summary = "Delete supplier", description = "Soft deletes a supplier", operationId = "deleteSupplier")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER')")
     public ResponseEntity<Void> deleteSupplier(
             @AuthenticationPrincipal User currentUser,

@@ -1,31 +1,33 @@
 package com.spiceflow.backend.sales.dto.request;
+import lombok.Builder;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
-import lombok.Data;
 
-@Data
-@SuppressWarnings("NullAway.Init")
-public class DeliveryShopItemRequest {
+@Builder
+public record DeliveryShopItemRequest(
+
     
     @NotNull(message = "Product ID is required")
-    private Long productId;
+    Long productId,
     
     @NotNull
     @PositiveOrZero
-    private Integer quantityDelivered;
+    Integer quantityDelivered,
     
-    private String unitType;
-    
-    @NotNull
-    @PositiveOrZero
-    private BigDecimal rate;
+    String unitType,
     
     @NotNull
     @PositiveOrZero
-    private BigDecimal discountAmount;
+    BigDecimal rate,
     
-    private Boolean isFreeItem = false;
-}
+    @NotNull
+    @PositiveOrZero
+    BigDecimal discountAmount,
+    
+    Boolean isFreeItem
 
+
+
+) {}

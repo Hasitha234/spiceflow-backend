@@ -72,7 +72,7 @@ public class WarehouseServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
-        assertEquals("Main Hub", result.getContent().get(0).getName());
+        assertEquals("Main Hub", result.getContent().get(0).name());
         verify(warehouseRepository).findByTenantId(1L, pageable);
     }
 
@@ -90,15 +90,13 @@ public class WarehouseServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
-        assertEquals("Main Hub", result.getContent().get(0).getName());
+        assertEquals("Main Hub", result.getContent().get(0).name());
         verify(warehouseRepository).findByTenantIdAndNameContainingIgnoreCase(1L, "Hub", pageable);
     }
 
     @Test
     void testCreateWarehouse() {
-        WarehouseRequest request = new WarehouseRequest();
-        request.setName("West Coast Hub");
-        request.setLocation("California");
+        WarehouseRequest request = WarehouseRequest.builder().name("West Coast Hub").location("California").build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
 
@@ -114,16 +112,13 @@ public class WarehouseServiceTest {
         WarehouseResponse response = warehouseService.createWarehouse(1L, request);
 
         assertNotNull(response);
-        assertEquals(20L, response.getId());
-        assertEquals("West Coast Hub", response.getName());
+        assertEquals(20L, response.id());
+        assertEquals("West Coast Hub", response.name());
     }
 
     @Test
     void testUpdateWarehouse() {
-        WarehouseRequest request = new WarehouseRequest();
-        request.setName("Updated Hub");
-
-        when(warehouseRepository.findByIdAndTenantId(10L, 1L)).thenReturn(Optional.of(mockWarehouse));
+        WarehouseRequest request = WarehouseRequest.builder().name("Updated Hub").location("").build();when(warehouseRepository.findByIdAndTenantId(10L, 1L)).thenReturn(Optional.of(mockWarehouse));
         when(warehouseRepository.save(any(Warehouse.class))).thenAnswer(i -> i.getArgument(0));
 
         WarehouseResponse mockResponse = WarehouseResponse.builder().id(10L).name("Updated Hub").build();
@@ -132,7 +127,7 @@ public class WarehouseServiceTest {
         WarehouseResponse response = warehouseService.updateWarehouse(1L, 10L, request);
 
         assertNotNull(response);
-        assertEquals("Updated Hub", response.getName());
+        assertEquals("Updated Hub", response.name());
     }
 
     @Test

@@ -57,16 +57,16 @@ public class ReportService {
             creditGiven = BigDecimal.ZERO;
         }
         
-        SalesSummaryResponse response = SalesSummaryResponse.builder()
-            .startDate(startDate)
-            .endDate(endDate)
-            .totalSales(totalSales)
-            .totalDiscounts(totalDiscounts)
-            .totalReturns(totalReturns)
-            .netSales(netSales)
-            .totalCollected(totalCollected)
-            .totalCreditGiven(creditGiven)
-            .build();
+        SalesSummaryResponse response = new SalesSummaryResponse(
+            startDate,
+            endDate,
+            totalSales,
+            totalDiscounts,
+            totalReturns,
+            netSales,
+            totalCollected,
+            creditGiven
+        );
             
         log.debug("Sales summary calculated: Net Sales = {}, Collected = {}", netSales, totalCollected);
         return CompletableFuture.completedFuture(response);
@@ -78,12 +78,12 @@ public class ReportService {
         List<ShopOutstandingResponse> outstandings = shopRepository.findByTenantId(tenantId, org.springframework.data.domain.Pageable.unpaged())
             .stream()
             .filter(s -> s.getOutstandingLoan() != null && s.getOutstandingLoan().compareTo(BigDecimal.ZERO) > 0)
-            .map(s -> ShopOutstandingResponse.builder()
-                .shopId(s.getId())
-                .shopName(s.getName())
-                .route(s.getRoute())
-                .outstandingAmount(s.getOutstandingLoan())
-                .build())
+            .map(s -> new ShopOutstandingResponse(
+                s.getId(),
+                s.getName(),
+                s.getRoute(),
+                s.getOutstandingLoan()
+            ))
             .collect(Collectors.toList());
             
         log.debug("Found {} shops with outstanding balances for tenant {}", outstandings.size(), tenantId);
@@ -113,14 +113,14 @@ public class ReportService {
                     .mapToInt(i -> i.getQuantityAvailable())
                     .sum();
                     
-                return StockStatusResponse.builder()
-                    .productId(product.getId())
-                    .productName(product.getName())
-                    .productCode(product.getSku())
-                    .mainStoreQuantity(mainQuantity)
-                    .otherStoresQuantity(otherQuantity)
-                    .totalQuantity(mainQuantity + otherQuantity)
-                    .build();
+                return new StockStatusResponse(
+                    product.getId(),
+                    product.getName(),
+                    product.getSku(),
+                    mainQuantity,
+                    otherQuantity,
+                    mainQuantity + otherQuantity
+                );
             })
             .collect(Collectors.toList());
             
@@ -148,13 +148,14 @@ public class ReportService {
                     .map(d -> d.getTotalCollectedAmount())
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
                     
-                return RepPerformanceResponse.builder()
-                    .repId(rep.getId())
-                    .repName(rep.getName())
-                    .totalOrders(repDeliveries.size())
-                    .totalSalesValue(totalSales)
-                    .totalCollectedAmount(totalCollected)
-                    .build();
+                return new RepPerformanceResponse(
+                    rep.getId(),
+                    rep.getName(),
+                    repDeliveries.size(),
+                    totalSales,
+                    totalCollected,
+                    null // performanceScore not calculated here
+                );
             })
             .collect(Collectors.toList());
             
@@ -162,4 +163,3 @@ public class ReportService {
         return performances;
     }
 }
-

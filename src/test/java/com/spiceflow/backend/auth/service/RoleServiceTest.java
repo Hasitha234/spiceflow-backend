@@ -75,14 +75,12 @@ class RoleServiceTest {
 
         assertNotNull(response);
         assertEquals(1, response.getContent().size());
-        assertEquals("Manager", response.getContent().get(0).getName());
+        assertEquals("Manager", response.getContent().get(0).name());
     }
 
     @Test
     void createRole_Success() {
-        RoleRequest request = new RoleRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "New Role");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "permissionCodes", Set.of("MANAGE_USERS"));
+        RoleRequest request = RoleRequest.builder().name("New Role").description("Admin role").permissionCodes(java.util.Set.of("MANAGE_USERS")).build();
 
         when(roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(1L, "New Role")).thenReturn(Optional.empty());
         when(permissionRepository.findByCodeIn(anySet())).thenReturn(Set.of(permission));
@@ -96,8 +94,7 @@ class RoleServiceTest {
 
     @Test
     void createRole_RoleExists() {
-        RoleRequest request = new RoleRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Manager");
+        RoleRequest request = RoleRequest.builder().name("Manager").description("Manager role").permissionCodes(java.util.Set.of("PERM_READ")).build();
 
         when(roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(1L, "Manager")).thenReturn(Optional.of(role));
 
@@ -106,9 +103,7 @@ class RoleServiceTest {
 
     @Test
     void createRole_InvalidPermissions() {
-        RoleRequest request = new RoleRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "New Role");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "permissionCodes", Set.of("INVALID_CODE"));
+        RoleRequest request = RoleRequest.builder().name("New Role").description("Role").permissionCodes(java.util.Set.of("INVALID_CODE")).build();
 
         when(roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(1L, "New Role")).thenReturn(Optional.empty());
         when(permissionRepository.findByCodeIn(anySet())).thenReturn(Set.of());
@@ -118,9 +113,7 @@ class RoleServiceTest {
 
     @Test
     void updateRole_Success() {
-        RoleRequest request = new RoleRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Updated Role");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "permissionCodes", Set.of("MANAGE_USERS"));
+        RoleRequest request = RoleRequest.builder().name("Updated Role").description("Admin role").permissionCodes(java.util.Set.of("MANAGE_USERS")).build();
 
         when(roleRepository.findByIdAndTenantIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(role));
         when(roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(1L, "Updated Role")).thenReturn(Optional.empty());
@@ -137,13 +130,12 @@ class RoleServiceTest {
         role.setIsSystemRole(true);
         when(roleRepository.findByIdAndTenantIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(role));
 
-        assertThrows(BusinessRuleViolationException.class, () -> roleService.updateRole(1L, new RoleRequest(), com.spiceflow.backend.auth.dto.AuthenticatedUser.builder().id(currentUser.getId()).tenantId(currentUser.getTenant() != null ? currentUser.getTenant().getId() : null).email(currentUser.getEmail()).build()));
+        assertThrows(BusinessRuleViolationException.class, () -> roleService.updateRole(1L, RoleRequest.builder().name("Admin").description("Admin role").permissionCodes(java.util.Set.of("PERM_READ")).build(), com.spiceflow.backend.auth.dto.AuthenticatedUser.builder().id(currentUser.getId()).tenantId(currentUser.getTenant() != null ? currentUser.getTenant().getId() : null).email(currentUser.getEmail()).build()));
     }
 
     @Test
     void updateRole_RoleNameConflict() {
-        RoleRequest request = new RoleRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Existing Role");
+        RoleRequest request = RoleRequest.builder().name("Existing Role").description("Admin role").permissionCodes(java.util.Set.of("PERM_READ")).build();
 
         Role existingRole = new Role();
         existingRole.setId(2L);

@@ -100,10 +100,7 @@ class LoadingSheetServiceTest {
 
     @Test
     void createLoadingSheet_Success() {
-        CreateLoadingSheetRequest request = new CreateLoadingSheetRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "repOrderId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "driverId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "loadingDate", LocalDate.now());
+        CreateLoadingSheetRequest request = CreateLoadingSheetRequest.builder().repOrderId(1L).driverId(1L).loadingDate(java.time.LocalDate.now()).build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(repOrderRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(repOrder));
@@ -122,8 +119,7 @@ class LoadingSheetServiceTest {
     @Test
     void createLoadingSheet_AlreadyLoaded() {
         repOrder.setLoadingStatus("IN_PROGRESS");
-        CreateLoadingSheetRequest request = new CreateLoadingSheetRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "repOrderId", 1L);
+        CreateLoadingSheetRequest request = CreateLoadingSheetRequest.builder().repOrderId(1L).driverId(1L).loadingDate(java.time.LocalDate.now()).build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(repOrderRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(repOrder));

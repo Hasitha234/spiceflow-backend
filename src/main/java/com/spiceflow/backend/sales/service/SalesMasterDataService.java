@@ -43,13 +43,17 @@ public class SalesMasterDataService {
             
         Rep rep = Rep.builder()
             .tenant(tenant)
-            .name(request.getName())
-            .phone(request.getPhone())
-            .area(request.getArea())
-            .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+            .employeeId(request.employeeId())
+            .name(request.name())
+            .email(request.email())
+            .phone(request.phone())
+            .area(request.area())
+            .employmentDate(request.employmentDate())
+            .terminationDate(request.terminationDate())
+            .isActive(request.isActive() != null ? request.isActive() : true)
             .build();
             
-        return salesMapper.toRepResponse(repRepository.save(rep));
+        return salesMapper.toRepResponseWithCount(repRepository.save(rep), 0L);
     }
     
     public Page<RepResponse> getReps(Long tenantId, String name, Pageable pageable) {
@@ -59,7 +63,39 @@ public class SalesMasterDataService {
         } else {
             reps = repRepository.findByTenantId(tenantId, pageable);
         }
-        return reps.map(salesMapper::toRepResponse);
+        java.util.Map<Long, Long> countsMap = shopRepository.countShopsByAssignedRepId(tenantId).stream()
+            .collect(java.util.stream.Collectors.toMap(
+                row -> ((Number) row[0]).longValue(),
+                row -> ((Number) row[1]).longValue()
+            ));
+        return reps.map(rep -> salesMapper.toRepResponseWithCount(rep, countsMap.getOrDefault(rep.getId(), 0L)));
+    }
+
+    public RepResponse getRep(Long id, Long tenantId) {
+        Rep rep = getRepEntity(id, tenantId);
+        return salesMapper.toRepResponse(rep);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public RepResponse updateRep(Long id, Long tenantId, RepRequest request) {
+        Rep rep = getRepEntity(id, tenantId);
+        rep.setEmployeeId(request.employeeId());
+        rep.setName(request.name());
+        rep.setEmail(request.email());
+        rep.setPhone(request.phone());
+        rep.setArea(request.area());
+        rep.setEmploymentDate(request.employmentDate());
+        rep.setTerminationDate(request.terminationDate());
+        if (request.isActive() != null) {
+            rep.setIsActive(request.isActive());
+        }
+        return salesMapper.toRepResponse(repRepository.save(rep));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteRep(Long id, Long tenantId) {
+        Rep rep = getRepEntity(id, tenantId);
+        repRepository.delete(rep);
     }
     
     // --- DRIVER ---
@@ -70,10 +106,10 @@ public class SalesMasterDataService {
             
         Driver driver = Driver.builder()
             .tenant(tenant)
-            .name(request.getName())
-            .phone(request.getPhone())
-            .vehicleNo(request.getVehicleNo())
-            .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+            .name(request.name())
+            .phone(request.phone())
+            .vehicleNo(request.vehicleNo())
+            .isActive(request.isActive() != null ? request.isActive() : true)
             .build();
             
         return salesMapper.toDriverResponse(driverRepository.save(driver));
@@ -96,21 +132,24 @@ public class SalesMasterDataService {
             .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             
         Rep assignedRep = null;
-        if (request.getAssignedRepId() != null) {
-            assignedRep = repRepository.findByIdAndTenantId(request.getAssignedRepId(), tenantId)
+        if (request.assignedRepId() != null) {
+            assignedRep = repRepository.findByIdAndTenantId(request.assignedRepId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Rep not found"));
         }
             
         Shop shop = Shop.builder()
             .tenant(tenant)
-            .name(request.getName())
-            .ownerName(request.getOwnerName())
-            .phone(request.getPhone())
-            .address(request.getAddress())
-            .area(request.getArea())
-            .route(request.getRoute())
+            .name(request.name())
+            .ownerName(request.ownerName())
+            .phone(request.phone())
+            .address(request.address())
+            .area(request.area())
+            .route(request.route())
             .assignedRep(assignedRep)
-            .outstandingLoan(request.getOutstandingLoan() != null ? request.getOutstandingLoan() : java.math.BigDecimal.ZERO)
+            .outstandingLoan(request.outstandingLoan() != null ? request.outstandingLoan() : java.math.BigDecimal.ZERO)
+            .latitude(request.latitude())
+            .longitude(request.longitude())
+            .isActive(request.isActive() != null ? request.isActive() : true)
             .build();
             
         return salesMapper.toShopResponse(shopRepository.save(shop));
@@ -124,6 +163,45 @@ public class SalesMasterDataService {
             shops = shopRepository.findByTenantId(tenantId, pageable);
         }
         return shops.map(salesMapper::toShopResponse);
+    }
+
+    public ShopResponse getShop(Long id, Long tenantId) {
+        return salesMapper.toShopResponse(getShopEntity(id, tenantId));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public ShopResponse updateShop(Long id, Long tenantId, ShopRequest request) {
+        Shop shop = getShopEntity(id, tenantId);
+
+        Rep assignedRep = null;
+        if (request.assignedRepId() != null) {
+            assignedRep = repRepository.findByIdAndTenantId(request.assignedRepId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Rep not found"));
+        }
+
+        shop.setName(request.name());
+        shop.setOwnerName(request.ownerName());
+        shop.setPhone(request.phone());
+        shop.setAddress(request.address());
+        shop.setArea(request.area());
+        shop.setRoute(request.route());
+        shop.setAssignedRep(assignedRep);
+        if (request.outstandingLoan() != null) {
+            shop.setOutstandingLoan(request.outstandingLoan());
+        }
+        shop.setLatitude(request.latitude());
+        shop.setLongitude(request.longitude());
+        if (request.isActive() != null) {
+            shop.setIsActive(request.isActive());
+        }
+
+        return salesMapper.toShopResponse(shopRepository.save(shop));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteShop(Long id, Long tenantId) {
+        Shop shop = getShopEntity(id, tenantId);
+        shopRepository.delete(shop);
     }
     
     public Shop getShopEntity(Long id, Long tenantId) {

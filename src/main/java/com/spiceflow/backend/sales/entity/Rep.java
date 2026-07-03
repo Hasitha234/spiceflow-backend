@@ -12,6 +12,8 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "reps")
 @Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
@@ -28,14 +30,26 @@ public class Rep extends BaseEntity {
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
+    @Column(name = "employee_id", length = 50)
+    private String employeeId;
+
     @Column(nullable = false, length = 100)
     private String name;
+
+    @Column(length = 100)
+    private String email;
 
     @Column(length = 50)
     private String phone;
 
     @Column(length = 100)
     private String area;
+
+    @Column(name = "employment_date")
+    private LocalDate employmentDate;
+
+    @Column(name = "termination_date")
+    private LocalDate terminationDate;
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default

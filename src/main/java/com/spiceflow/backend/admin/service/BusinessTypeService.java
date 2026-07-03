@@ -28,15 +28,15 @@ public class BusinessTypeService {
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = "businessTypes", allEntries = true)
     public BusinessTypeResponse createBusinessType(BusinessTypeRequest request) {
-        log.info("Creating new business type: {}", request.getName());
+        log.info("Creating new business type: {}", request.name());
         
-        if (businessTypeRepository.existsByName(request.getName())) {
-            throw new BusinessRuleViolationException("Business type with name '" + request.getName() + "' already exists");
+        if (businessTypeRepository.existsByName(request.name())) {
+            throw new BusinessRuleViolationException("Business type with name '" + request.name() + "' already exists");
         }
 
         BusinessType businessType = BusinessType.builder()
-            .name(request.getName())
-            .description(request.getDescription())
+            .name(request.name())
+            .description(request.description())
             .build();
 
         businessType = businessTypeRepository.save(businessType);
@@ -63,12 +63,12 @@ public class BusinessTypeService {
         
         BusinessType businessType = getBusinessTypeEntity(id);
         
-        if (!businessType.getName().equals(request.getName()) && businessTypeRepository.existsByName(request.getName())) {
-            throw new BusinessRuleViolationException("Business type with name '" + request.getName() + "' already exists");
+        if (!businessType.getName().equals(request.name()) && businessTypeRepository.existsByName(request.name())) {
+            throw new BusinessRuleViolationException("Business type with name '" + request.name() + "' already exists");
         }
 
-        businessType.setName(request.getName());
-        businessType.setDescription(request.getDescription());
+        businessType.setName(request.name());
+        businessType.setDescription(request.description());
 
         businessType = businessTypeRepository.save(businessType);
         return mapToResponse(businessType);
@@ -96,12 +96,12 @@ public class BusinessTypeService {
     }
 
     private BusinessTypeResponse mapToResponse(BusinessType entity) {
-        return BusinessTypeResponse.builder()
-            .id(entity.getId())
-            .name(entity.getName())
-            .description(entity.getDescription())
-            .createdAt(entity.getCreatedAt())
-            .updatedAt(entity.getUpdatedAt())
-            .build();
+        return new BusinessTypeResponse(
+            entity.getId(),
+            entity.getName(),
+            entity.getDescription(),
+            entity.getCreatedAt(),
+            entity.getUpdatedAt()
+        );
     }
 }

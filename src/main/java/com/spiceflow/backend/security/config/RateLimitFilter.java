@@ -4,8 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.spiceflow.backend.common.dto.ApiResponse;
-import com.spiceflow.backend.common.dto.ErrorResponse;
+
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
@@ -75,13 +74,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.setHeader("X-RateLimit-Retry-After-Seconds", String.valueOf(waitForRefill));
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-            ErrorResponse errorBody = ErrorResponse.builder()
-                    .code("TOO_MANY_REQUESTS")
-                    .message("Too many attempts. Please try again later.")
-                    .build();
+            org.springframework.http.ProblemDetail problem = org.springframework.http.ProblemDetail.forStatusAndDetail(
+                HttpStatus.TOO_MANY_REQUESTS, "Too many attempts. Please try again later.");
+            problem.setTitle("Too Many Requests");
+            problem.setInstance(java.net.URI.create(request.getRequestURI()));
+            problem.setProperty("timestamp", OffsetDateTime.now().toString());
 
-            ApiResponse<Object> apiResponse = ApiResponse.error(errorBody);
-            response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
+            response.getWriter().write(objectMapper.writeValueAsString(problem));
         }
     }
 

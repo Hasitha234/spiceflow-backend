@@ -1,30 +1,31 @@
 package com.spiceflow.backend.inventory.dto.response;
+import lombok.Builder;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import lombok.Builder;
-import lombok.Data;
 
-@Data
 @Builder
-public class ProductResponse {
-    private Long id;
-    private String sku;
-    private String name;
-    private String description;
-    private BigDecimal basePrice;
-    private String unitOfMeasure;
-    private Long categoryId;
-    private String categoryName;
-    private Long supplierId;
-    private String supplierName;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
+public record ProductResponse(
+
+    Long id,
+    String sku,
+    String name,
+    String description,
+    BigDecimal basePrice,
+    String unitOfMeasure,
+    Long categoryId,
+    String categoryName,
+    Long supplierId,
+    String supplierName,
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt,
     
-    private String netWeight;
-    private String unitType;
-    private String boxConfiguration;
-    private Integer itemsPerSoldUnit;
-    private Integer soldUnitsPerBox;
-    private BigDecimal ratePerSoldUnit;
-}
+    String netWeight,
+    String unitType,
+    String boxConfiguration,
+    Integer itemsPerSoldUnit,
+    Integer soldUnitsPerBox,
+    BigDecimal ratePerSoldUnit
+
+
+) {}

@@ -30,17 +30,17 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping
-    @Operation(summary = "Create a new product", description = "Creates a new product under the authenticated tenant's scope")
+    @Operation(summary = "Create a new product", description = "Creates a new product under the authenticated tenant's scope", operationId = "createProduct")
     public ResponseEntity<ProductResponse> createProduct(
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody ProductRequest request) {
-        log.info("Received request to create product: {} by user: {}", request.getName(), currentUser.getId());
+        log.info("Received request to create product: {} by user: {}", request.name(), currentUser.getId());
         ProductResponse response = productService.createProduct(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
-    @Operation(summary = "List all products", description = "Returns a paginated list of products, optionally filtered by search text")
+    @Operation(summary = "List all products", description = "Returns a paginated list of products, optionally filtered by search text", operationId = "getProducts")
     public ResponseEntity<Page<ProductResponse>> getProducts(
             @AuthenticationPrincipal User currentUser,
             @RequestParam(required = false) String search,
@@ -51,7 +51,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get product by ID", description = "Returns details of a specific product")
+    @Operation(summary = "Get product by ID", description = "Returns details of a specific product", operationId = "getProduct")
     public ResponseEntity<ProductResponse> getProduct(
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {
@@ -61,7 +61,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update product", description = "Updates details of an existing product")
+    @Operation(summary = "Update product", description = "Updates details of an existing product", operationId = "updateProduct")
     public ResponseEntity<ProductResponse> updateProduct(
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id, @Valid @RequestBody ProductRequest request) {
@@ -71,7 +71,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete product", description = "Deletes a product if it has no associated inventory items")
+    @Operation(summary = "Delete product", description = "Deletes a product if it has no associated inventory items", operationId = "deleteProduct")
     public ResponseEntity<Void> deleteProduct(
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {

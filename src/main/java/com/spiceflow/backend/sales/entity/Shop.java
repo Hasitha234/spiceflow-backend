@@ -60,4 +60,16 @@ public class Shop extends BaseEntity {
     @Column(name = "outstanding_loan", nullable = false, precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal outstandingLoan = BigDecimal.ZERO;
+
+    @Column(precision = 10, scale = 7)
+    @org.jspecify.annotations.Nullable
+    private BigDecimal latitude;
+
+    @Column(precision = 10, scale = 7)
+    @org.jspecify.annotations.Nullable
+    private BigDecimal longitude;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
 }

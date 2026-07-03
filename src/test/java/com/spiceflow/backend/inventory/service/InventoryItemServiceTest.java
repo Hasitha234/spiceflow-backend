@@ -71,10 +71,11 @@ class InventoryItemServiceTest {
 
     @Test
     void createInventoryItem_Success() {
-        InventoryItemRequest request = new InventoryItemRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "productId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "warehouseId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "quantityAvailable", 50);
+        InventoryItemRequest request = InventoryItemRequest.builder()
+            .productId(1L)
+            .warehouseId(1L)
+            .quantityAvailable(50)
+            .build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(1L, 1L, 1L)).thenReturn(Optional.empty());
@@ -91,9 +92,10 @@ class InventoryItemServiceTest {
 
     @Test
     void createInventoryItem_AlreadyExists() {
-        InventoryItemRequest request = new InventoryItemRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "productId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "warehouseId", 1L);
+        InventoryItemRequest request = InventoryItemRequest.builder()
+            .productId(1L)
+            .warehouseId(1L)
+            .build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(1L, 1L, 1L)).thenReturn(Optional.of(inventoryItem));
@@ -125,8 +127,9 @@ class InventoryItemServiceTest {
 
     @Test
     void updateInventoryItem_Success() {
-        InventoryItemRequest request = new InventoryItemRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "quantityAvailable", 150);
+        InventoryItemRequest request = InventoryItemRequest.builder()
+            .quantityAvailable(150)
+            .build();
 
         when(inventoryItemRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(inventoryItem));
         when(inventoryItemRepository.save(any(InventoryItem.class))).thenReturn(inventoryItem);
@@ -158,12 +161,13 @@ class InventoryItemServiceTest {
 
     @Test
     void transferInventory_Success() {
-        InventoryTransferRequest request = new InventoryTransferRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "productId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "fromWarehouseId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "toWarehouseId", 2L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "quantity", 50);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "reason", "Transfer");
+        InventoryTransferRequest request = InventoryTransferRequest.builder()
+            .productId(1L)
+            .fromWarehouseId(1L)
+            .toWarehouseId(2L)
+            .quantity(50)
+            .reason("Transfer")
+            .build();
 
         InventoryItem destItem = new InventoryItem();
         destItem.setQuantityAvailable(10);
@@ -182,11 +186,12 @@ class InventoryItemServiceTest {
 
     @Test
     void markDamaged_Success() {
-        InventoryMarkDamagedRequest request = new InventoryMarkDamagedRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "productId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "warehouseId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "quantity", 20);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "notes", "Damaged");
+        InventoryMarkDamagedRequest request = InventoryMarkDamagedRequest.builder()
+            .productId(1L)
+            .warehouseId(1L)
+            .quantity(20)
+            .notes("Damaged")
+            .build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(1L, 1L, 1L)).thenReturn(Optional.of(inventoryItem));

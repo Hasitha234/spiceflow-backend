@@ -28,17 +28,17 @@ public class SupplierService {
 
     @Transactional(rollbackFor = Exception.class)
     public SupplierResponse createSupplier(Long tenantId, SupplierRequest request) {
-        log.debug("Creating supplier for tenantId: {}, name: {}", tenantId, request.getName());
+        log.debug("Creating supplier for tenantId: {}, name: {}", tenantId, request.name());
         try {
             Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant with ID " + tenantId + " not found"));
             
             Supplier supplier = Supplier.builder()
-                .name(request.getName())
-                .contactEmail(request.getContactEmail())
-                .contactPhone(request.getContactPhone())
-                .address(request.getAddress())
-                .taxId(request.getTaxId())
+                .name(request.name())
+                .contactEmail(request.contactEmail())
+                .contactPhone(request.contactPhone())
+                .address(request.address())
+                .taxId(request.taxId())
                 .tenant(tenant)
                 .build();
                 
@@ -78,11 +78,11 @@ public class SupplierService {
         try {
             Supplier supplier = getSupplierEntity(tenantId, id);
             
-            supplier.setName(request.getName());
-            supplier.setContactEmail(request.getContactEmail());
-            supplier.setContactPhone(request.getContactPhone());
-            supplier.setAddress(request.getAddress());
-            supplier.setTaxId(request.getTaxId());
+            supplier.setName(request.name());
+            supplier.setContactEmail(request.contactEmail());
+            supplier.setContactPhone(request.contactPhone());
+            supplier.setAddress(request.address());
+            supplier.setTaxId(request.taxId());
             
             Supplier updatedSupplier = supplierRepository.save(supplier);
             log.info("Successfully updated supplier with ID: {} for tenantId: {}", id, tenantId);

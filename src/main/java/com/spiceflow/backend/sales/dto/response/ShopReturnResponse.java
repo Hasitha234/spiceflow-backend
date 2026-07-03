@@ -1,25 +1,26 @@
 package com.spiceflow.backend.sales.dto.response;
-
 import lombok.Builder;
-import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-@Data
 @Builder
-public class ShopReturnResponse {
+public record ShopReturnResponse(
+
     
-    private Long id;
-    private Long productId;
-    private String productName;
-    private String productSku;
+    Long id,
+    Long productId,
+    String productName,
+    String productSku,
     
-    private Integer quantity;
-    private String unitType;
-    private BigDecimal creditValue;
+    Integer quantity,
+    String unitType,
+    BigDecimal creditValue,
     
-    private String returnType;
-    private String status;
+    String returnType,
+    String status,
     
-    private OffsetDateTime createdAt;
-}
+    OffsetDateTime createdAt
+
+
+) {}

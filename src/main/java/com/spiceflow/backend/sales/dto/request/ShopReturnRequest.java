@@ -1,29 +1,31 @@
 package com.spiceflow.backend.sales.dto.request;
+import lombok.Builder;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
-import lombok.Data;
 
-@Data
-@SuppressWarnings("NullAway.Init")
-public class ShopReturnRequest {
+@Builder
+public record ShopReturnRequest(
+
     
     @NotNull(message = "Product ID is required")
-    private Long productId;
+    Long productId,
     
     @NotNull
     @PositiveOrZero
-    private Integer quantity;
+    Integer quantity,
     
-    private String unitType;
+    String unitType,
     
     @NotNull
     @PositiveOrZero
-    private BigDecimal creditValue;
+    BigDecimal creditValue,
     
     @NotBlank
-    private String returnType;
-}
+    String returnType
 
+
+
+) {}

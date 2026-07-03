@@ -35,7 +35,7 @@ public class SalesMasterDataController {
     // --- REPS ---
     @PostMapping("/reps")
     @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
-    @Operation(summary = "Create a rep")
+    @Operation(summary = "Create a rep", operationId = "createRep")
     public ResponseEntity<RepResponse> createRep(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody RepRequest request) {
@@ -45,7 +45,7 @@ public class SalesMasterDataController {
 
     @GetMapping("/reps")
     @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
-    @Operation(summary = "List reps")
+    @Operation(summary = "List reps", operationId = "getReps")
     public ResponseEntity<Page<RepResponse>> getReps(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String name,
@@ -53,10 +53,39 @@ public class SalesMasterDataController {
         return ResponseEntity.ok(salesMasterDataService.getReps(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), name, pageable));
     }
 
+    @GetMapping("/reps/{id}")
+    @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
+    @Operation(summary = "Get a rep by ID", operationId = "getRep")
+    public ResponseEntity<RepResponse> getRep(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        return ResponseEntity.ok(salesMasterDataService.getRep(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null")));
+    }
+
+    @PutMapping("/reps/{id}")
+    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @Operation(summary = "Update a rep", operationId = "updateRep")
+    public ResponseEntity<RepResponse> updateRep(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @Valid @RequestBody RepRequest request) {
+        return ResponseEntity.ok(salesMasterDataService.updateRep(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request));
+    }
+
+    @DeleteMapping("/reps/{id}")
+    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @Operation(summary = "Delete a rep", operationId = "deleteRep")
+    public ResponseEntity<Void> deleteRep(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        salesMasterDataService.deleteRep(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
+        return ResponseEntity.noContent().build();
+    }
+
     // --- DRIVERS ---
     @PostMapping("/drivers")
     @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
-    @Operation(summary = "Create a driver")
+    @Operation(summary = "Create a driver", operationId = "createDriver")
     public ResponseEntity<DriverResponse> createDriver(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody DriverRequest request) {
@@ -66,7 +95,7 @@ public class SalesMasterDataController {
 
     @GetMapping("/drivers")
     @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
-    @Operation(summary = "List drivers")
+    @Operation(summary = "List drivers", operationId = "getDrivers")
     public ResponseEntity<Page<DriverResponse>> getDrivers(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String name,
@@ -77,7 +106,7 @@ public class SalesMasterDataController {
     // --- SHOPS ---
     @PostMapping("/shops")
     @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
-    @Operation(summary = "Create a shop")
+    @Operation(summary = "Create a shop", operationId = "createShop")
     public ResponseEntity<ShopResponse> createShop(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody ShopRequest request) {
@@ -87,12 +116,41 @@ public class SalesMasterDataController {
 
     @GetMapping("/shops")
     @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
-    @Operation(summary = "List shops")
+    @Operation(summary = "List shops", operationId = "getShops")
     public ResponseEntity<Page<ShopResponse>> getShops(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String name,
             Pageable pageable) {
         return ResponseEntity.ok(salesMasterDataService.getShops(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), name, pageable));
+    }
+
+    @GetMapping("/shops/{id}")
+    @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
+    @Operation(summary = "Get a shop by ID", operationId = "getShop")
+    public ResponseEntity<ShopResponse> getShop(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        return ResponseEntity.ok(salesMasterDataService.getShop(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null")));
+    }
+
+    @PutMapping("/shops/{id}")
+    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @Operation(summary = "Update a shop", operationId = "updateShop")
+    public ResponseEntity<ShopResponse> updateShop(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @Valid @RequestBody ShopRequest request) {
+        return ResponseEntity.ok(salesMasterDataService.updateShop(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request));
+    }
+
+    @DeleteMapping("/shops/{id}")
+    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @Operation(summary = "Delete a shop", operationId = "deleteShop")
+    public ResponseEntity<Void> deleteShop(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        salesMasterDataService.deleteShop(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
+        return ResponseEntity.noContent().build();
     }
 }
 

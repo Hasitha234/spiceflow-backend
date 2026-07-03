@@ -66,18 +66,18 @@ public class AdminService {
     public TenantResponse createTenant(CreateTenantRequest request) {
         
         // 1. Validate that the email is not already used by another tenant
-        if (tenantRepository.findByEmailAndDeletedAtIsNull(request.getOwnerEmail()).isPresent()) {
+        if (tenantRepository.findByEmailAndDeletedAtIsNull(request.ownerEmail()).isPresent()) {
             throw new ResourceConflictException("Email is already registered to a business");
         }
 
-        BusinessType businessType = businessTypeRepository.findById(request.getBusinessTypeId())
-            .orElseThrow(() -> new ResourceNotFoundException("Business Type not found with id: " + request.getBusinessTypeId()));
+        BusinessType businessType = businessTypeRepository.findById(request.businessTypeId())
+            .orElseThrow(() -> new ResourceNotFoundException("Business Type not found with id: " + request.businessTypeId()));
 
         // 2. Create the Tenant
         Tenant tenant = Tenant.builder()
-            .businessName(request.getBusinessName())
+            .businessName(request.businessName())
             .businessType(businessType)
-            .email(request.getOwnerEmail())
+            .email(request.ownerEmail())
             .status("ACTIVE")
             .plan("BASIC")
             .build();
@@ -98,8 +98,8 @@ public class AdminService {
         // 4. Create the Tenant Owner User with the Owner role assigned
         User owner = User.builder()
             .tenant(tenant)
-            .email(request.getOwnerEmail())
-            .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.getOwnerPassword()), "Password hash cannot be null"))
+            .email(request.ownerEmail())
+            .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.ownerPassword()), "Password hash cannot be null"))
             .assignedRole(ownerRole)
             .build();
         userRepository.save(owner);
@@ -114,19 +114,19 @@ public class AdminService {
         warehouseRepository.saveAll(defaultStores);
 
         log.info("Platform Admin created new {} business: {} with owner {}", 
-            businessType.getName(), request.getBusinessName(), request.getOwnerEmail());
+            businessType.getName(), request.businessName(), request.ownerEmail());
 
         // 5. Map the newly created tenant back to a safe Response DTO
-        return TenantResponse.builder()
-            .id(tenant.getId())
-            .businessName(tenant.getBusinessName())
-            .businessTypeId(tenant.getBusinessType().getId())
-            .businessTypeName(tenant.getBusinessType().getName())
-            .email(tenant.getEmail())
-            .status(tenant.getStatus())
-            .plan(tenant.getPlan())
-            .createdAt(tenant.getCreatedAt())
-            .build();
+        return new TenantResponse(
+            tenant.getId(),
+            tenant.getBusinessName(),
+            tenant.getBusinessType().getId(),
+            tenant.getBusinessType().getName(),
+            tenant.getEmail(),
+            tenant.getStatus(),
+            tenant.getPlan(),
+            tenant.getCreatedAt()
+        );
     }
 
 
@@ -136,16 +136,16 @@ public class AdminService {
     
     log.debug("Fetched {} active tenants from database", tenants.getNumberOfElements());
     
-    Page<TenantResponse> responsePage = tenants.map(t -> TenantResponse.builder()
-            .id(t.getId())
-            .businessName(t.getBusinessName())
-            .businessTypeId(t.getBusinessType().getId())
-            .businessTypeName(t.getBusinessType().getName())
-            .email(t.getEmail())
-            .status(t.getStatus())
-            .plan(t.getPlan())
-            .createdAt(t.getCreatedAt())
-            .build());
+    Page<TenantResponse> responsePage = tenants.map(t -> new TenantResponse(
+            t.getId(),
+            t.getBusinessName(),
+            t.getBusinessType().getId(),
+            t.getBusinessType().getName(),
+            t.getEmail(),
+            t.getStatus(),
+            t.getPlan(),
+            t.getCreatedAt()
+        ));
             
     return PageResponse.of(responsePage);
   }
@@ -159,16 +159,16 @@ public class AdminService {
 
     log.debug("Fetched tenant id={} from database", tenant.getId());
     
-    return TenantResponse.builder()
-        .id(tenant.getId())
-        .businessName(tenant.getBusinessName())
-        .businessTypeId(tenant.getBusinessType().getId())
-        .businessTypeName(tenant.getBusinessType().getName())
-        .email(tenant.getEmail())
-        .status(tenant.getStatus())
-        .plan(tenant.getPlan())
-        .createdAt(tenant.getCreatedAt())
-        .build();
+    return new TenantResponse(
+        tenant.getId(),
+        tenant.getBusinessName(),
+        tenant.getBusinessType().getId(),
+        tenant.getBusinessType().getName(),
+        tenant.getEmail(),
+        tenant.getStatus(),
+        tenant.getPlan(),
+        tenant.getCreatedAt()
+    );
   }
 
   /** Updates a tenant's business details. Email cannot be changed. */
@@ -178,27 +178,27 @@ public class AdminService {
         .filter(t -> t.getDeletedAt() == null)
         .orElseThrow(() -> new ResourceNotFoundException("Tenant not found with id: " + id));
 
-    BusinessType businessType = businessTypeRepository.findById(request.getBusinessTypeId())
-        .orElseThrow(() -> new ResourceNotFoundException("Business Type not found with id: " + request.getBusinessTypeId()));
+    BusinessType businessType = businessTypeRepository.findById(request.businessTypeId())
+        .orElseThrow(() -> new ResourceNotFoundException("Business Type not found with id: " + request.businessTypeId()));
 
-    tenant.setBusinessName(request.getBusinessName());
+    tenant.setBusinessName(request.businessName());
     tenant.setBusinessType(businessType);
-    tenant.setStatus(request.getStatus());
-    tenant.setPlan(request.getPlan());
+    tenant.setStatus(request.status());
+    tenant.setPlan(request.plan());
     tenantRepository.save(tenant);
 
     log.info("Platform Admin updated tenant id={}, name={}", tenant.getId(), tenant.getBusinessName());
 
-    return TenantResponse.builder()
-        .id(tenant.getId())
-        .businessName(tenant.getBusinessName())
-        .businessTypeId(tenant.getBusinessType().getId())
-        .businessTypeName(tenant.getBusinessType().getName())
-        .email(tenant.getEmail())
-        .status(tenant.getStatus())
-        .plan(tenant.getPlan())
-        .createdAt(tenant.getCreatedAt())
-        .build();
+    return new TenantResponse(
+        tenant.getId(),
+        tenant.getBusinessName(),
+        tenant.getBusinessType().getId(),
+        tenant.getBusinessType().getName(),
+        tenant.getEmail(),
+        tenant.getStatus(),
+        tenant.getPlan(),
+        tenant.getCreatedAt()
+    );
   }
 
   /** Soft-deletes a tenant — sets deleted_at timestamp, never removes the database record. */

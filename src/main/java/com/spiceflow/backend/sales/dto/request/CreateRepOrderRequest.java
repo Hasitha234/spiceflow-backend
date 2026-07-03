@@ -1,25 +1,27 @@
 package com.spiceflow.backend.sales.dto.request;
+import lombok.Builder;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
-import lombok.Data;
 
-@Data
-@SuppressWarnings("NullAway.Init")
-public class CreateRepOrderRequest {
+@Builder
+public record CreateRepOrderRequest(
+
     
     @NotNull(message = "Rep ID is required")
-    private Long repId;
+    Long repId,
     
     @NotNull(message = "Order date is required")
-    private LocalDate orderDate;
+    LocalDate orderDate,
     
-    private String routeArea;
+    String routeArea,
     
     @Valid
     @NotNull
-    private List<RepOrderShopRequest> shops;
-}
+    List<RepOrderShopRequest> shops
 
+
+
+) {}

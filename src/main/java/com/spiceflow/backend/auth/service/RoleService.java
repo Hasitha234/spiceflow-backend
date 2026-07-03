@@ -57,11 +57,11 @@ public class RoleService {
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = "roles", allEntries = true)
     public RoleResponse createRole(RoleRequest request, AuthenticatedUser currentUser) {
-        if (roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(getRequiredTenantId(currentUser), request.getName()).isPresent()) {
+        if (roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(getRequiredTenantId(currentUser), request.name()).isPresent()) {
             throw new ResourceConflictException("A role with this name already exists");
         }
 
-        Set<Permission> permissions = permissionRepository.findByCodeIn(request.getPermissionCodes());
+        Set<Permission> permissions = permissionRepository.findByCodeIn(request.permissionCodes());
         if (permissions.isEmpty()) {
             throw new BusinessRuleViolationException("Invalid permission codes provided");
         }
@@ -71,8 +71,8 @@ public class RoleService {
 
         Role role = Role.builder()
                 .tenant(tenantRef)
-                .name(request.getName())
-                .description(request.getDescription())
+                .name(request.name())
+                .description(request.description())
                 .isSystemRole(false)
                 .permissions(permissions)
                 .build();
@@ -92,20 +92,20 @@ public class RoleService {
             throw new BusinessRuleViolationException("System roles (like Owner) cannot be modified");
         }
 
-        roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(getRequiredTenantId(currentUser), request.getName())
+        roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(getRequiredTenantId(currentUser), request.name())
                 .ifPresent(existingRole -> {
                     if (!existingRole.getId().equals(roleId)) {
                         throw new ResourceConflictException("A role with this name already exists");
                     }
                 });
 
-        Set<Permission> permissions = permissionRepository.findByCodeIn(request.getPermissionCodes());
+        Set<Permission> permissions = permissionRepository.findByCodeIn(request.permissionCodes());
         if (permissions.isEmpty()) {
             throw new BusinessRuleViolationException("Invalid permission codes provided");
         }
 
-        role.setName(request.getName());
-        role.setDescription(request.getDescription());
+        role.setName(request.name());
+        role.setDescription(request.description());
         role.setPermissions(permissions);
 
         Role savedRole = roleRepository.save(role);
@@ -138,14 +138,14 @@ public class RoleService {
                 .map(Permission::getCode)
                 .collect(Collectors.toSet());
 
-        return RoleResponse.builder()
-                .id(role.getId())
-                .name(role.getName())
-                .description(role.getDescription())
-                .isSystemRole(role.getIsSystemRole())
-                .permissions(permissionCodes)
-                .createdAt(role.getCreatedAt())
-                .build();
+        return new RoleResponse(
+                role.getId(),
+                role.getName(),
+                role.getDescription(),
+                role.getIsSystemRole(),
+                permissionCodes,
+                role.getCreatedAt()
+        );
     }
 }
 

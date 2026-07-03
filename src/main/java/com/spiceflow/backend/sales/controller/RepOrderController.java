@@ -30,7 +30,7 @@ public class RepOrderController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('REP_ORDER_CREATE')")
-    @Operation(summary = "Create a rep order", description = "Creates a rep order with multiple shops and line items")
+    @Operation(summary = "Create a rep order", description = "Creates a rep order with multiple shops and line items", operationId = "createRepOrder")
     public ResponseEntity<RepOrderResponse> createRepOrder(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody CreateRepOrderRequest request) {
@@ -41,7 +41,7 @@ public class RepOrderController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('REP_ORDER_VIEW')")
-    @Operation(summary = "List rep orders", description = "Returns a paginated list of rep orders")
+    @Operation(summary = "List rep orders", description = "Returns a paginated list of rep orders", operationId = "getRepOrders")
     public ResponseEntity<Page<RepOrderResponse>> getRepOrders(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) Long repId,
@@ -53,7 +53,7 @@ public class RepOrderController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('REP_ORDER_VIEW')")
-    @Operation(summary = "Get rep order by ID", description = "Returns details of a specific rep order")
+    @Operation(summary = "Get rep order by ID", description = "Returns details of a specific rep order", operationId = "getRepOrder")
     public ResponseEntity<RepOrderResponse> getRepOrder(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {

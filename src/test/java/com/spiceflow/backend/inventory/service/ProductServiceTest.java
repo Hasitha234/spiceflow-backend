@@ -67,11 +67,7 @@ class ProductServiceTest {
 
     @Test
     void createProduct_Success() {
-        ProductRequest request = new ProductRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "sku", "SKU-123");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Test Product");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "categoryId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "supplierId", 1L);
+        ProductRequest request = ProductRequest.builder().name("Test Product").sku("SKU-123").unitOfMeasure("kg").categoryId(1L).supplierId(1L).build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(productRepository.findBySkuAndTenantId("SKU-123", 1L)).thenReturn(Optional.empty());
@@ -88,8 +84,7 @@ class ProductServiceTest {
 
     @Test
     void createProduct_SkuExists() {
-        ProductRequest request = new ProductRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "sku", "SKU-123");
+        ProductRequest request = ProductRequest.builder().name("Test Product").sku("SKU-123").unitOfMeasure("kg").categoryId(1L).build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(productRepository.findBySkuAndTenantId("SKU-123", 1L)).thenReturn(Optional.of(product));
@@ -138,11 +133,7 @@ class ProductServiceTest {
 
     @Test
     void updateProduct_Success() {
-        ProductRequest request = new ProductRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "sku", "SKU-456");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Updated Product");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "categoryId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "supplierId", 1L);
+        ProductRequest request = ProductRequest.builder().name("Updated Product").sku("SKU-456").unitOfMeasure("kg").categoryId(1L).supplierId(1L).build();
 
         when(productRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(product));
         when(productRepository.findBySkuAndTenantId("SKU-456", 1L)).thenReturn(Optional.empty());
@@ -159,8 +150,7 @@ class ProductServiceTest {
 
     @Test
     void updateProduct_SkuExists() {
-        ProductRequest request = new ProductRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "sku", "SKU-456");
+        ProductRequest request = ProductRequest.builder().name("Test Product").sku("SKU-456").unitOfMeasure("kg").categoryId(1L).build();
 
         when(productRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(product));
         when(productRepository.findBySkuAndTenantId("SKU-456", 1L)).thenReturn(Optional.of(new Product()));

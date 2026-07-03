@@ -31,18 +31,18 @@ public class InventoryItemController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
-    @Operation(summary = "Create an inventory item", description = "Registers a product in a warehouse with an initial quantity")
+    @Operation(summary = "Create an inventory item", description = "Registers a product in a warehouse with an initial quantity", operationId = "createInventoryItem")
     public ResponseEntity<InventoryItemResponse> createInventoryItem(
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody InventoryItemRequest request) {
         log.info("Received request to create inventory item for product: {} at warehouse: {} by user: {}", 
-            request.getProductId(), request.getWarehouseId(), currentUser.getId());
+            request.productId(), request.warehouseId(), currentUser.getId());
         InventoryItemResponse response = inventoryItemService.createInventoryItem(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
-    @Operation(summary = "List all inventory items", description = "Returns a paginated list of inventory items, optionally filtered by warehouse and product")
+    @Operation(summary = "List all inventory items", description = "Returns a paginated list of inventory items, optionally filtered by warehouse and product", operationId = "getInventoryItems")
     public ResponseEntity<Page<InventoryItemResponse>> getInventoryItems(
             @AuthenticationPrincipal User currentUser,
             @RequestParam(required = false) Long warehouseId,
@@ -54,7 +54,7 @@ public class InventoryItemController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get inventory item by ID", description = "Returns details of a specific inventory item")
+    @Operation(summary = "Get inventory item by ID", description = "Returns details of a specific inventory item", operationId = "getInventoryItem")
     public ResponseEntity<InventoryItemResponse> getInventoryItem(
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {
@@ -65,7 +65,7 @@ public class InventoryItemController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
-    @Operation(summary = "Update an inventory item", description = "Updates details (like batch number/expiration) of an existing inventory item")
+    @Operation(summary = "Update an inventory item", description = "Updates details (like batch number/expiration) of an existing inventory item", operationId = "updateInventoryItem")
     public ResponseEntity<InventoryItemResponse> updateInventoryItem(
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id, @Valid @RequestBody InventoryItemRequest request) {
@@ -76,7 +76,7 @@ public class InventoryItemController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
-    @Operation(summary = "Delete an inventory item", description = "Deletes an inventory item only if quantities are zero")
+    @Operation(summary = "Delete an inventory item", description = "Deletes an inventory item only if quantities are zero", operationId = "deleteInventoryItem")
     public ResponseEntity<Void> deleteInventoryItem(
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {
@@ -87,7 +87,7 @@ public class InventoryItemController {
     
     @PostMapping("/transfer")
     @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
-    @Operation(summary = "Transfer inventory", description = "Transfer products between warehouses")
+    @Operation(summary = "Transfer inventory", description = "Transfer products between warehouses", operationId = "transferInventory")
     public ResponseEntity<Void> transferInventory(
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody com.spiceflow.backend.inventory.dto.request.InventoryTransferRequest request) {
@@ -98,7 +98,7 @@ public class InventoryItemController {
     
     @PostMapping("/mark-damaged")
     @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
-    @Operation(summary = "Mark inventory damaged", description = "Mark products as damaged and deduct from available stock")
+    @Operation(summary = "Mark inventory damaged", description = "Mark products as damaged and deduct from available stock", operationId = "markDamaged")
     public ResponseEntity<Void> markDamaged(
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody com.spiceflow.backend.inventory.dto.request.InventoryMarkDamagedRequest request) {

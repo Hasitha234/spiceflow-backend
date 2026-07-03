@@ -111,20 +111,20 @@ class PerformanceIsolationIntegrationTest {
     @Test
     void testCacheTenantIsolation() {
         // Step 1: Set context for Tenant A and fetch roles
-        TenantContext.setTenantId(userA.getTenantId());
-        var rolesA = roleService.getRolesForTenant(com.spiceflow.backend.auth.dto.AuthenticatedUser.builder().id(userA.getId()).tenantId(userA.getTenantId()).email(userA.getEmail()).build(), Pageable.unpaged());
+        TenantContext.setTenantId(userA.getTenant().getId());
+        var rolesA = roleService.getRolesForTenant(com.spiceflow.backend.auth.dto.AuthenticatedUser.builder().id(userA.getId()).tenantId(userA.getTenant().getId()).email(userA.getEmail()).build(), Pageable.unpaged());
         assertThat(rolesA.getContent()).hasSize(1);
-        assertThat(rolesA.getContent().get(0).getName()).startsWith("Role A");
+        assertThat(rolesA.getContent().get(0).name()).startsWith("Role A");
         
         // Cache should now have a key prefixed with Tenant A's ID
         
         // Step 2: Set context for Tenant B and fetch roles
-        TenantContext.setTenantId(userB.getTenantId());
-        var rolesB = roleService.getRolesForTenant(com.spiceflow.backend.auth.dto.AuthenticatedUser.builder().id(userB.getId()).tenantId(userB.getTenantId()).email(userB.getEmail()).build(), Pageable.unpaged());
+        TenantContext.setTenantId(userB.getTenant().getId());
+        var rolesB = roleService.getRolesForTenant(com.spiceflow.backend.auth.dto.AuthenticatedUser.builder().id(userB.getId()).tenantId(userB.getTenant().getId()).email(userB.getEmail()).build(), Pageable.unpaged());
         
         // If the cache was NOT isolated, Tenant B would get Tenant A's cached roles
         assertThat(rolesB.getContent()).hasSize(1);
-        assertThat(rolesB.getContent().get(0).getName()).startsWith("Role B");
+        assertThat(rolesB.getContent().get(0).name()).startsWith("Role B");
         
         TenantContext.clear();
     }
@@ -132,12 +132,12 @@ class PerformanceIsolationIntegrationTest {
     @Test
     void testAsyncContextPropagationAndIsolation() throws ExecutionException, InterruptedException {
         // Step 1: Trigger report for Tenant A
-        TenantContext.setTenantId(userA.getTenantId());
-        CompletableFuture<SalesSummaryResponse> futureA = reportService.getSalesSummary(userA.getTenantId(), LocalDate.now(), LocalDate.now());
+        TenantContext.setTenantId(userA.getTenant().getId());
+        CompletableFuture<SalesSummaryResponse> futureA = reportService.getSalesSummary(userA.getTenant().getId(), LocalDate.now(), LocalDate.now());
         
         // Step 2: Immediately trigger report for Tenant B on the same thread pool
-        TenantContext.setTenantId(userB.getTenantId());
-        CompletableFuture<SalesSummaryResponse> futureB = reportService.getSalesSummary(userB.getTenantId(), LocalDate.now(), LocalDate.now());
+        TenantContext.setTenantId(userB.getTenant().getId());
+        CompletableFuture<SalesSummaryResponse> futureB = reportService.getSalesSummary(userB.getTenant().getId(), LocalDate.now(), LocalDate.now());
         
         TenantContext.clear();
         

@@ -51,8 +51,7 @@ class SupplierServiceTest {
 
     @Test
     void createSupplier_Success() {
-        SupplierRequest request = new SupplierRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Supplier 1");
+        SupplierRequest request = SupplierRequest.builder().name("Test Supplier").build();
         
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(supplierRepository.save(any(Supplier.class))).thenReturn(supplier);
@@ -105,8 +104,7 @@ class SupplierServiceTest {
 
     @Test
     void updateSupplier_Success() {
-        SupplierRequest request = new SupplierRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Updated Supplier");
+        SupplierRequest request = SupplierRequest.builder().name("Updated Supplier").build();
 
         when(supplierRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(supplier));
         when(supplierRepository.save(any(Supplier.class))).thenReturn(supplier);

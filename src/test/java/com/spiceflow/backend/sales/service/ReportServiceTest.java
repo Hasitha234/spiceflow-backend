@@ -68,11 +68,11 @@ class ReportServiceTest {
         SalesSummaryResponse result = reportService.getSalesSummary(1L, start, end).join();
 
         assertNotNull(result);
-        assertEquals(new BigDecimal("1000"), result.getTotalSales());
-        assertEquals(new BigDecimal("100"), result.getTotalReturns());
-        assertEquals(new BigDecimal("900"), result.getNetSales());
-        assertEquals(new BigDecimal("800"), result.getTotalCollected());
-        assertEquals(new BigDecimal("100"), result.getTotalCreditGiven());
+        assertEquals(new BigDecimal("1000"), result.totalSales());
+        assertEquals(new BigDecimal("100"), result.totalReturns());
+        assertEquals(new BigDecimal("900"), result.netSales());
+        assertEquals(new BigDecimal("800"), result.totalCollected());
+        assertEquals(new BigDecimal("100"), result.totalCreditGiven());
     }
 
     @Test
@@ -88,7 +88,7 @@ class ReportServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(new BigDecimal("500"), result.get(0).getOutstandingAmount());
+        assertEquals(new BigDecimal("500"), result.get(0).outstandingAmount());
     }
 
     @Test
@@ -119,9 +119,9 @@ class ReportServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(100, result.get(0).getMainStoreQuantity());
-        assertEquals(50, result.get(0).getOtherStoresQuantity());
-        assertEquals(150, result.get(0).getTotalQuantity());
+        assertEquals(100, result.get(0).mainStoreQuantity());
+        assertEquals(50, result.get(0).otherStoresQuantity());
+        assertEquals(150, result.get(0).totalQuantity());
     }
 
     @Test
@@ -150,9 +150,9 @@ class ReportServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(1L, result.get(0).getRepId());
-        assertEquals(1, result.get(0).getTotalOrders());
-        assertEquals(new BigDecimal("2000"), result.get(0).getTotalSalesValue());
-        assertEquals(new BigDecimal("1800"), result.get(0).getTotalCollectedAmount());
+        assertEquals(1L, result.get(0).repId());
+        assertEquals(1, result.get(0).totalOrders());
+        assertEquals(new BigDecimal("2000"), result.get(0).totalSalesValue());
+        assertEquals(new BigDecimal("1800"), result.get(0).totalCollectedAmount());
     }
 }

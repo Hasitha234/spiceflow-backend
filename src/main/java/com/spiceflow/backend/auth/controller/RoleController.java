@@ -40,7 +40,7 @@ public class RoleController {
     }
 
     @GetMapping
-    @Operation(summary = "List all roles for the current tenant")
+    @Operation(summary = "List all roles for the current tenant", operationId = "getRoles")
     @PreAuthorize("hasAuthority('ROLE_VIEW') or hasRole('OWNER')")
     public ResponseEntity<PageResponse<RoleResponse>> getRoles(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -50,7 +50,7 @@ public class RoleController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create a new custom role")
+    @Operation(summary = "Create a new custom role", operationId = "createRole")
     @PreAuthorize("hasAuthority('ROLE_CREATE') or hasRole('OWNER')")
     public RoleResponse createRole(
             @Valid @RequestBody RoleRequest request,
@@ -59,7 +59,7 @@ public class RoleController {
     }
 
     @PutMapping("/{roleId}")
-    @Operation(summary = "Update a custom role")
+    @Operation(summary = "Update a custom role", operationId = "updateRole")
     @PreAuthorize("hasAuthority('ROLE_UPDATE') or hasRole('OWNER')")
     public RoleResponse updateRole(
             @PathVariable Long roleId,
@@ -70,7 +70,7 @@ public class RoleController {
 
     @DeleteMapping("/{roleId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Delete a custom role")
+    @Operation(summary = "Delete a custom role", operationId = "deleteRole")
     @PreAuthorize("hasAuthority('ROLE_DELETE') or hasRole('OWNER')")
     public void deleteRole(
             @PathVariable Long roleId,

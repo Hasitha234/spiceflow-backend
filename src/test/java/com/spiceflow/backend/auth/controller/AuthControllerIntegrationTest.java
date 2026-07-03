@@ -93,8 +93,8 @@ public class AuthControllerIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonPayload))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.accessToken").exists())
-                .andExpect(jsonPath("$.data.refreshToken").exists());
+                .andExpect(jsonPath("$.accessToken").exists())
+                .andExpect(jsonPath("$.refreshToken").exists());
     }
 
     @Test

@@ -78,13 +78,11 @@ class AuthServiceTest {
 
     @Test
     void login_PlatformAdmin_Success() {
-        LoginRequest request = new LoginRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "email", "admin@example.com");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "password", "password");
-        when(platformAdminRepository.findByEmailAndDeletedAtIsNull(request.getEmail()))
+        LoginRequest request = LoginRequest.builder().email("admin@test.com").password("password").build();
+        when(platformAdminRepository.findByEmailAndDeletedAtIsNull(request.email()))
                 .thenReturn(Optional.of(admin));
         when(loginAttemptService.isBlocked(admin.getEmail())).thenReturn(false);
-        when(passwordEncoder.matches(request.getPassword(), admin.getPasswordHash())).thenReturn(true);
+        when(passwordEncoder.matches(request.password(), admin.getPasswordHash())).thenReturn(true);
         when(jwtUtil.generateAdminToken(admin)).thenReturn("access_token");
         when(jwtUtil.getAccessTokenExpiryMs()).thenReturn(3600000L);
         when(jwtUtil.getRefreshTokenExpiryMs()).thenReturn(86400000L);
@@ -92,22 +90,20 @@ class AuthServiceTest {
         LoginResponse response = authService.login(request);
 
         assertNotNull(response);
-        assertEquals("access_token", response.getAccessToken());
-        assertNotNull(response.getRefreshToken());
-        assertFalse(response.isPasswordChangeRequired());
+        assertEquals("access_token", response.accessToken());
+        assertNotNull(response.refreshToken());
+        assertFalse(response.passwordChangeRequired());
         verify(loginAttemptService).loginSucceeded(admin.getEmail());
         verify(refreshTokenRepository).save(any(RefreshToken.class));
     }
 
     @Test
     void login_PlatformAdmin_InvalidPassword() {
-        LoginRequest request = new LoginRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "email", "admin@example.com");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "password", "wrong_password");
-        when(platformAdminRepository.findByEmailAndDeletedAtIsNull(request.getEmail()))
+        LoginRequest request = LoginRequest.builder().email("admin@test.com").password("password").build();
+        when(platformAdminRepository.findByEmailAndDeletedAtIsNull(request.email()))
                 .thenReturn(Optional.of(admin));
         when(loginAttemptService.isBlocked(admin.getEmail())).thenReturn(false);
-        when(passwordEncoder.matches(request.getPassword(), admin.getPasswordHash())).thenReturn(false);
+        when(passwordEncoder.matches(request.password(), admin.getPasswordHash())).thenReturn(false);
 
         assertThrows(InvalidCredentialsException.class, () -> authService.login(request));
         verify(loginAttemptService).loginFailed(admin.getEmail());
@@ -115,13 +111,11 @@ class AuthServiceTest {
 
     @Test
     void login_User_Success() {
-        LoginRequest request = new LoginRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "email", "user@example.com");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "password", "password");
-        when(platformAdminRepository.findByEmailAndDeletedAtIsNull(request.getEmail())).thenReturn(Optional.empty());
-        when(userRepository.findByEmailAndDeletedAtIsNull(request.getEmail())).thenReturn(Optional.of(user));
+        LoginRequest request = LoginRequest.builder().email("admin@test.com").password("password").build();
+        when(platformAdminRepository.findByEmailAndDeletedAtIsNull(request.email())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailAndDeletedAtIsNull(request.email())).thenReturn(Optional.of(user));
         when(loginAttemptService.isBlocked(user.getEmail())).thenReturn(false);
-        when(passwordEncoder.matches(request.getPassword(), user.getPasswordHash())).thenReturn(true);
+        when(passwordEncoder.matches(request.password(), user.getPasswordHash())).thenReturn(true);
         when(jwtUtil.generateAccessToken(user)).thenReturn("access_token");
         when(jwtUtil.getAccessTokenExpiryMs()).thenReturn(3600000L);
         when(jwtUtil.getRefreshTokenExpiryMs()).thenReturn(86400000L);
@@ -129,32 +123,28 @@ class AuthServiceTest {
         LoginResponse response = authService.login(request);
 
         assertNotNull(response);
-        assertEquals("access_token", response.getAccessToken());
-        assertNotNull(response.getRefreshToken());
-        assertFalse(response.isPasswordChangeRequired());
+        assertEquals("access_token", response.accessToken());
+        assertNotNull(response.refreshToken());
+        assertFalse(response.passwordChangeRequired());
         verify(loginAttemptService).loginSucceeded(user.getEmail());
         verify(userRepository).save(user);
     }
 
     @Test
     void login_User_InactiveTenant_ThrowsAccessDenied() {
-        LoginRequest request = new LoginRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "email", "user@example.com");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "password", "password");
+        LoginRequest request = LoginRequest.builder().email("admin@test.com").password("password").build();
         tenant.setStatus("SUSPENDED");
-        when(platformAdminRepository.findByEmailAndDeletedAtIsNull(request.getEmail())).thenReturn(Optional.empty());
-        when(userRepository.findByEmailAndDeletedAtIsNull(request.getEmail())).thenReturn(Optional.of(user));
+        when(platformAdminRepository.findByEmailAndDeletedAtIsNull(request.email())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailAndDeletedAtIsNull(request.email())).thenReturn(Optional.of(user));
         assertThrows(AccessDeniedException.class, () -> authService.login(request));
     }
 
     @Test
     void login_User_LockedAccount_ThrowsInvalidCredentials() {
-        LoginRequest request = new LoginRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "email", "user@example.com");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "password", "password");
+        LoginRequest request = LoginRequest.builder().email("admin@test.com").password("password").build();
         user.setLockedUntil(OffsetDateTime.now().plusMinutes(10));
-        when(platformAdminRepository.findByEmailAndDeletedAtIsNull(request.getEmail())).thenReturn(Optional.empty());
-        when(userRepository.findByEmailAndDeletedAtIsNull(request.getEmail())).thenReturn(Optional.of(user));
+        when(platformAdminRepository.findByEmailAndDeletedAtIsNull(request.email())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailAndDeletedAtIsNull(request.email())).thenReturn(Optional.of(user));
         when(loginAttemptService.isBlocked(user.getEmail())).thenReturn(false);
 
         assertThrows(InvalidCredentialsException.class, () -> authService.login(request));
@@ -162,8 +152,7 @@ class AuthServiceTest {
 
     @Test
     void refresh_User_Success() {
-        TokenRefreshRequest request = new TokenRefreshRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "refreshToken", "raw_refresh_token");
+        TokenRefreshRequest request = TokenRefreshRequest.builder().refreshToken("raw_refresh_token").build();
         when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(refreshToken));
         when(jwtUtil.generateAccessToken(user)).thenReturn("new_access_token");
         when(jwtUtil.getAccessTokenExpiryMs()).thenReturn(3600000L);
@@ -171,9 +160,9 @@ class AuthServiceTest {
         LoginResponse response = authService.refresh(request);
 
         assertNotNull(response);
-        assertEquals("new_access_token", response.getAccessToken());
-        assertEquals("raw_refresh_token", response.getRefreshToken());
-        assertFalse(response.isPasswordChangeRequired());
+        assertEquals("new_access_token", response.accessToken());
+        assertEquals("raw_refresh_token", response.refreshToken());
+        assertFalse(response.passwordChangeRequired());
     }
 
     @Test
@@ -194,11 +183,9 @@ class AuthServiceTest {
 
     @Test
     void changePassword_Success() {
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "currentPassword", "hashed_password");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "newPassword", "new_password");
-        when(passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())).thenReturn(true);
-        when(passwordEncoder.encode(request.getNewPassword())).thenReturn("new_hashed_password");
+        ChangePasswordRequest request = ChangePasswordRequest.builder().currentPassword("oldPass").newPassword("newPass").confirmNewPassword("newPass").build();
+        when(passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())).thenReturn(true);
+        when(passwordEncoder.encode(request.newPassword())).thenReturn("new_hashed_password");
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         authService.changePassword(com.spiceflow.backend.auth.dto.AuthenticatedUser.builder().id(user.getId()).tenantId(user.getTenant() != null ? user.getTenant().getId() : null).email(user.getEmail()).build(), request);
@@ -211,10 +198,8 @@ class AuthServiceTest {
 
     @Test
     void changePassword_InvalidCurrentPassword() {
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "currentPassword", "wrong_password");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "newPassword", "new_password");
-        when(passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())).thenReturn(false);
+        ChangePasswordRequest request = ChangePasswordRequest.builder().currentPassword("oldPass").newPassword("newPass").confirmNewPassword("newPass").build();
+        when(passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())).thenReturn(false);
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         assertThrows(BusinessRuleViolationException.class, () -> authService.changePassword(com.spiceflow.backend.auth.dto.AuthenticatedUser.builder().id(user.getId()).tenantId(user.getTenant() != null ? user.getTenant().getId() : null).email(user.getEmail()).build(), request));

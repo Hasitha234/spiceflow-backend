@@ -67,24 +67,20 @@ class AdminServiceTest {
 
     @Test
     void createTenant_Success() {
-        CreateTenantRequest request = new CreateTenantRequest();
-        request.setBusinessName("Test Business");
-        request.setOwnerEmail("owner@test.com");
-        request.setOwnerPassword("password123");
-        request.setBusinessTypeId(1L);
-
-        when(tenantRepository.findByEmailAndDeletedAtIsNull(request.getOwnerEmail())).thenReturn(Optional.empty());
-        when(businessTypeRepository.findById(request.getBusinessTypeId())).thenReturn(Optional.of(businessType));
+        CreateTenantRequest request = CreateTenantRequest.builder().businessName("Test Biz").businessTypeId(1L).ownerEmail("owner@test.com").ownerPassword("pass1234").build();
+                                
+        when(tenantRepository.findByEmailAndDeletedAtIsNull(request.ownerEmail())).thenReturn(Optional.empty());
+        when(businessTypeRepository.findById(request.businessTypeId())).thenReturn(Optional.of(businessType));
         when(tenantRepository.save(any(Tenant.class))).thenReturn(tenant);
         
         Role mockRole = new Role();
         when(roleRepository.save(any(Role.class))).thenReturn(mockRole);
-        when(passwordEncoder.encode(request.getOwnerPassword())).thenReturn("hashed_pwd");
+        when(passwordEncoder.encode(request.ownerPassword())).thenReturn("hashed_pwd");
 
         TenantResponse response = adminService.createTenant(request);
 
         assertNotNull(response);
-        assertEquals(tenant.getBusinessName(), response.getBusinessName());
+        assertEquals(tenant.getBusinessName(), response.businessName());
         verify(tenantRepository).save(any(Tenant.class));
         verify(userRepository).save(any(User.class));
         verify(warehouseRepository).saveAll(anyList());
@@ -92,10 +88,9 @@ class AdminServiceTest {
 
     @Test
     void createTenant_EmailAlreadyExists() {
-        CreateTenantRequest request = new CreateTenantRequest();
-        request.setOwnerEmail("owner@test.com");
-
-        when(tenantRepository.findByEmailAndDeletedAtIsNull(request.getOwnerEmail())).thenReturn(Optional.of(tenant));
+        CreateTenantRequest request = CreateTenantRequest.builder().businessName("Test Biz").businessTypeId(1L).ownerEmail("owner@test.com").ownerPassword("pass1234").build();
+        
+        when(tenantRepository.findByEmailAndDeletedAtIsNull(request.ownerEmail())).thenReturn(Optional.of(tenant));
 
         assertThrows(ResourceConflictException.class, () -> adminService.createTenant(request));
     }
@@ -109,7 +104,7 @@ class AdminServiceTest {
 
         assertNotNull(response);
         assertEquals(1, response.getContent().size());
-        assertEquals(tenant.getBusinessName(), response.getContent().get(0).getBusinessName());
+        assertEquals(tenant.getBusinessName(), response.getContent().get(0).businessName());
     }
 
     @Test
@@ -119,7 +114,7 @@ class AdminServiceTest {
         TenantResponse response = adminService.getTenantById(1L);
 
         assertNotNull(response);
-        assertEquals(tenant.getBusinessName(), response.getBusinessName());
+        assertEquals(tenant.getBusinessName(), response.businessName());
     }
 
     @Test
@@ -131,11 +126,7 @@ class AdminServiceTest {
 
     @Test
     void updateTenant_Success() {
-        UpdateTenantRequest request = new UpdateTenantRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "businessName", "Updated Business");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "businessTypeId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "status", "SUSPENDED");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "plan", "PREMIUM");
+        UpdateTenantRequest request = UpdateTenantRequest.builder().businessName("Updated Business").businessTypeId(1L).status("ACTIVE").plan("PRO").build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(businessTypeRepository.findById(1L)).thenReturn(Optional.of(businessType));

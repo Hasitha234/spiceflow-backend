@@ -1,27 +1,29 @@
 package com.spiceflow.backend.inventory.dto.request;
+import lombok.Builder;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import lombok.Data;
 
-@Data
-@SuppressWarnings("NullAway.Init")
-public class InventoryTransferRequest {
+@Builder
+public record InventoryTransferRequest(
+
     
     @NotNull(message = "Source warehouse ID is required")
-    private Long fromWarehouseId;
+    Long fromWarehouseId,
     
     @NotNull(message = "Destination warehouse ID is required")
-    private Long toWarehouseId;
+    Long toWarehouseId,
     
     @NotNull(message = "Product ID is required")
-    private Long productId;
+    Long productId,
     
     @NotNull(message = "Quantity is required")
     @Positive(message = "Quantity must be positive")
-    private Integer quantity;
+    Integer quantity,
     
-    private String reason;
-}
+    String reason
 
+
+
+) {}

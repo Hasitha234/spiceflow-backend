@@ -77,7 +77,7 @@ public class AuthService {
 public LoginResponse login(LoginRequest request) {
   // Check platform_admins table first
   Optional<PlatformAdmin> adminOpt =
-      platformAdminRepository.findByEmailAndDeletedAtIsNull(request.getEmail());
+      platformAdminRepository.findByEmailAndDeletedAtIsNull(request.email());
 
   if (adminOpt.isPresent()) {
     PlatformAdmin admin = adminOpt.get();
@@ -86,7 +86,7 @@ public LoginResponse login(LoginRequest request) {
       throw new InvalidCredentialsException("Account is temporarily locked due to too many failed attempts.");
     }
     
-    if (!passwordEncoder.matches(request.getPassword(), admin.getPasswordHash())) {
+    if (!passwordEncoder.matches(request.password(), admin.getPasswordHash())) {
       loginAttemptService.loginFailed(admin.getEmail());
       throw new InvalidCredentialsException("Invalid email or password");
     }
@@ -95,16 +95,17 @@ public LoginResponse login(LoginRequest request) {
     String accessToken = jwtUtil.generateAdminToken(admin);
     String rawRefreshToken = generateAndSaveRefreshTokenForAdmin(admin);
     log.info("Platform admin {} logged in successfully", admin.getEmail());
-    return LoginResponse.builder()
-        .accessToken(accessToken)
-        .refreshToken(rawRefreshToken)
-        .expiresIn(jwtUtil.getAccessTokenExpiryMs() / 1000)
-        .passwordChangeRequired(false)
-        .build();
+    return new LoginResponse(
+      accessToken,
+      rawRefreshToken,
+      "Bearer",
+      jwtUtil.getAccessTokenExpiryMs() / 1000,
+      false
+  );
   }
 
   // Then check tenant users table
-  User user = userRepository.findByEmailAndDeletedAtIsNull(request.getEmail())
+  User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
       .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
   if (!"ACTIVE".equals(user.getTenant().getStatus())) {
@@ -120,7 +121,7 @@ public LoginResponse login(LoginRequest request) {
         "Account is temporarily locked by administrator. Please try again in " + LOCKOUT_MINUTES + " minutes.");
   }
 
-  if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+  if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
     loginAttemptService.loginFailed(user.getEmail());
     handleFailedLogin(user); // Also update DB if needed, though redundant now
     throw new InvalidCredentialsException("Invalid email or password");
@@ -136,17 +137,27 @@ public LoginResponse login(LoginRequest request) {
   String rawRefreshToken = generateAndSaveRefreshToken(user);
   log.info("User {} logged in successfully for tenant {}", user.getEmail(), user.getTenantId());
 
-  return LoginResponse.builder()
-      .accessToken(accessToken)
-      .refreshToken(rawRefreshToken)
-      .expiresIn(jwtUtil.getAccessTokenExpiryMs() / 1000)
-      .passwordChangeRequired(user.isPasswordChangeRequired())
-      .build();
+  return new LoginResponse(
+      accessToken,
+      rawRefreshToken,
+      "Bearer",
+      jwtUtil.getAccessTokenExpiryMs() / 1000,
+      user.isPasswordChangeRequired()
+  );
 }
 
     @Transactional(rollbackFor = Exception.class)
   public LoginResponse refresh(TokenRefreshRequest request) {
-    String tokenHash = sha256(request.getRefreshToken());
+    return refreshByCookie(request.refreshToken());
+  }
+
+  /**
+   * Issues a new access token from a raw refresh token string.
+   * Used by the cookie-based flow in {@link com.spiceflow.backend.auth.controller.AuthController}.
+   */
+  @Transactional(rollbackFor = Exception.class)
+  public LoginResponse refreshByCookie(String rawRefreshToken) {
+    String tokenHash = sha256(rawRefreshToken);
 
     RefreshToken storedToken = refreshTokenRepository.findByTokenHash(tokenHash)
         .orElseThrow(() -> new InvalidCredentialsException("Invalid or expired refresh token"));
@@ -155,31 +166,33 @@ public LoginResponse login(LoginRequest request) {
       throw new InvalidCredentialsException("Refresh token has expired or been revoked");
     }
 
-    // NEW LOGIC: Check if this token belongs to a Super Admin first!
+    // Check if this token belongs to a Super Admin first
     if (storedToken.getPlatformAdminId() != null) {
       PlatformAdmin admin = platformAdminRepository.findById(storedToken.getPlatformAdminId())
           .orElseThrow(() -> new InvalidCredentialsException("Admin not found"));
-      
+
       String newAccessToken = jwtUtil.generateAdminToken(admin);
-      
-      return LoginResponse.builder()
-          .accessToken(newAccessToken)
-          .refreshToken(request.getRefreshToken())
-          .expiresIn(jwtUtil.getAccessTokenExpiryMs() / 1000)
-          .passwordChangeRequired(false)
-          .build();
+
+      return new LoginResponse(
+          newAccessToken,
+          rawRefreshToken,
+          "Bearer",
+          jwtUtil.getAccessTokenExpiryMs() / 1000,
+          false
+      );
     }
 
-    // ORIGINAL LOGIC: Fallback to regular Tenant User
+    // Fallback to regular Tenant User
     User user = storedToken.getUser();
     String newAccessToken = jwtUtil.generateAccessToken(user);
 
-    return LoginResponse.builder()
-        .accessToken(newAccessToken)
-        .refreshToken(request.getRefreshToken()) 
-        .expiresIn(jwtUtil.getAccessTokenExpiryMs() / 1000)
-        .passwordChangeRequired(user.isPasswordChangeRequired())
-        .build();
+    return new LoginResponse(
+        newAccessToken,
+        rawRefreshToken,
+        "Bearer",
+        jwtUtil.getAccessTokenExpiryMs() / 1000,
+        user.isPasswordChangeRequired()
+    );
   }
 
 
@@ -211,11 +224,11 @@ public LoginResponse login(LoginRequest request) {
     User user = userRepository.findById(currentUser.getId())
         .orElseThrow(() -> new com.spiceflow.backend.common.exception.ResourceNotFoundException("User not found"));
 
-    if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+    if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
       throw new com.spiceflow.backend.common.exception.BusinessRuleViolationException("Current password is incorrect");
     }
 
-    user.setPasswordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.getNewPassword())));
+    user.setPasswordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.newPassword())));
     user.setPasswordChangeRequired(false);
     userRepository.save(user);
 

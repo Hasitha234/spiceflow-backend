@@ -110,13 +110,13 @@ class TokenBlacklistIntegrationTest {
                         .content(loginJson))
                 .andDo(print()) // Log full response so we can see what's returned
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.accessToken").exists())
+                .andExpect(jsonPath("$.accessToken").exists())
                 .andReturn();
 
         // Extract tokens using JsonPath — API response is wrapped: {status, data:{accessToken, refreshToken}, timestamp}
         String responseBody = loginResult.getResponse().getContentAsString();
-        String accessToken = JsonPath.read(responseBody, "$.data.accessToken");
-        String refreshToken = JsonPath.read(responseBody, "$.data.refreshToken");
+        String accessToken = JsonPath.read(responseBody, "$.accessToken");
+        String refreshToken = JsonPath.read(responseBody, "$.refreshToken");
 
         // 2. Prove the access token is valid: secured endpoint returns 403 (authenticated but no permission)
         //    If the token were invalid, Spring would return 401/403 via the AuthenticationEntryPoint.

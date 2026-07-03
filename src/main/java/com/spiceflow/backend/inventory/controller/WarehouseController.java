@@ -38,7 +38,7 @@ public class WarehouseController {
     private final WarehouseService warehouseService;
 
     @GetMapping
-    @Operation(summary = "List all warehouses (with pagination and search)", description = "Returns warehouses for the authenticated tenant")
+    @Operation(summary = "List all warehouses (with pagination and search)", description = "Returns warehouses for the authenticated tenant", operationId = "getAllWarehouses")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'WAREHOUSE_STAFF')")
     public ResponseEntity<Page<WarehouseResponse>> getAllWarehouses(
             @AuthenticationPrincipal User currentUser,
@@ -48,7 +48,7 @@ public class WarehouseController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get a warehouse by ID")
+    @Operation(summary = "Get a warehouse by ID", operationId = "getWarehouse")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'WAREHOUSE_STAFF')")
     public ResponseEntity<WarehouseResponse> getWarehouse(
             @PathVariable Long id,
@@ -57,7 +57,7 @@ public class WarehouseController {
     }
 
     @PostMapping
-    @Operation(summary = "Create warehouse", description = "Creates a new warehouse for the authenticated tenant")
+    @Operation(summary = "Create warehouse", description = "Creates a new warehouse for the authenticated tenant", operationId = "createWarehouse")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER')")
     public ResponseEntity<WarehouseResponse> createWarehouse(
             @AuthenticationPrincipal User currentUser,
@@ -66,7 +66,7 @@ public class WarehouseController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update an existing warehouse")
+    @Operation(summary = "Update an existing warehouse", operationId = "updateWarehouse")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER')")
     public ResponseEntity<WarehouseResponse> updateWarehouse(
             @PathVariable Long id,
@@ -76,7 +76,7 @@ public class WarehouseController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete warehouse", description = "Soft deletes a warehouse")
+    @Operation(summary = "Delete warehouse", description = "Soft deletes a warehouse", operationId = "deleteWarehouse")
     @PreAuthorize("hasRole('TENANT_OWNER')")
     public ResponseEntity<Void> deleteWarehouse(
             @AuthenticationPrincipal User currentUser,

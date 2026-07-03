@@ -72,26 +72,15 @@ class RepOrderServiceTest {
 
     @Test
     void createRepOrder_Success() {
-        CreateRepOrderRequest request = new CreateRepOrderRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "repId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "orderDate", LocalDate.now());
+        CreateRepOrderRequest request = CreateRepOrderRequest.builder().repId(1L).orderDate(java.time.LocalDate.now()).routeArea("Colombo").shops(java.util.List.of()).build();
         
-        RepOrderItemRequest itemReq = new RepOrderItemRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(itemReq, "productId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(itemReq, "quantity", 10);
-        org.springframework.test.util.ReflectionTestUtils.setField(itemReq, "rate", new BigDecimal("10.00"));
+        RepOrderItemRequest itemReq = RepOrderItemRequest.builder().productId(1L).quantity(10).unitType("BOX").rate(java.math.BigDecimal.TEN).discountAmount(java.math.BigDecimal.ZERO).isFreeItem(false).boxesNeeded(1).build();
         
-        ShopReturnRequest returnReq = new ShopReturnRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(returnReq, "productId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(returnReq, "quantity", 2);
-        org.springframework.test.util.ReflectionTestUtils.setField(returnReq, "creditValue", new BigDecimal("10.00"));
+        ShopReturnRequest returnReq = ShopReturnRequest.builder().productId(1L).quantity(1).returnType("DAMAGED").creditValue(java.math.BigDecimal.TEN).unitType("BOX").build();
 
-        RepOrderShopRequest shopReq = new RepOrderShopRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(shopReq, "shopId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(shopReq, "items", List.of(itemReq));
-        org.springframework.test.util.ReflectionTestUtils.setField(shopReq, "returns", List.of(returnReq));
+        RepOrderShopRequest shopReq = RepOrderShopRequest.builder().shopId(1L).items(List.of(itemReq)).returns(List.of()).build();
+        request = CreateRepOrderRequest.builder().repId(1L).orderDate(java.time.LocalDate.now()).routeArea("Colombo").shops(List.of(shopReq)).build();
 
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "shops", List.of(shopReq));
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(salesMasterDataService.getRepEntity(1L, 1L)).thenReturn(rep);

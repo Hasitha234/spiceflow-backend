@@ -72,10 +72,10 @@ class SalesMasterDataServiceTest {
 
     @Test
     void createRep_Success() {
-        RepRequest request = new RepRequest();
+        RepRequest request = RepRequest.builder().name("Rep").phone("077").area("Area").isActive(true).build();
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(repRepository.save(any(Rep.class))).thenReturn(rep);
-        when(salesMapper.toRepResponse(rep)).thenReturn(repResponse);
+        when(salesMapper.toRepResponseWithCount(rep, 0L)).thenReturn(repResponse);
 
         RepResponse result = salesMasterDataService.createRep(1L, request);
 
@@ -83,10 +83,42 @@ class SalesMasterDataServiceTest {
     }
 
     @Test
+    void getRep_Success() {
+        when(repRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(rep));
+        when(salesMapper.toRepResponse(rep)).thenReturn(repResponse);
+
+        RepResponse result = salesMasterDataService.getRep(1L, 1L);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void updateRep_Success() {
+        RepRequest request = RepRequest.builder().name("Updated Rep").phone("077").area("Area").isActive(true).build();
+        when(repRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(rep));
+        when(repRepository.save(rep)).thenReturn(rep);
+        when(salesMapper.toRepResponse(rep)).thenReturn(repResponse);
+
+        RepResponse result = salesMasterDataService.updateRep(1L, 1L, request);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void deleteRep_Success() {
+        when(repRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(rep));
+
+        salesMasterDataService.deleteRep(1L, 1L);
+
+        verify(repRepository).delete(rep);
+    }
+
+    @Test
     void getReps_Success() {
         Page<Rep> page = new PageImpl<>(List.of(rep));
         when(repRepository.findByTenantId(eq(1L), any(PageRequest.class))).thenReturn(page);
-        when(salesMapper.toRepResponse(rep)).thenReturn(repResponse);
+        when(shopRepository.countShopsByAssignedRepId(1L)).thenReturn(List.of());
+        when(salesMapper.toRepResponseWithCount(rep, 0L)).thenReturn(repResponse);
 
         Page<RepResponse> result = salesMasterDataService.getReps(1L, null, PageRequest.of(0, 10));
 
@@ -97,7 +129,8 @@ class SalesMasterDataServiceTest {
     void getReps_WithSearch() {
         Page<Rep> page = new PageImpl<>(List.of(rep));
         when(repRepository.findByTenantIdAndNameContainingIgnoreCase(eq(1L), eq("test"), any(PageRequest.class))).thenReturn(page);
-        when(salesMapper.toRepResponse(rep)).thenReturn(repResponse);
+        when(shopRepository.countShopsByAssignedRepId(1L)).thenReturn(List.of());
+        when(salesMapper.toRepResponseWithCount(rep, 0L)).thenReturn(repResponse);
 
         Page<RepResponse> result = salesMasterDataService.getReps(1L, "test", PageRequest.of(0, 10));
 
@@ -106,7 +139,7 @@ class SalesMasterDataServiceTest {
 
     @Test
     void createDriver_Success() {
-        DriverRequest request = new DriverRequest();
+        DriverRequest request = DriverRequest.builder().name("Driver").phone("077").vehicleNo("CAB-123").isActive(true).build();
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(driverRepository.save(any(Driver.class))).thenReturn(driver);
         when(salesMapper.toDriverResponse(driver)).thenReturn(driverResponse);
@@ -140,8 +173,7 @@ class SalesMasterDataServiceTest {
 
     @Test
     void createShop_Success() {
-        ShopRequest request = new ShopRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "assignedRepId", 1L);
+        ShopRequest request = ShopRequest.builder().name("Shop").ownerName("Owner").phone("077").address("Addr").area("Area").route("Route").assignedRepId(1L).outstandingLoan(java.math.BigDecimal.ZERO).build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(repRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(rep));

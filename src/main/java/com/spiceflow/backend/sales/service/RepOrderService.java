@@ -43,18 +43,18 @@ public class RepOrderService {
 
     @Transactional(rollbackFor = Exception.class)
     public RepOrderResponse createRepOrder(Long tenantId, CreateRepOrderRequest request) {
-        log.debug("Creating rep order for repId: {} in tenantId: {}", request.getRepId(), tenantId);
+        log.debug("Creating rep order for repId: {} in tenantId: {}", request.repId(), tenantId);
 
         Tenant tenant = tenantRepository.findById(tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
-        Rep rep = salesMasterDataService.getRepEntity(request.getRepId(), tenantId);
+        Rep rep = salesMasterDataService.getRepEntity(request.repId(), tenantId);
 
         RepOrder repOrder = RepOrder.builder()
             .tenant(tenant)
             .rep(rep)
-            .orderDate(request.getOrderDate())
-            .routeArea(request.getRouteArea())
+            .orderDate(request.orderDate())
+            .routeArea(request.routeArea())
             .loadingStatus("DRAFT")
             .build();
 
@@ -63,8 +63,8 @@ public class RepOrderService {
         
         List<RepOrderShop> shops = new ArrayList<>();
 
-        for (RepOrderShopRequest shopReq : request.getShops()) {
-            Shop shop = salesMasterDataService.getShopEntity(shopReq.getShopId(), tenantId);
+        for (RepOrderShopRequest shopReq : request.shops()) {
+            Shop shop = salesMasterDataService.getShopEntity(shopReq.shopId(), tenantId);
 
             RepOrderShop orderShop = RepOrderShop.builder()
                 .tenant(tenant)
@@ -76,20 +76,20 @@ public class RepOrderService {
             BigDecimal shopReturns = BigDecimal.ZERO;
 
             List<RepOrderItem> items = new ArrayList<>();
-            for (RepOrderItemRequest itemReq : shopReq.getItems()) {
-                Product product = productService.getProductEntity(itemReq.getProductId(), tenantId);
+            for (RepOrderItemRequest itemReq : shopReq.items()) {
+                Product product = productService.getProductEntity(itemReq.productId(), tenantId);
 
                 RepOrderItem item = RepOrderItem.builder()
                     .tenant(tenant)
                     .repOrderShop(orderShop)
                     .product(product)
-                    .quantity(itemReq.getQuantity())
-                    .unitType(itemReq.getUnitType())
-                    .rate(itemReq.getRate())
-                    .grossAmount(itemReq.getRate().multiply(BigDecimal.valueOf(itemReq.getQuantity())))
-                    .discountAmount(itemReq.getDiscountAmount() != null ? itemReq.getDiscountAmount() : BigDecimal.ZERO)
-                    .isFreeItem(itemReq.getIsFreeItem() != null ? itemReq.getIsFreeItem() : false)
-                    .boxesNeeded(itemReq.getBoxesNeeded())
+                    .quantity(itemReq.quantity())
+                    .unitType(itemReq.unitType())
+                    .rate(itemReq.rate())
+                    .grossAmount(itemReq.rate().multiply(BigDecimal.valueOf(itemReq.quantity())))
+                    .discountAmount(itemReq.discountAmount() != null ? itemReq.discountAmount() : BigDecimal.ZERO)
+                    .isFreeItem(itemReq.isFreeItem() != null ? itemReq.isFreeItem() : false)
+                    .boxesNeeded(itemReq.boxesNeeded())
                     .build();
                 
                 item.setNetAmount(item.getGrossAmount().subtract(item.getDiscountAmount()));
@@ -99,18 +99,18 @@ public class RepOrderService {
             }
 
             List<ShopReturn> returns = new ArrayList<>();
-            if (shopReq.getReturns() != null) {
-                for (ShopReturnRequest returnReq : shopReq.getReturns()) {
-                    Product product = productService.getProductEntity(returnReq.getProductId(), tenantId);
+            if (shopReq.returns() != null) {
+                for (ShopReturnRequest returnReq : shopReq.returns()) {
+                    Product product = productService.getProductEntity(returnReq.productId(), tenantId);
 
                     ShopReturn sr = ShopReturn.builder()
                         .tenant(tenant)
                         .repOrderShop(orderShop)
                         .product(product)
-                        .quantity(returnReq.getQuantity())
-                        .unitType(returnReq.getUnitType())
-                        .creditValue(returnReq.getCreditValue())
-                        .returnType(returnReq.getReturnType())
+                        .quantity(returnReq.quantity())
+                        .unitType(returnReq.unitType())
+                        .creditValue(returnReq.creditValue())
+                        .returnType(returnReq.returnType())
                         .status("PENDING")
                         .build();
 

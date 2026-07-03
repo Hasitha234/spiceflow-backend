@@ -31,18 +31,18 @@ public class InventoryTransactionController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
-    @Operation(summary = "Create an inventory transaction", description = "Records a stock movement (IN, OUT, RESERVE, RELEASE) and updates inventory quantities")
+    @Operation(summary = "Create an inventory transaction", description = "Records a stock movement (IN, OUT, RESERVE, RELEASE) and updates inventory quantities", operationId = "createTransaction")
     public ResponseEntity<InventoryTransactionResponse> createTransaction(
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody InventoryTransactionRequest request) {
         log.info("Received request to create inventory transaction type: {} for item: {} by user: {}", 
-            request.getTransactionType(), request.getInventoryItemId(), currentUser.getId());
+            request.transactionType(), request.inventoryItemId(), currentUser.getId());
         InventoryTransactionResponse response = transactionService.recordTransaction(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
-    @Operation(summary = "List all inventory transactions", description = "Returns an immutable paginated ledger of all stock movements")
+    @Operation(summary = "List all inventory transactions", description = "Returns an immutable paginated ledger of all stock movements", operationId = "getTransactions")
     public ResponseEntity<Page<InventoryTransactionResponse>> getTransactions(
             @AuthenticationPrincipal User currentUser,
             @RequestParam(required = false) Long inventoryItemId,
@@ -54,7 +54,7 @@ public class InventoryTransactionController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get inventory transaction by ID", description = "Returns details of a specific stock movement")
+    @Operation(summary = "Get inventory transaction by ID", description = "Returns details of a specific stock movement", operationId = "getTransaction")
     public ResponseEntity<InventoryTransactionResponse> getTransaction(
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {

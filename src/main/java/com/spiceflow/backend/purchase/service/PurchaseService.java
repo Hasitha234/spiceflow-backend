@@ -50,12 +50,12 @@ public class PurchaseService {
 
     @Transactional(rollbackFor = Exception.class)
     public PurchaseResponse createPurchase(Long tenantId, CreatePurchaseRequest request) {
-        log.debug("Creating purchase for tenant: {}, invoice: {}", tenantId, request.getInvoiceNo());
+        log.debug("Creating purchase for tenant: {}, invoice: {}", tenantId, request.invoiceNo());
         
         Tenant tenant = tenantRepository.findById(tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             
-        Supplier supplier = supplierService.getSupplierEntity(tenantId, request.getSupplierId());
+        Supplier supplier = supplierService.getSupplierEntity(tenantId, request.supplierId());
         
         // Calculate totals
         int totalBoxes = 0;
@@ -66,41 +66,41 @@ public class PurchaseService {
         Purchase purchase = Purchase.builder()
             .tenant(tenant)
             .supplier(supplier)
-            .invoiceNo(request.getInvoiceNo())
-            .invoiceDate(request.getInvoiceDate())
-            .orderNo(request.getOrderNo())
-            .lcNo(request.getLcNo())
-            .grossWeightKg(request.getGrossWeightKg())
-            .discountAmount(request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO)
-            .returnsDeductedAmount(request.getReturnsDeductedAmount() != null ? request.getReturnsDeductedAmount() : BigDecimal.ZERO)
-            .vatAmount(request.getVatAmount() != null ? request.getVatAmount() : BigDecimal.ZERO)
-            .paymentMethod(request.getPaymentMethod())
-            .chequeNo(request.getChequeNo())
-            .chequeBankName(request.getChequeBankName())
-            .chequeAmount(request.getChequeAmount())
+            .invoiceNo(request.invoiceNo())
+            .invoiceDate(request.invoiceDate())
+            .orderNo(request.orderNo())
+            .lcNo(request.lcNo())
+            .grossWeightKg(request.grossWeightKg())
+            .discountAmount(request.discountAmount() != null ? request.discountAmount() : BigDecimal.ZERO)
+            .returnsDeductedAmount(request.returnsDeductedAmount() != null ? request.returnsDeductedAmount() : BigDecimal.ZERO)
+            .vatAmount(request.vatAmount() != null ? request.vatAmount() : BigDecimal.ZERO)
+            .paymentMethod(request.paymentMethod())
+            .chequeNo(request.chequeNo())
+            .chequeBankName(request.chequeBankName())
+            .chequeAmount(request.chequeAmount())
             .status("DRAFT")
-            .notes(request.getNotes())
+            .notes(request.notes())
             .build();
             
-        for (PurchaseLineItemRequest itemReq : request.getLineItems()) {
-            Product product = productService.getProductEntity(itemReq.getProductId(), tenantId);
+        for (PurchaseLineItemRequest itemReq : request.lineItems()) {
+            Product product = productService.getProductEntity(itemReq.productId(), tenantId);
             
-            BigDecimal amount = itemReq.getRate().multiply(BigDecimal.valueOf(itemReq.getSoldQuantity()));
+            BigDecimal amount = itemReq.rate().multiply(BigDecimal.valueOf(itemReq.soldQuantity()));
             
             PurchaseLineItem lineItem = PurchaseLineItem.builder()
                 .tenant(tenant)
                 .purchase(purchase)
                 .product(product)
-                .noOfBoxes(itemReq.getNoOfBoxes())
-                .soldQuantity(itemReq.getSoldQuantity())
-                .unitType(itemReq.getUnitType())
-                .rate(itemReq.getRate())
+                .noOfBoxes(itemReq.noOfBoxes())
+                .soldQuantity(itemReq.soldQuantity())
+                .unitType(itemReq.unitType())
+                .rate(itemReq.rate())
                 .amount(amount)
                 .build();
                 
             lineItems.add(lineItem);
             
-            totalBoxes += itemReq.getNoOfBoxes();
+            totalBoxes += itemReq.noOfBoxes();
             totalOrderValue = totalOrderValue.add(amount);
         }
         

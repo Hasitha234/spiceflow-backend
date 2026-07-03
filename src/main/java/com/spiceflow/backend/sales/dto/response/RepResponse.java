@@ -1,17 +1,22 @@
 package com.spiceflow.backend.sales.dto.response;
-
 import lombok.Builder;
-import lombok.Data;
+
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
-@Data
 @Builder
-public class RepResponse {
-    private Long id;
-    private String name;
-    private String phone;
-    private String area;
-    private Boolean isActive;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
-}
+public record RepResponse(
+
+    Long id,
+    String employeeId,
+    String name,
+    String email,
+    String phone,
+    String area,
+    LocalDate employmentDate,
+    LocalDate terminationDate,
+    Long assignedShopsCount,
+    Boolean isActive,
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt
+) {}

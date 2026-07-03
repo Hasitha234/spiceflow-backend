@@ -1,29 +1,31 @@
 package com.spiceflow.backend.purchase.dto.request;
+import lombok.Builder;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
-import lombok.Data;
 
-@Data
-@SuppressWarnings("NullAway.Init")
-public class PurchaseLineItemRequest {
+@Builder
+public record PurchaseLineItemRequest(
+
     
     @NotNull(message = "Product ID is required")
-    private Long productId;
+    Long productId,
     
     @NotNull
     @PositiveOrZero
-    private Integer noOfBoxes;
+    Integer noOfBoxes,
     
     @NotNull
     @PositiveOrZero
-    private Integer soldQuantity;
+    Integer soldQuantity,
     
-    private String unitType;
+    String unitType,
     
     @NotNull
     @PositiveOrZero
-    private BigDecimal rate;
-}
+    BigDecimal rate
 
+
+
+) {}

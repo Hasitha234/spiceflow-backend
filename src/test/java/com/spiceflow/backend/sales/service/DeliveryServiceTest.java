@@ -91,9 +91,7 @@ class DeliveryServiceTest {
 
     @Test
     void createDelivery_Success() {
-        CreateDeliveryRequest request = new CreateDeliveryRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "loadingSheetId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "deliveryDate", LocalDate.now());
+        CreateDeliveryRequest request = CreateDeliveryRequest.builder().loadingSheetId(1L).deliveryDate(java.time.LocalDate.now()).build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(loadingSheetRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(loadingSheet));
@@ -108,8 +106,7 @@ class DeliveryServiceTest {
     @Test
     void createDelivery_LoadingSheetNotConfirmed() {
         loadingSheet.setStatus("DRAFT");
-        CreateDeliveryRequest request = new CreateDeliveryRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "loadingSheetId", 1L);
+        CreateDeliveryRequest request = CreateDeliveryRequest.builder().loadingSheetId(1L).deliveryDate(java.time.LocalDate.now()).build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(loadingSheetRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(loadingSheet));
@@ -119,22 +116,10 @@ class DeliveryServiceTest {
 
     @Test
     void recordShopDelivery_Success() {
-        RecordShopDeliveryRequest request = new RecordShopDeliveryRequest();
-        DeliveryShopItemRequest itemReq = new DeliveryShopItemRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(itemReq, "productId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(itemReq, "quantityDelivered", 10);
-        org.springframework.test.util.ReflectionTestUtils.setField(itemReq, "rate", new BigDecimal("100"));
-
-        DeliveryShopReturnRequest returnReq = new DeliveryShopReturnRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(returnReq, "productId", 1L);
-        org.springframework.test.util.ReflectionTestUtils.setField(returnReq, "creditValue", new BigDecimal("50"));
-
-        DeliveryPaymentRequest paymentReq = new DeliveryPaymentRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(paymentReq, "amount", new BigDecimal("900"));
-
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "items", List.of(itemReq));
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "returns", List.of(returnReq));
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "payments", List.of(paymentReq));
+        DeliveryShopItemRequest itemReq = DeliveryShopItemRequest.builder().productId(1L).quantityDelivered(10).rate(java.math.BigDecimal.valueOf(100)).build();
+        DeliveryShopReturnRequest returnReq = DeliveryShopReturnRequest.builder().productId(1L).creditValue(java.math.BigDecimal.valueOf(50)).build();
+        DeliveryPaymentRequest paymentReq = DeliveryPaymentRequest.builder().amount(java.math.BigDecimal.valueOf(900)).build();
+        RecordShopDeliveryRequest request = RecordShopDeliveryRequest.builder().items(java.util.List.of(itemReq)).returns(java.util.List.of(returnReq)).payments(java.util.List.of(paymentReq)).build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(deliveryRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(delivery));

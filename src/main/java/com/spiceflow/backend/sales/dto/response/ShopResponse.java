@@ -1,26 +1,24 @@
 package com.spiceflow.backend.sales.dto.response;
-
 import lombok.Builder;
-import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-@Data
 @Builder
-public class ShopResponse {
-    private Long id;
-    private String name;
-    private String ownerName;
-    private String phone;
-    private String address;
-    private String area;
-    private String route;
-    
-    private Long assignedRepId;
-    private String assignedRepName;
-    
-    private BigDecimal outstandingLoan;
-    
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
-}
+public record ShopResponse(
+    Long id,
+    String name,
+    String ownerName,
+    String phone,
+    String address,
+    String area,
+    String route,
+    Long assignedRepId,
+    String assignedRepName,
+    BigDecimal outstandingLoan,
+    BigDecimal latitude,
+    BigDecimal longitude,
+    Boolean isActive,
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt
+) {}
