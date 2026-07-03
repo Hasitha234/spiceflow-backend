@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("NullAway.Init")
 public class PageResponse<T> {
     private List<T> content;
     private int page;
@@ -35,3 +36,4 @@ public class PageResponse<T> {
                 .build();
     }
 }
+

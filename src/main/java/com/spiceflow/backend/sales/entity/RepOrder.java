@@ -58,7 +58,7 @@ public class RepOrder extends BaseEntity {
     @Builder.Default
     private String loadingStatus = "DRAFT";
 
-    @OneToMany(mappedBy = "repOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "repOrder", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
     @Builder.Default
     private List<RepOrderShop> shops = new ArrayList<>();
 }

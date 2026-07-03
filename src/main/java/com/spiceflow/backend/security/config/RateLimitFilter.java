@@ -87,7 +87,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private String resolveBucketKey(HttpServletRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated() && !authentication.getPrincipal().equals("anonymousUser")) {
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
             return "user:" + authentication.getName();
         }
         return "ip:" + extractIpAddress(request);

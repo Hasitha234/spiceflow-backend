@@ -33,22 +33,28 @@ public class Shop extends BaseEntity {
     private String name;
 
     @Column(name = "owner_name", length = 100)
+    @org.jspecify.annotations.Nullable
     private String ownerName;
 
     @Column(length = 50)
+    @org.jspecify.annotations.Nullable
     private String phone;
 
     @Column(columnDefinition = "TEXT")
+    @org.jspecify.annotations.Nullable
     private String address;
 
     @Column(length = 100)
+    @org.jspecify.annotations.Nullable
     private String area;
 
     @Column(length = 100)
+    @org.jspecify.annotations.Nullable
     private String route;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_rep_id")
+    @org.jspecify.annotations.Nullable
     private Rep assignedRep;
 
     @Column(name = "outstanding_loan", nullable = false, precision = 15, scale = 2)

@@ -37,7 +37,7 @@ public class InventoryItemController {
             @Valid @RequestBody InventoryItemRequest request) {
         log.info("Received request to create inventory item for product: {} at warehouse: {} by user: {}", 
             request.getProductId(), request.getWarehouseId(), currentUser.getId());
-        InventoryItemResponse response = inventoryItemService.createInventoryItem(currentUser.getTenantId(), request);
+        InventoryItemResponse response = inventoryItemService.createInventoryItem(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -49,7 +49,7 @@ public class InventoryItemController {
             @RequestParam(required = false) Long productId,
             Pageable pageable) {
         log.info("Received request to fetch inventory items by user: {}", currentUser.getId());
-        Page<InventoryItemResponse> response = inventoryItemService.getInventoryItems(currentUser.getTenantId(), warehouseId, productId, pageable);
+        Page<InventoryItemResponse> response = inventoryItemService.getInventoryItems(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), warehouseId, productId, pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -59,7 +59,7 @@ public class InventoryItemController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {
         log.info("Received request to fetch inventory item ID: {} by user: {}", id, currentUser.getId());
-        InventoryItemResponse response = inventoryItemService.getInventoryItem(id, currentUser.getTenantId());
+        InventoryItemResponse response = inventoryItemService.getInventoryItem(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
     }
 
@@ -70,7 +70,7 @@ public class InventoryItemController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id, @Valid @RequestBody InventoryItemRequest request) {
         log.info("Received request to update inventory item ID: {} by user: {}", id, currentUser.getId());
-        InventoryItemResponse response = inventoryItemService.updateInventoryItem(id, currentUser.getTenantId(), request);
+        InventoryItemResponse response = inventoryItemService.updateInventoryItem(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.ok(response);
     }
 
@@ -81,7 +81,7 @@ public class InventoryItemController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {
         log.info("Received request to delete inventory item ID: {} by user: {}", id, currentUser.getId());
-        inventoryItemService.deleteInventoryItem(id, currentUser.getTenantId());
+        inventoryItemService.deleteInventoryItem(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.noContent().build();
     }
     
@@ -92,7 +92,7 @@ public class InventoryItemController {
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody com.spiceflow.backend.inventory.dto.request.InventoryTransferRequest request) {
         log.info("Received request to transfer inventory by user: {}", currentUser.getId());
-        inventoryItemService.transferInventory(currentUser.getTenantId(), request);
+        inventoryItemService.transferInventory(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.ok().build();
     }
     
@@ -103,7 +103,8 @@ public class InventoryItemController {
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody com.spiceflow.backend.inventory.dto.request.InventoryMarkDamagedRequest request) {
         log.info("Received request to mark inventory damaged by user: {}", currentUser.getId());
-        inventoryItemService.markDamaged(currentUser.getTenantId(), request);
+        inventoryItemService.markDamaged(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.ok().build();
     }
 }
+

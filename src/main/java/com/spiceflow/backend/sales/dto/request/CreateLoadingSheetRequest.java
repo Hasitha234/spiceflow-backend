@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class CreateLoadingSheetRequest {
     
     @NotNull(message = "Rep order ID is required")
@@ -16,3 +17,4 @@ public class CreateLoadingSheetRequest {
     @NotNull(message = "Loading date is required")
     private LocalDate loadingDate;
 }
+

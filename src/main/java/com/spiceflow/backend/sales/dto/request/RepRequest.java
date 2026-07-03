@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class RepRequest {
     
     @NotBlank(message = "Name is required")
@@ -14,3 +15,4 @@ public class RepRequest {
     
     private Boolean isActive = true;
 }
+

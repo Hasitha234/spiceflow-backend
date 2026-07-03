@@ -5,7 +5,7 @@ import com.spiceflow.backend.auth.dto.request.ChangePasswordRequest;
 import com.spiceflow.backend.auth.dto.request.LoginRequest;
 import com.spiceflow.backend.auth.dto.request.TokenRefreshRequest;
 import com.spiceflow.backend.auth.dto.response.LoginResponse;
-import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -72,7 +72,7 @@ public class AuthController {
       jakarta.servlet.http.HttpServletRequest httpServletRequest) {
     
     String authHeader = httpServletRequest.getHeader("Authorization");
-    String accessToken = null;
+    @org.jspecify.annotations.Nullable String accessToken = null;
     if (authHeader != null && authHeader.startsWith("Bearer ")) {
       accessToken = authHeader.substring(7);
     }
@@ -91,8 +91,10 @@ public class AuthController {
   @Operation(summary = "Change Password", description = "Changes the authenticated user's password and revokes all existing sessions.")
   public ResponseEntity<Void> changePassword(
       @Valid @RequestBody ChangePasswordRequest request,
-      @AuthenticationPrincipal User currentUser) {
+      @AuthenticationPrincipal AuthenticatedUser currentUser) {
     authService.changePassword(currentUser, request);
     return ResponseEntity.noContent().build();
   }
 }
+
+

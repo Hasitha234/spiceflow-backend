@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class DeliveryPaymentRequest {
     
     @NotBlank(message = "Payment method is required")
@@ -21,3 +22,4 @@ public class DeliveryPaymentRequest {
     private String chequeBankName;
     private LocalDate chequeDate;
 }
+

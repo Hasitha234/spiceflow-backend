@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class RecordShopDeliveryRequest {
     
     @Valid
@@ -18,3 +19,4 @@ public class RecordShopDeliveryRequest {
     @Valid
     private List<DeliveryPaymentRequest> payments;
 }
+

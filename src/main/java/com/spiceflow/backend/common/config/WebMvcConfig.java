@@ -9,6 +9,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final EndpointLoggingInterceptor loggingInterceptor;
+    
+    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins}")
+    private String[] allowedOrigins = new String[0];
 
     public WebMvcConfig(EndpointLoggingInterceptor loggingInterceptor) {
         this.loggingInterceptor = loggingInterceptor;
@@ -23,13 +26,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins(
-                        "http://localhost:8080",
-                        "http://127.0.0.1:8080",
-                        "http://localhost:3000",
-                        "http://127.0.0.1:3000",
-                        "http://localhost:4200"
-                )
+                .allowedOrigins(allowedOrigins)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .allowCredentials(true);

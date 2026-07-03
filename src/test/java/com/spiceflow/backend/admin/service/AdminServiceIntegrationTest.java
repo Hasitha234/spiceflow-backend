@@ -21,8 +21,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 
 @SpringBootTest
-@ActiveProfiles("local")
-public class AdminServiceIntegrationTest {
+@ActiveProfiles("test")
+@Transactional
+class AdminServiceIntegrationTest {
 
     @Autowired
     private AdminService adminService;
@@ -43,7 +44,11 @@ public class AdminServiceIntegrationTest {
         long initialUserCount = userRepository.count();
 
         // Ensure business type exists
-        BusinessType type = businessTypeRepository.findAll().get(0);
+        BusinessType type = BusinessType.builder()
+                .name("RETAIL")
+                .description("Retail Business")
+                .build();
+        type = businessTypeRepository.save(type);
 
         CreateTenantRequest request = new CreateTenantRequest();
         request.setBusinessName("Rollback Test Business");

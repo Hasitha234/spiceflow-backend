@@ -35,7 +35,7 @@ public class ProductController {
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody ProductRequest request) {
         log.info("Received request to create product: {} by user: {}", request.getName(), currentUser.getId());
-        ProductResponse response = productService.createProduct(currentUser.getTenantId(), request);
+        ProductResponse response = productService.createProduct(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -46,7 +46,7 @@ public class ProductController {
             @RequestParam(required = false) String search,
             Pageable pageable) {
         log.info("Received request to fetch products by user: {}", currentUser.getId());
-        Page<ProductResponse> response = productService.getProducts(currentUser.getTenantId(), search, pageable);
+        Page<ProductResponse> response = productService.getProducts(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), search, pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -56,7 +56,7 @@ public class ProductController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {
         log.info("Received request to fetch product ID: {} by user: {}", id, currentUser.getId());
-        ProductResponse response = productService.getProduct(id, currentUser.getTenantId());
+        ProductResponse response = productService.getProduct(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
     }
 
@@ -66,7 +66,7 @@ public class ProductController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id, @Valid @RequestBody ProductRequest request) {
         log.info("Received request to update product ID: {} by user: {}", id, currentUser.getId());
-        ProductResponse response = productService.updateProduct(id, currentUser.getTenantId(), request);
+        ProductResponse response = productService.updateProduct(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.ok(response);
     }
 
@@ -76,7 +76,8 @@ public class ProductController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {
         log.info("Received request to delete product ID: {} by user: {}", id, currentUser.getId());
-        productService.deleteProduct(id, currentUser.getTenantId());
+        productService.deleteProduct(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.noContent().build();
     }
 }
+

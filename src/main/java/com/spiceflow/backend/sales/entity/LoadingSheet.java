@@ -46,11 +46,11 @@ public class LoadingSheet extends BaseEntity {
     @Builder.Default
     private String status = "DRAFT";
 
-    @OneToMany(mappedBy = "loadingSheet", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "loadingSheet", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
     @Builder.Default
     private List<LoadingSheetItem> items = new ArrayList<>();
 
-    @OneToMany(mappedBy = "loadingSheet", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "loadingSheet", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
     @Builder.Default
     private List<LoadingSheetReturn> returns = new ArrayList<>();
 }

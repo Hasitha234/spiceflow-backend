@@ -28,17 +28,13 @@ public class TenantFilterAspect {
     // Intercept all methods in all repositories inside our application
     @Before("execution(* com.spiceflow.backend..*Repository.*(..))")
     public void enableTenantFilter() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Long tenantId = com.spiceflow.backend.common.context.TenantContext.getTenantId();
         
-        // Only apply if the current principal is a tenant User
-        if (auth != null && auth.getPrincipal() instanceof User) {
-            User user = (User) auth.getPrincipal();
-            
-            if (user.getTenantId() != null) {
-                // Unwrap the underlying Hibernate Session and enable the filter
-                Session session = entityManager.unwrap(Session.class);
-                session.enableFilter("tenantFilter").setParameter("tenantId", user.getTenantId());
-            }
+        // Only apply if the current principal is a tenant User (has tenantId)
+        if (tenantId != null) {
+            // Unwrap the underlying Hibernate Session and enable the filter
+            Session session = entityManager.unwrap(Session.class);
+            session.enableFilter("tenantFilter").setParameter("tenantId", tenantId);
         }
     }
 }

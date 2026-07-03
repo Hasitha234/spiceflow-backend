@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class DeliveryShopReturnRequest {
     
     @NotNull(message = "Product ID is required")
@@ -25,3 +26,4 @@ public class DeliveryShopReturnRequest {
     @NotBlank
     private String returnType;
 }
+

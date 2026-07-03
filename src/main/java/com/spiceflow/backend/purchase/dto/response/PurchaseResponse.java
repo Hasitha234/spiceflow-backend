@@ -9,6 +9,7 @@ import lombok.Data;
 
 @Data
 @Builder
+@SuppressWarnings("NullAway.Init")
 public class PurchaseResponse {
     
     private Long id;
@@ -41,3 +42,4 @@ public class PurchaseResponse {
     
     private List<PurchaseLineItemResponse> lineItems;
 }
+

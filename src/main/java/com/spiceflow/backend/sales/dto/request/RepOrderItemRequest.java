@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class RepOrderItemRequest {
     
     @NotNull(message = "Product ID is required")
@@ -31,3 +32,4 @@ public class RepOrderItemRequest {
     @PositiveOrZero
     private Integer boxesNeeded;
 }
+

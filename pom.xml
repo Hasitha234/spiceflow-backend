@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
@@ -127,6 +127,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5</artifactId>
+      <version>1.3.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-api</artifactId>
       <version>0.12.6</version>
@@ -173,6 +179,25 @@
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
     </dependency>
+    <!-- Observability / Tracing -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-tracing-bridge-otel</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.github.gavlyukovskiy</groupId>
+      <artifactId>p6spy-spring-boot-starter</artifactId>
+      <version>1.9.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-cache</artifactId>
+    </dependency>
+      <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>1.0.0</version>
+    </dependency>
   </dependencies>
   <dependencyManagement>
     <dependencies>
@@ -183,7 +208,12 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-    </dependencies>
+        <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
   </dependencyManagement>
   <build>
     <plugins>
@@ -225,7 +255,32 @@
                   <artifactId>lombok-mapstruct-binding</artifactId>
                   <version>0.2.0</version>
                 </path>
+                <path>
+                  <groupId>com.google.errorprone</groupId>
+                  <artifactId>error_prone_core</artifactId>
+                  <version>2.28.0</version>
+                </path>
+                <path>
+                  <groupId>com.uber.nullaway</groupId>
+                  <artifactId>nullaway</artifactId>
+                  <version>0.10.25</version>
+                </path>
               </annotationProcessorPaths>
+              <fork>true</fork>
+              <compilerArgs>
+                <arg>-XDcompilePolicy=simple</arg>
+                <arg>-Xplugin:ErrorProne -Xep:NullAway:ERROR -XepOpt:NullAway:AnnotatedPackages=com.spiceflow.backend -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:ExcludedClassAnnotations=javax.annotation.processing.Generated -XepOpt:NullAway:UnannotatedSubPackages=com.spiceflow.backend.inventory.mapper,com.spiceflow.backend.auth.mapper,com.spiceflow.backend.sales.mapper,com.spiceflow.backend.purchase.mapper,com.spiceflow.backend.common.mapper</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
+                <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
+                <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
+                <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
+              </compilerArgs>
             </configuration>
           </execution>
           <execution>
@@ -250,6 +305,11 @@
                   <artifactId>lombok-mapstruct-binding</artifactId>
                   <version>0.2.0</version>
                 </path>
+                <path>
+                  <groupId>com.uber.nullaway</groupId>
+                  <artifactId>nullaway</artifactId>
+                  <version>0.10.25</version>
+                </path>
               </annotationProcessorPaths>
             </configuration>
           </execution>
@@ -261,7 +321,7 @@
         <version>3.4.0</version>
         <configuration>
           <configLocation>google_checks.xml</configLocation>
-          <failsOnError>true</failsOnError>
+          <failOnError>true</failOnError>
           <consoleOutput>true</consoleOutput>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
@@ -284,7 +344,7 @@
           <effort>Max</effort>
           <threshold>High</threshold>
           <!-- only fail on High severity bugs. Medium/Low are warnings only.-->
-          <failsOnError>true</failsOnError>
+          <failOnError>true</failOnError>
         </configuration>
         <executions>
           <execution>
@@ -313,6 +373,16 @@
             <goals>
               <goal>report</goal>
             </goals>
+            <configuration>
+              <excludes>
+                <exclude>**/*Mapper.*</exclude>
+                <exclude>**/*MapperImpl.*</exclude>
+                <exclude>**/dto/**</exclude>
+                <exclude>**/controller/**</exclude>
+                <exclude>**/config/**</exclude>
+                <exclude>**/exception/**</exclude>
+              </excludes>
+            </configuration>
           </execution>
           <execution>
             <id>jacoco-check</id>
@@ -321,6 +391,14 @@
               <goal>check</goal>
             </goals>
             <configuration>
+              <excludes>
+                <exclude>**/*Mapper.*</exclude>
+                <exclude>**/*MapperImpl.*</exclude>
+                <exclude>**/dto/**</exclude>
+                <exclude>**/controller/**</exclude>
+                <exclude>**/config/**</exclude>
+                <exclude>**/exception/**</exclude>
+              </excludes>
               <rules>
                 <rule>
                   <element>BUNDLE</element>
@@ -328,8 +406,7 @@
                     <limit>
                       <counter>LINE</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.00</minimum>
-                      <!-- start at 20%. Raise to 80% as you write real tests.-->
+                      <minimum>0.80</minimum>
                     </limit>
                   </limits>
                 </rule>
@@ -339,12 +416,40 @@
         </executions>
       </plugin>
       <!-- OWASP Dependency Check removed from default build for speed. 
-			     Run manually or on a scheduled CI job instead. -->
-      <plugin>
-        <groupId>org.owasp</groupId>
-        <artifactId>dependency-check-maven</artifactId>
-        <version>9.0.9</version>
-      </plugin>
+			     Run manually or via profile 'security-scan' instead. -->
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>security-scan</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.owasp</groupId>
+            <artifactId>dependency-check-maven</artifactId>
+            <version>9.0.9</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <failBuildOnCVSS>7</failBuildOnCVSS>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
+
+
+
+
+
+
+
+

@@ -3,7 +3,7 @@ package com.spiceflow.backend.auth.controller;
 import org.springframework.validation.annotation.Validated;
 import com.spiceflow.backend.auth.dto.request.RoleRequest;
 import com.spiceflow.backend.auth.dto.response.RoleResponse;
-import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.auth.service.RoleService;
 import com.spiceflow.backend.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,7 +43,7 @@ public class RoleController {
     @Operation(summary = "List all roles for the current tenant")
     @PreAuthorize("hasAuthority('ROLE_VIEW') or hasRole('OWNER')")
     public ResponseEntity<PageResponse<RoleResponse>> getRoles(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         return ResponseEntity.ok(roleService.getRolesForTenant(currentUser, pageable));
     }
@@ -54,7 +54,7 @@ public class RoleController {
     @PreAuthorize("hasAuthority('ROLE_CREATE') or hasRole('OWNER')")
     public RoleResponse createRole(
             @Valid @RequestBody RoleRequest request,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
         return roleService.createRole(request, currentUser);
     }
 
@@ -64,7 +64,7 @@ public class RoleController {
     public RoleResponse updateRole(
             @PathVariable Long roleId,
             @Valid @RequestBody RoleRequest request,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
         return roleService.updateRole(roleId, request, currentUser);
     }
 
@@ -74,7 +74,8 @@ public class RoleController {
     @PreAuthorize("hasAuthority('ROLE_DELETE') or hasRole('OWNER')")
     public void deleteRole(
             @PathVariable Long roleId,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
         roleService.deleteRole(roleId, currentUser);
     }
 }
+

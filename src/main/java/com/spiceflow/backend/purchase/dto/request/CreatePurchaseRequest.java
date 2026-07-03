@@ -10,6 +10,7 @@ import java.util.List;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class CreatePurchaseRequest {
     
     @NotNull(message = "Supplier ID is required")
@@ -52,3 +53,4 @@ public class CreatePurchaseRequest {
     @NotNull
     private List<PurchaseLineItemRequest> lineItems;
 }
+

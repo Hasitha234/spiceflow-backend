@@ -67,15 +67,15 @@ public class DeliveryShop {
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
-    @OneToMany(mappedBy = "deliveryShop", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "deliveryShop", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
     @Builder.Default
     private List<DeliveryShopItem> items = new ArrayList<>();
 
-    @OneToMany(mappedBy = "deliveryShop", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "deliveryShop", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
     @Builder.Default
     private List<DeliveryShopReturn> returns = new ArrayList<>();
 
-    @OneToMany(mappedBy = "deliveryShop", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "deliveryShop", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
     @Builder.Default
     private List<DeliveryPayment> payments = new ArrayList<>();
 }

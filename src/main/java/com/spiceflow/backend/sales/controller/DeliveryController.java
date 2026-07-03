@@ -1,7 +1,7 @@
 package com.spiceflow.backend.sales.controller;
 
 import org.springframework.validation.annotation.Validated;
-import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.sales.dto.request.CreateDeliveryRequest;
 import com.spiceflow.backend.sales.dto.request.RecordShopDeliveryRequest;
 import com.spiceflow.backend.sales.dto.response.DeliveryResponse;
@@ -34,10 +34,10 @@ public class DeliveryController {
     @PreAuthorize("hasAuthority('DELIVERY_WRITE')")
     @Operation(summary = "Start a delivery", description = "Creates a delivery from a confirmed loading sheet")
     public ResponseEntity<DeliveryResponse> createDelivery(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody CreateDeliveryRequest request) {
         log.info("User {} creating delivery", currentUser.getId());
-        DeliveryResponse response = deliveryService.createDelivery(currentUser.getTenantId(), request);
+        DeliveryResponse response = deliveryService.createDelivery(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -45,12 +45,12 @@ public class DeliveryController {
     @PreAuthorize("hasAuthority('DELIVERY_WRITE')")
     @Operation(summary = "Record shop delivery", description = "Records delivered items, returns, and payments for a specific shop")
     public ResponseEntity<DeliveryShopResponse> recordShopDelivery(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id,
             @PathVariable Long shopId,
             @Valid @RequestBody RecordShopDeliveryRequest request) {
         log.info("User {} recording delivery {} for shop {}", currentUser.getId(), id, shopId);
-        DeliveryShopResponse response = deliveryService.recordShopDelivery(currentUser.getTenantId(), id, shopId, request);
+        DeliveryShopResponse response = deliveryService.recordShopDelivery(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id, shopId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -58,10 +58,10 @@ public class DeliveryController {
     @PreAuthorize("hasAuthority('DELIVERY_WRITE')")
     @Operation(summary = "Complete delivery", description = "Marks the delivery as completed and calculates final totals")
     public ResponseEntity<DeliveryResponse> completeDelivery(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("User {} completing delivery {}", currentUser.getId(), id);
-        DeliveryResponse response = deliveryService.completeDelivery(currentUser.getTenantId(), id);
+        DeliveryResponse response = deliveryService.completeDelivery(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id);
         return ResponseEntity.ok(response);
     }
 
@@ -69,10 +69,10 @@ public class DeliveryController {
     @PreAuthorize("hasAuthority('DELIVERY_READ')")
     @Operation(summary = "List deliveries", description = "Returns a paginated list of deliveries")
     public ResponseEntity<Page<DeliveryResponse>> getDeliveries(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             Pageable pageable) {
         log.info("User {} listing deliveries", currentUser.getId());
-        Page<DeliveryResponse> response = deliveryService.getDeliveries(currentUser.getTenantId(), pageable);
+        Page<DeliveryResponse> response = deliveryService.getDeliveries(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -80,10 +80,12 @@ public class DeliveryController {
     @PreAuthorize("hasAuthority('DELIVERY_READ')")
     @Operation(summary = "Get delivery by ID", description = "Returns details of a specific delivery")
     public ResponseEntity<DeliveryResponse> getDelivery(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("User {} getting delivery {}", currentUser.getId(), id);
-        DeliveryResponse response = deliveryService.getDelivery(id, currentUser.getTenantId());
+        DeliveryResponse response = deliveryService.getDelivery(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
     }
 }
+
+

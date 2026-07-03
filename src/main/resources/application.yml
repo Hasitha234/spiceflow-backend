@@ -1,4 +1,6 @@
 spring:
+  main:
+    allow-circular-references: false
   application:
     name: spiceflow-backend
   servlet:
@@ -12,6 +14,17 @@ spring:
       idle-timeout: 30000
       max-lifetime: 1800000
       connection-timeout: 30000
+    p6spy:
+      enable-logging: true
+      tracing:
+        include-parameter-values: true
+      logging: "slf4j"
+      outagedetection: true
+      outagedetectioninterval: 1
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: true
 
 server:
   forward-headers-strategy: FRAMEWORK
@@ -33,6 +46,16 @@ management:
     metrics:
       export:
         enabled: true
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0 # Development setting, update for prod if using an exporter
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
 
 logging:
   level:
@@ -40,6 +63,8 @@ logging:
     com.spiceflow: DEBUG
 
 app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8080,http://127.0.0.1:8080,http://localhost:3000,http://127.0.0.1:3000,http://localhost:4200}
   jwt:
     secret: ${JWT_SECRET}
     access-token-expiry: 28800000

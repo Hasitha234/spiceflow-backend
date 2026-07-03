@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 public class ShopOutstandingResponse {
     private Long shopId;
     private String shopName;
+    @org.jspecify.annotations.Nullable
     private String route;
     private BigDecimal outstandingAmount;
 }

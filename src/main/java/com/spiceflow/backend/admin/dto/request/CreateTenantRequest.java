@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class CreateTenantRequest {
 
     @Schema(description = "The registered name of the business", example = "Spice Flow Inc.")
@@ -29,3 +30,4 @@ public class CreateTenantRequest {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String ownerPassword;
 }
+

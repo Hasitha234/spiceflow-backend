@@ -69,7 +69,7 @@ public class SecurityConfig {
                 "/swagger-ui.html",
                 "/v3/api-docs/**"
             ).permitAll()
-            .requestMatchers("/actuator/**").hasRole("ADMIN")
+            .requestMatchers("/actuator/**").hasRole("SUPER_ADMIN")
             // Everything else requires a valid JWT
             .anyRequest().authenticated()
         )

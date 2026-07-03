@@ -35,9 +35,11 @@ import java.time.LocalDate;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 class TenantIsolationIntegrationTest {
 
     @Autowired
@@ -76,20 +78,12 @@ class TenantIsolationIntegrationTest {
     private Long tenantARepOrderId;
 
     @BeforeEach
+    @Transactional
     void setup() {
         mockMvc = MockMvcBuilders
                 .webAppContextSetup(context)
                 .apply(springSecurity())
                 .build();
-
-        // Clear DB for clean test
-        repOrderRepository.deleteAll();
-        repRepository.deleteAll();
-        userRepository.deleteAll();
-        roleRepository.deleteAll();
-        permissionRepository.deleteAll();
-        tenantRepository.deleteAll();
-        businessTypeRepository.deleteAll();
 
         BusinessType type = businessTypeRepository.save(BusinessType.builder()
                 .name("DISTRIBUTOR")

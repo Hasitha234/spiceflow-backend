@@ -6,6 +6,7 @@ import lombok.Data;
 
 @Data
 @Builder
+@SuppressWarnings("NullAway.Init")
 public class PurchaseLineItemResponse {
     
     private Long id;
@@ -19,3 +20,4 @@ public class PurchaseLineItemResponse {
     private BigDecimal rate;
     private BigDecimal amount;
 }
+

@@ -6,55 +6,27 @@ import com.spiceflow.backend.sales.dto.response.LoadingSheetReturnResponse;
 import com.spiceflow.backend.sales.entity.LoadingSheet;
 import com.spiceflow.backend.sales.entity.LoadingSheetItem;
 import com.spiceflow.backend.sales.entity.LoadingSheetReturn;
-import org.springframework.stereotype.Component;
+import com.spiceflow.backend.common.mapper.CentralMapperConfig;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-import java.util.stream.Collectors;
+@Mapper(config = CentralMapperConfig.class)
+public interface LoadingSheetMapper {
 
-@Component
-public class LoadingSheetMapper {
-
-    public LoadingSheetResponse toResponse(LoadingSheet sheet) {
-        if (sheet == null) return null;
-        return LoadingSheetResponse.builder()
-            .id(sheet.getId())
-            .repOrderId(sheet.getRepOrder().getId())
-            .repId(sheet.getRepOrder().getRep().getId())
-            .repName(sheet.getRepOrder().getRep().getName())
-            .driverId(sheet.getDriver().getId())
-            .driverName(sheet.getDriver().getName())
-            .loadingDate(sheet.getLoadingDate())
-            .status(sheet.getStatus())
-            .createdAt(sheet.getCreatedAt())
-            .updatedAt(sheet.getUpdatedAt())
-            .items(sheet.getItems() != null ? 
-                sheet.getItems().stream().map(this::toItemResponse).collect(Collectors.toList()) : null)
-            .returns(sheet.getReturns() != null ? 
-                sheet.getReturns().stream().map(this::toReturnResponse).collect(Collectors.toList()) : null)
-            .build();
-    }
+    @Mapping(source = "repOrder.id", target = "repOrderId")
+    @Mapping(source = "repOrder.rep.id", target = "repId")
+    @Mapping(source = "repOrder.rep.name", target = "repName")
+    @Mapping(source = "driver.id", target = "driverId")
+    @Mapping(source = "driver.name", target = "driverName")
+    LoadingSheetResponse toResponse(LoadingSheet sheet);
     
-    public LoadingSheetItemResponse toItemResponse(LoadingSheetItem item) {
-        if (item == null) return null;
-        return LoadingSheetItemResponse.builder()
-            .id(item.getId())
-            .productId(item.getProduct().getId())
-            .productName(item.getProduct().getName())
-            .productSku(item.getProduct().getSku())
-            .quantityLoaded(item.getQuantityLoaded())
-            .unitType(item.getUnitType())
-            .build();
-    }
+    @Mapping(source = "product.id", target = "productId")
+    @Mapping(source = "product.name", target = "productName")
+    @Mapping(source = "product.sku", target = "productSku")
+    LoadingSheetItemResponse toItemResponse(LoadingSheetItem item);
     
-    public LoadingSheetReturnResponse toReturnResponse(LoadingSheetReturn ret) {
-        if (ret == null) return null;
-        return LoadingSheetReturnResponse.builder()
-            .id(ret.getId())
-            .productId(ret.getProduct().getId())
-            .productName(ret.getProduct().getName())
-            .productSku(ret.getProduct().getSku())
-            .quantityReturned(ret.getQuantityReturned())
-            .unitType(ret.getUnitType())
-            .returnType(ret.getReturnType())
-            .build();
-    }
+    @Mapping(source = "product.id", target = "productId")
+    @Mapping(source = "product.name", target = "productName")
+    @Mapping(source = "product.sku", target = "productSku")
+    LoadingSheetReturnResponse toReturnResponse(LoadingSheetReturn ret);
 }

@@ -55,11 +55,11 @@ public class RepOrderShop {
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
-    @OneToMany(mappedBy = "repOrderShop", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "repOrderShop", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
     @Builder.Default
     private List<RepOrderItem> items = new ArrayList<>();
 
-    @OneToMany(mappedBy = "repOrderShop", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "repOrderShop", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
     @Builder.Default
     private List<ShopReturn> returns = new ArrayList<>();
 }

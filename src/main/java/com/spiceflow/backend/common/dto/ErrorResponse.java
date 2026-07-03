@@ -10,6 +10,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@SuppressWarnings("NullAway.Init")
 public class ErrorResponse {
   private String code;
   private String message;
@@ -23,3 +24,4 @@ public class ErrorResponse {
     private String message;
   }
 }
+

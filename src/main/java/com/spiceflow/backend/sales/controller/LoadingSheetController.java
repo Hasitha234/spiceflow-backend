@@ -1,7 +1,7 @@
 package com.spiceflow.backend.sales.controller;
 
 import org.springframework.validation.annotation.Validated;
-import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.sales.dto.request.CreateLoadingSheetRequest;
 import com.spiceflow.backend.sales.dto.response.LoadingSheetResponse;
 import com.spiceflow.backend.sales.service.LoadingSheetService;
@@ -32,10 +32,10 @@ public class LoadingSheetController {
     @PreAuthorize("hasAuthority('LOADING_WRITE')")
     @Operation(summary = "Create a loading sheet", description = "Generates a loading sheet from a rep order")
     public ResponseEntity<LoadingSheetResponse> createLoadingSheet(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody CreateLoadingSheetRequest request) {
         log.info("User {} creating loading sheet", currentUser.getId());
-        LoadingSheetResponse response = loadingSheetService.createLoadingSheet(currentUser.getTenantId(), request);
+        LoadingSheetResponse response = loadingSheetService.createLoadingSheet(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -43,10 +43,10 @@ public class LoadingSheetController {
     @PreAuthorize("hasAuthority('LOADING_WRITE')")
     @Operation(summary = "Confirm a loading sheet", description = "Confirms loading and transfers inventory to the vehicle")
     public ResponseEntity<LoadingSheetResponse> confirmLoadingSheet(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("User {} confirming loading sheet {}", currentUser.getId(), id);
-        LoadingSheetResponse response = loadingSheetService.confirmLoadingSheet(id, currentUser.getTenantId());
+        LoadingSheetResponse response = loadingSheetService.confirmLoadingSheet(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
     }
 
@@ -54,10 +54,10 @@ public class LoadingSheetController {
     @PreAuthorize("hasAuthority('LOADING_READ')")
     @Operation(summary = "List loading sheets", description = "Returns a paginated list of loading sheets")
     public ResponseEntity<Page<LoadingSheetResponse>> getLoadingSheets(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             Pageable pageable) {
         log.info("User {} listing loading sheets", currentUser.getId());
-        Page<LoadingSheetResponse> response = loadingSheetService.getLoadingSheets(currentUser.getTenantId(), pageable);
+        Page<LoadingSheetResponse> response = loadingSheetService.getLoadingSheets(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -65,10 +65,12 @@ public class LoadingSheetController {
     @PreAuthorize("hasAuthority('LOADING_READ')")
     @Operation(summary = "Get loading sheet by ID", description = "Returns details of a specific loading sheet")
     public ResponseEntity<LoadingSheetResponse> getLoadingSheet(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("User {} getting loading sheet {}", currentUser.getId(), id);
-        LoadingSheetResponse response = loadingSheetService.getLoadingSheet(id, currentUser.getTenantId());
+        LoadingSheetResponse response = loadingSheetService.getLoadingSheet(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
     }
 }
+
+

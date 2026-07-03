@@ -107,6 +107,10 @@ public LoginResponse login(LoginRequest request) {
   User user = userRepository.findByEmailAndDeletedAtIsNull(request.getEmail())
       .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
+  if (!"ACTIVE".equals(user.getTenant().getStatus())) {
+    throw new org.springframework.security.access.AccessDeniedException("Tenant account is not active");
+  }
+
   if (loginAttemptService.isBlocked(user.getEmail())) {
     throw new InvalidCredentialsException("Account is temporarily locked due to too many failed attempts.");
   }
@@ -183,7 +187,7 @@ public LoginResponse login(LoginRequest request) {
    * Revokes the given refresh token and blacklists the access token.
    */
   @Transactional(rollbackFor = Exception.class)
-  public void logout(String rawRefreshToken, String accessToken) {
+  public void logout(String rawRefreshToken, @org.jspecify.annotations.Nullable String accessToken) {
     String tokenHash = sha256(rawRefreshToken);
     refreshTokenRepository.findByTokenHash(tokenHash).ifPresent(token -> {
       token.setRevokedAt(OffsetDateTime.now());
@@ -203,18 +207,21 @@ public LoginResponse login(LoginRequest request) {
    * Revokes ALL existing refresh tokens to force re-login on all devices.
    */
   @Transactional(rollbackFor = Exception.class)
-  public void changePassword(User currentUser, ChangePasswordRequest request) {
-    if (!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPasswordHash())) {
-      throw new BusinessRuleViolationException("Current password is incorrect");
+  public void changePassword(com.spiceflow.backend.auth.dto.AuthenticatedUser currentUser, ChangePasswordRequest request) {
+    User user = userRepository.findById(currentUser.getId())
+        .orElseThrow(() -> new com.spiceflow.backend.common.exception.ResourceNotFoundException("User not found"));
+
+    if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+      throw new com.spiceflow.backend.common.exception.BusinessRuleViolationException("Current password is incorrect");
     }
 
-    currentUser.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
-    currentUser.setPasswordChangeRequired(false);
-    userRepository.save(currentUser);
+    user.setPasswordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.getNewPassword())));
+    user.setPasswordChangeRequired(false);
+    userRepository.save(user);
 
     // Invalidate all sessions — user must log in again on all devices
-    refreshTokenRepository.revokeAllByUserId(currentUser.getId(), java.time.OffsetDateTime.now());
-    log.info("Password changed for user {}. All sessions revoked.", currentUser.getEmail());
+    refreshTokenRepository.revokeAllByUserId(user.getId(), java.time.OffsetDateTime.now());
+    log.info("Password changed for user {}. All sessions revoked.", user.getEmail());
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
@@ -268,3 +275,5 @@ public LoginResponse login(LoginRequest request) {
     return rawToken;
   }
 }
+
+

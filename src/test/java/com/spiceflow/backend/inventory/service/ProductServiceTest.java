@@ -1,11 +1,8 @@
 package com.spiceflow.backend.inventory.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
@@ -16,6 +13,7 @@ import com.spiceflow.backend.inventory.dto.response.ProductResponse;
 import com.spiceflow.backend.inventory.entity.Product;
 import com.spiceflow.backend.inventory.entity.ProductCategory;
 import com.spiceflow.backend.inventory.entity.Supplier;
+import com.spiceflow.backend.inventory.mapper.ProductMapper;
 import com.spiceflow.backend.inventory.repository.ProductRepository;
 import java.math.BigDecimal;
 import java.util.List;
@@ -29,122 +27,153 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
-public class ProductServiceTest {
+class ProductServiceTest {
 
-    @Mock
-    private ProductRepository productRepository;
+    @Mock private ProductRepository productRepository;
+    @Mock private TenantRepository tenantRepository;
+    @Mock private ProductCategoryService productCategoryService;
+    @Mock private SupplierService supplierService;
+    @Mock private ProductMapper productMapper;
 
-    @Mock
-    private TenantRepository tenantRepository;
+    @InjectMocks private ProductService productService;
 
-    @Mock
-    private ProductCategoryService productCategoryService;
-
-    @Mock
-    private SupplierService supplierService;
-
-    @Mock
-    private com.spiceflow.backend.inventory.mapper.ProductMapper productMapper;
-
-    @InjectMocks
-    private ProductService productService;
-
-    private Tenant mockTenant;
-    private ProductCategory mockCategory;
-    private Supplier mockSupplier;
-    private Product mockProduct;
+    private Tenant tenant;
+    private ProductCategory category;
+    private Supplier supplier;
+    private Product product;
+    @Mock private ProductResponse response;
 
     @BeforeEach
     void setUp() {
-        mockTenant = new Tenant();
-        mockTenant.setId(1L);
+        tenant = new Tenant();
+        tenant.setId(1L);
 
-        mockCategory = ProductCategory.builder()
-                .name("Spices")
-                .tenant(mockTenant)
-                .build();
-        mockCategory.setId(10L);
+        category = new ProductCategory();
+        category.setId(1L);
 
-        mockSupplier = new Supplier();
-        mockSupplier.setId(20L);
-        mockSupplier.setName("Supplier A");
+        supplier = new Supplier();
+        supplier.setId(1L);
 
-        mockProduct = Product.builder()
-                .name("Cinnamon")
-                .sku("CIN-001")
-                .basePrice(new BigDecimal("10.50"))
-                .category(mockCategory)
-                .supplier(mockSupplier)
-                .tenant(mockTenant)
-                .build();
-        mockProduct.setId(100L);
+        product = new Product();
+        product.setId(1L);
+        product.setSku("SKU-123");
+        product.setName("Test Product");
+        product.setTenant(tenant);
+        product.setCategory(category);
+        product.setSupplier(supplier);
     }
 
     @Test
-    void testGetProducts_WithoutSearch() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Product> page = new PageImpl<>(List.of(mockProduct));
+    void createProduct_Success() {
+        ProductRequest request = new ProductRequest();
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "sku", "SKU-123");
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Test Product");
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "categoryId", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "supplierId", 1L);
 
-        when(productRepository.findByTenantId(1L, pageable)).thenReturn(page);
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
+        when(productRepository.findBySkuAndTenantId("SKU-123", 1L)).thenReturn(Optional.empty());
+        when(productCategoryService.getCategoryEntity(1L, 1L)).thenReturn(category);
+        when(supplierService.getSupplierEntity(1L, 1L)).thenReturn(supplier);
+        when(productRepository.save(any(Product.class))).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
 
-        ProductResponse mockResponse = ProductResponse.builder().id(100L).name("Cinnamon").build();
-        when(productMapper.toResponse(any(Product.class))).thenReturn(mockResponse);
-
-        Page<ProductResponse> result = productService.getProducts(1L, null, pageable);
+        ProductResponse result = productService.createProduct(1L, request);
 
         assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        assertEquals("Cinnamon", result.getContent().get(0).getName());
-        verify(productRepository).findByTenantId(1L, pageable);
+        verify(productRepository).save(any(Product.class));
     }
 
     @Test
-    void testCreateProduct_Success() {
+    void createProduct_SkuExists() {
         ProductRequest request = new ProductRequest();
-        request.setName("Paprika");
-        request.setSku("PAP-001");
-        request.setBasePrice(new BigDecimal("12.00"));
-        request.setCategoryId(10L);
-        request.setSupplierId(20L);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "sku", "SKU-123");
 
-        when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
-        when(productCategoryService.getCategoryEntity(10L, 1L)).thenReturn(mockCategory);
-        when(supplierService.getSupplierEntity(1L, 20L)).thenReturn(mockSupplier);
-        when(productRepository.findBySkuAndTenantId("PAP-001", 1L)).thenReturn(Optional.empty());
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
+        when(productRepository.findBySkuAndTenantId("SKU-123", 1L)).thenReturn(Optional.of(product));
 
-        when(productRepository.save(any(Product.class))).thenAnswer(i -> {
-            Product p = i.getArgument(0);
-            p.setId(101L);
-            return p;
-        });
-
-        ProductResponse mockResponse = ProductResponse.builder().id(101L).name("Paprika").build();
-        when(productMapper.toResponse(any(Product.class))).thenReturn(mockResponse);
-
-        ProductResponse response = productService.createProduct(1L, request);
-
-        assertNotNull(response);
-        assertEquals(101L, response.getId());
-        assertEquals("Paprika", response.getName());
+        assertThrows(BusinessRuleViolationException.class, () -> productService.createProduct(1L, request));
     }
 
     @Test
-    void testCreateProduct_DuplicateSku() {
+    void getProducts_WithSearch() {
+        Page<Product> page = new PageImpl<>(List.of(product));
+        when(productRepository.searchByTenantId(eq(1L), eq("SKU-123"), any(PageRequest.class))).thenReturn(page);
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        Page<ProductResponse> result = productService.getProducts(1L, "SKU-123", PageRequest.of(0, 10));
+
+        assertEquals(1, result.getContent().size());
+    }
+
+    @Test
+    void getProducts_WithoutSearch() {
+        Page<Product> page = new PageImpl<>(List.of(product));
+        when(productRepository.findByTenantId(eq(1L), any(PageRequest.class))).thenReturn(page);
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        Page<ProductResponse> result = productService.getProducts(1L, "", PageRequest.of(0, 10));
+
+        assertEquals(1, result.getContent().size());
+    }
+
+    @Test
+    void getProduct_Success() {
+        when(productRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(product));
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        ProductResponse result = productService.getProduct(1L, 1L);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void getProduct_NotFound() {
+        when(productRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> productService.getProduct(1L, 1L));
+    }
+
+    @Test
+    void updateProduct_Success() {
         ProductRequest request = new ProductRequest();
-        request.setName("Paprika");
-        request.setSku("CIN-001"); // Existing SKU
-        request.setBasePrice(new BigDecimal("12.00"));
-        request.setCategoryId(10L);
-        request.setSupplierId(20L);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "sku", "SKU-456");
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Updated Product");
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "categoryId", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "supplierId", 1L);
 
-        when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
-        when(productRepository.findBySkuAndTenantId("CIN-001", 1L)).thenReturn(Optional.of(mockProduct));
+        when(productRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(product));
+        when(productRepository.findBySkuAndTenantId("SKU-456", 1L)).thenReturn(Optional.empty());
+        when(productCategoryService.getCategoryEntity(1L, 1L)).thenReturn(category);
+        when(supplierService.getSupplierEntity(1L, 1L)).thenReturn(supplier);
+        when(productRepository.save(any(Product.class))).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
 
-        assertThrows(BusinessRuleViolationException.class, () -> {
-            productService.createProduct(1L, request);
-        });
+        ProductResponse result = productService.updateProduct(1L, 1L, request);
+
+        assertNotNull(result);
+        assertEquals("SKU-456", product.getSku());
+    }
+
+    @Test
+    void updateProduct_SkuExists() {
+        ProductRequest request = new ProductRequest();
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "sku", "SKU-456");
+
+        when(productRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(product));
+        when(productRepository.findBySkuAndTenantId("SKU-456", 1L)).thenReturn(Optional.of(new Product()));
+
+        assertThrows(BusinessRuleViolationException.class, () -> productService.updateProduct(1L, 1L, request));
+    }
+
+    @Test
+    void deleteProduct_Success() {
+        when(productRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(product));
+
+        productService.deleteProduct(1L, 1L);
+
+        verify(productRepository).delete(product);
     }
 }

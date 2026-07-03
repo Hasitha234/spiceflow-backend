@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class PurchaseLineItemRequest {
     
     @NotNull(message = "Product ID is required")
@@ -25,3 +26,4 @@ public class PurchaseLineItemRequest {
     @PositiveOrZero
     private BigDecimal rate;
 }
+

@@ -1,7 +1,7 @@
 package com.spiceflow.backend.purchase.controller;
 
 import org.springframework.validation.annotation.Validated;
-import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.purchase.dto.request.CreatePurchaseRequest;
 import com.spiceflow.backend.purchase.dto.response.PurchaseResponse;
 import com.spiceflow.backend.purchase.service.PurchaseService;
@@ -32,10 +32,10 @@ public class PurchaseController {
     @PreAuthorize("hasAuthority('PURCHASE_CREATE')")
     @Operation(summary = "Create a purchase", description = "Creates a new purchase record in DRAFT status")
     public ResponseEntity<PurchaseResponse> createPurchase(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody CreatePurchaseRequest request) {
         log.info("User {} creating purchase", currentUser.getId());
-        PurchaseResponse response = purchaseService.createPurchase(currentUser.getTenantId(), request);
+        PurchaseResponse response = purchaseService.createPurchase(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -43,11 +43,11 @@ public class PurchaseController {
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @Operation(summary = "List all purchases", description = "Returns a paginated list of purchases")
     public ResponseEntity<Page<PurchaseResponse>> getPurchases(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String invoiceNo,
             Pageable pageable) {
         log.info("User {} listing purchases", currentUser.getId());
-        Page<PurchaseResponse> response = purchaseService.getPurchases(currentUser.getTenantId(), invoiceNo, pageable);
+        Page<PurchaseResponse> response = purchaseService.getPurchases(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), invoiceNo, pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -55,10 +55,10 @@ public class PurchaseController {
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @Operation(summary = "Get purchase by ID", description = "Returns details of a specific purchase")
     public ResponseEntity<PurchaseResponse> getPurchase(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("User {} getting purchase {}", currentUser.getId(), id);
-        PurchaseResponse response = purchaseService.getPurchase(id, currentUser.getTenantId());
+        PurchaseResponse response = purchaseService.getPurchase(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
     }
 
@@ -66,10 +66,12 @@ public class PurchaseController {
     @PreAuthorize("hasAuthority('PURCHASE_UPDATE')")
     @Operation(summary = "Confirm purchase", description = "Confirms a draft purchase and updates inventory in the MAIN store")
     public ResponseEntity<PurchaseResponse> confirmPurchase(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("User {} confirming purchase {}", currentUser.getId(), id);
-        PurchaseResponse response = purchaseService.confirmPurchase(id, currentUser.getTenantId());
+        PurchaseResponse response = purchaseService.confirmPurchase(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
     }
 }
+
+

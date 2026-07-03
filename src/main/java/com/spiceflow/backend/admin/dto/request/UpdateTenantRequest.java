@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 /** Request body for PUT /api/v1/admin/tenants/{id} */
 @Getter
 @NoArgsConstructor
+@SuppressWarnings("NullAway.Init")
 public class UpdateTenantRequest {
 
     @NotBlank(message = "Business name is required")
@@ -24,3 +25,4 @@ public class UpdateTenantRequest {
     @NotBlank(message = "Plan is required")
     private String plan;
 }
+

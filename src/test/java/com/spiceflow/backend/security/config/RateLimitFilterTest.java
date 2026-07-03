@@ -75,30 +75,29 @@ class RateLimitFilterTest {
     }
 
     @Test
-    void shouldExtractIpFromXForwardedFor() throws ServletException, IOException {
+    void shouldIgnoreXForwardedForHeader() throws ServletException, IOException {
+        // Attack: attempt to bypass rate limit by sending different X-Forwarded-For headers
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/auth/login");
         request.addHeader("X-Forwarded-For", "10.0.0.1, 192.168.1.100");
-        request.setRemoteAddr("127.0.0.1"); // Proxy IP
+        request.setRemoteAddr("127.0.0.1"); // Real IP
         
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        // Exhaust the limit for 10.0.0.1
+        // Exhaust the limit for 127.0.0.1
         for (int i = 0; i < 3; i++) {
             rateLimitFilter.doFilterInternal(request, response, filterChain);
         }
 
-        // 4th request from 10.0.0.1 fails
-        response = new MockHttpServletResponse();
-        rateLimitFilter.doFilterInternal(request, response, filterChain);
-        assertThat(response.getStatus()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS.value());
-
-        // But a direct request from a different IP (or without header) gets its own bucket
-        MockHttpServletRequest newRequest = new MockHttpServletRequest("POST", "/api/v1/auth/login");
-        newRequest.setRemoteAddr("127.0.0.1");
-        MockHttpServletResponse newResponse = new MockHttpServletResponse();
+        // 4th request from a "different" X-Forwarded-For IP, but same real IP
+        MockHttpServletRequest spoofedRequest = new MockHttpServletRequest("POST", "/api/v1/auth/login");
+        spoofedRequest.addHeader("X-Forwarded-For", "20.0.0.2");
+        spoofedRequest.setRemoteAddr("127.0.0.1"); // Same real IP
+        MockHttpServletResponse spoofedResponse = new MockHttpServletResponse();
         
-        rateLimitFilter.doFilterInternal(newRequest, newResponse, filterChain);
-        assertThat(newResponse.getStatus()).isEqualTo(HttpStatus.OK.value()); // It passes!
+        rateLimitFilter.doFilterInternal(spoofedRequest, spoofedResponse, filterChain);
+        
+        // It should still fail, proving X-Forwarded-For is ignored
+        assertThat(spoofedResponse.getStatus()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS.value());
     }
 
     @Test

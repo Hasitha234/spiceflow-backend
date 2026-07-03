@@ -55,7 +55,7 @@ public class Delivery extends BaseEntity {
     @Builder.Default
     private BigDecimal totalCollectedAmount = BigDecimal.ZERO;
 
-    @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "delivery", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
     @Builder.Default
     private List<DeliveryShop> shops = new ArrayList<>();
 }

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class InventoryTransferRequest {
     
     @NotNull(message = "Source warehouse ID is required")
@@ -23,3 +24,4 @@ public class InventoryTransferRequest {
     
     private String reason;
 }
+

@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class RepOrderShopRequest {
     
     @NotNull(message = "Shop ID is required")
@@ -18,3 +19,4 @@ public class RepOrderShopRequest {
     @Valid
     private List<ShopReturnRequest> returns;
 }
+

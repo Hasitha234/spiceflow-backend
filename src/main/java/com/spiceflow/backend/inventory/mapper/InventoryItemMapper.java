@@ -3,9 +3,10 @@ package com.spiceflow.backend.inventory.mapper;
 import com.spiceflow.backend.inventory.dto.response.InventoryItemResponse;
 import com.spiceflow.backend.inventory.entity.InventoryItem;
 import org.mapstruct.Mapper;
+import com.spiceflow.backend.common.mapper.CentralMapperConfig;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(config = CentralMapperConfig.class)
 public interface InventoryItemMapper {
 
     @Mapping(target = "productId", source = "product.id")
@@ -15,3 +16,4 @@ public interface InventoryItemMapper {
     @Mapping(target = "warehouseName", source = "warehouse.name")
     InventoryItemResponse toResponse(InventoryItem item);
 }
+

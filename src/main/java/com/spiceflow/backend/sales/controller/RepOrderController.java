@@ -1,7 +1,7 @@
 package com.spiceflow.backend.sales.controller;
 
 import org.springframework.validation.annotation.Validated;
-import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.sales.dto.request.CreateRepOrderRequest;
 import com.spiceflow.backend.sales.dto.response.RepOrderResponse;
 import com.spiceflow.backend.sales.service.RepOrderService;
@@ -32,10 +32,10 @@ public class RepOrderController {
     @PreAuthorize("hasAuthority('REP_ORDER_CREATE')")
     @Operation(summary = "Create a rep order", description = "Creates a rep order with multiple shops and line items")
     public ResponseEntity<RepOrderResponse> createRepOrder(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody CreateRepOrderRequest request) {
         log.info("User {} creating rep order", currentUser.getId());
-        RepOrderResponse response = repOrderService.createRepOrder(currentUser.getTenantId(), request);
+        RepOrderResponse response = repOrderService.createRepOrder(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -43,11 +43,11 @@ public class RepOrderController {
     @PreAuthorize("hasAuthority('REP_ORDER_VIEW')")
     @Operation(summary = "List rep orders", description = "Returns a paginated list of rep orders")
     public ResponseEntity<Page<RepOrderResponse>> getRepOrders(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) Long repId,
             Pageable pageable) {
         log.info("User {} listing rep orders", currentUser.getId());
-        Page<RepOrderResponse> response = repOrderService.getRepOrders(currentUser.getTenantId(), repId, pageable);
+        Page<RepOrderResponse> response = repOrderService.getRepOrders(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), repId, pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -55,10 +55,12 @@ public class RepOrderController {
     @PreAuthorize("hasAuthority('REP_ORDER_VIEW')")
     @Operation(summary = "Get rep order by ID", description = "Returns details of a specific rep order")
     public ResponseEntity<RepOrderResponse> getRepOrder(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("User {} getting rep order {}", currentUser.getId(), id);
-        RepOrderResponse response = repOrderService.getRepOrder(id, currentUser.getTenantId());
+        RepOrderResponse response = repOrderService.getRepOrder(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
     }
 }
+
+

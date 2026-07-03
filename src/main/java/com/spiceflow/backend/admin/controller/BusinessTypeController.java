@@ -67,3 +67,5 @@ public class BusinessTypeController {
         return ResponseEntity.noContent().build();
     }
 }
+
+

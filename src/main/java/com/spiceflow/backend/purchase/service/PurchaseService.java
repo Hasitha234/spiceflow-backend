@@ -40,7 +40,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class PurchaseService {
 
     private final PurchaseRepository purchaseRepository;
-    private final PurchaseLineItemRepository purchaseLineItemRepository;
     private final TenantRepository tenantRepository;
     private final SupplierService supplierService;
     private final ProductService productService;
@@ -183,3 +182,4 @@ public class PurchaseService {
         return purchaseMapper.toResponse(purchaseRepository.save(purchase));
     }
 }
+

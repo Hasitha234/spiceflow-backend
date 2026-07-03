@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class InventoryMarkDamagedRequest {
     
     @NotNull(message = "Warehouse ID is required")
@@ -19,3 +20,4 @@ public class InventoryMarkDamagedRequest {
     
     private String notes;
 }
+

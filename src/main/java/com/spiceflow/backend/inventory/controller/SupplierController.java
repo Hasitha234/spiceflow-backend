@@ -44,7 +44,7 @@ public class SupplierController {
             @AuthenticationPrincipal User currentUser,
             @RequestParam(required = false) String search,
             @PageableDefault(size = 20, sort = "name") Pageable pageable) {
-        Page<SupplierResponse> page = supplierService.getSuppliers(currentUser.getTenantId(), search, pageable);
+        Page<SupplierResponse> page = supplierService.getSuppliers(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), search, pageable);
         return ResponseEntity.ok(page);
     }
 
@@ -54,7 +54,7 @@ public class SupplierController {
     public ResponseEntity<SupplierResponse> getSupplier(
             @PathVariable Long id,
             @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(supplierService.getSupplier(currentUser.getTenantId(), id));
+        return ResponseEntity.ok(supplierService.getSupplier(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id));
     }
 
     @PostMapping
@@ -63,7 +63,7 @@ public class SupplierController {
     public ResponseEntity<SupplierResponse> createSupplier(
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody SupplierRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(supplierService.createSupplier(currentUser.getTenantId(), request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(supplierService.createSupplier(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request));
     }
 
     @PutMapping("/{id}")
@@ -73,7 +73,7 @@ public class SupplierController {
             @PathVariable Long id,
             @Valid @RequestBody SupplierRequest request,
             @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(supplierService.updateSupplier(currentUser.getTenantId(), id, request));
+        return ResponseEntity.ok(supplierService.updateSupplier(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id, request));
     }
 
     @DeleteMapping("/{id}")
@@ -82,7 +82,8 @@ public class SupplierController {
     public ResponseEntity<Void> deleteSupplier(
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {
-        supplierService.deleteSupplier(currentUser.getTenantId(), id);
+        supplierService.deleteSupplier(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id);
         return ResponseEntity.noContent().build();
     }
 }
+

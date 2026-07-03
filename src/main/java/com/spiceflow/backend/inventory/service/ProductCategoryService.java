@@ -15,6 +15,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 @Slf4j
 @Service
@@ -27,6 +29,7 @@ public class ProductCategoryService {
     private final ProductCategoryMapper productCategoryMapper;
 
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "productCategories", allEntries = true)
     public ProductCategoryResponse createCategory(Long tenantId, ProductCategoryRequest request) {
         log.debug("Creating product category for tenantId: {}, name: {}", tenantId, request.getName());
         try {
@@ -54,6 +57,7 @@ public class ProductCategoryService {
         }
     }
     
+    @Cacheable(value = "productCategories")
     public Page<ProductCategoryResponse> getCategories(Long tenantId, String search, Pageable pageable) {
         log.debug("Fetching product categories for tenantId: {}, search: {}", tenantId, search);
         try {
@@ -70,12 +74,14 @@ public class ProductCategoryService {
         }
     }
     
+    @Cacheable(value = "productCategories")
     public ProductCategoryResponse getCategory(Long id, Long tenantId) {
         log.debug("Fetching product category with ID: {} for tenantId: {}", id, tenantId);
         return productCategoryMapper.toResponse(getCategoryEntity(id, tenantId));
     }
     
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "productCategories", allEntries = true)
     public ProductCategoryResponse updateCategory(Long id, Long tenantId, ProductCategoryRequest request) {
         log.debug("Updating product category with ID: {} for tenantId: {}", id, tenantId);
         try {
@@ -106,6 +112,7 @@ public class ProductCategoryService {
     }
     
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "productCategories", allEntries = true)
     public void deleteCategory(Long id, Long tenantId) {
         log.debug("Deleting product category with ID: {} for tenantId: {}", id, tenantId);
         try {

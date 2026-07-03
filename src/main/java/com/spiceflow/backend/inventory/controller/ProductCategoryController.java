@@ -35,7 +35,7 @@ public class ProductCategoryController {
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody ProductCategoryRequest request) {
         log.info("Received request to create product category: {} by user: {}", request.getName(), currentUser.getId());
-        ProductCategoryResponse response = productCategoryService.createCategory(currentUser.getTenantId(), request);
+        ProductCategoryResponse response = productCategoryService.createCategory(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -46,7 +46,7 @@ public class ProductCategoryController {
             @RequestParam(required = false) String search,
             Pageable pageable) {
         log.info("Received request to fetch product categories by user: {}", currentUser.getId());
-        Page<ProductCategoryResponse> response = productCategoryService.getCategories(currentUser.getTenantId(), search, pageable);
+        Page<ProductCategoryResponse> response = productCategoryService.getCategories(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), search, pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -56,7 +56,7 @@ public class ProductCategoryController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {
         log.info("Received request to fetch product category ID: {} by user: {}", id, currentUser.getId());
-        ProductCategoryResponse response = productCategoryService.getCategory(id, currentUser.getTenantId());
+        ProductCategoryResponse response = productCategoryService.getCategory(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
     }
 
@@ -66,7 +66,7 @@ public class ProductCategoryController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id, @Valid @RequestBody ProductCategoryRequest request) {
         log.info("Received request to update product category ID: {} by user: {}", id, currentUser.getId());
-        ProductCategoryResponse response = productCategoryService.updateCategory(id, currentUser.getTenantId(), request);
+        ProductCategoryResponse response = productCategoryService.updateCategory(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.ok(response);
     }
 
@@ -76,7 +76,8 @@ public class ProductCategoryController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {
         log.info("Received request to delete product category ID: {} by user: {}", id, currentUser.getId());
-        productCategoryService.deleteCategory(id, currentUser.getTenantId());
+        productCategoryService.deleteCategory(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.noContent().build();
     }
 }
+

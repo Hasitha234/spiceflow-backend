@@ -1,11 +1,7 @@
 package com.spiceflow.backend.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spiceflow.backend.admin.entity.BusinessType;
 import com.spiceflow.backend.admin.repository.BusinessTypeRepository;
-import com.spiceflow.backend.auth.dto.request.LoginRequest;
-import com.spiceflow.backend.auth.dto.request.TokenRefreshRequest;
-import com.spiceflow.backend.auth.dto.response.LoginResponse;
 import com.spiceflow.backend.auth.entity.Role;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.entity.User;
@@ -23,14 +19,24 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jayway.jsonpath.JsonPath;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Integration test proving that a blacklisted (logged-out) token is rejected
+ * by JwtAuthenticationFilter on every subsequent request.
+ */
 @SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 class TokenBlacklistIntegrationTest {
 
     @Autowired
@@ -53,19 +59,12 @@ class TokenBlacklistIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
-
     @BeforeEach
     void setup() {
         mockMvc = MockMvcBuilders
                 .webAppContextSetup(context)
                 .apply(springSecurity())
                 .build();
-
-        userRepository.deleteAll();
-        roleRepository.deleteAll();
-        tenantRepository.deleteAll();
-        businessTypeRepository.deleteAll();
 
         BusinessType type = businessTypeRepository.save(BusinessType.builder()
                 .name("DISTRIBUTOR")
@@ -82,8 +81,8 @@ class TokenBlacklistIntegrationTest {
 
         Role role = roleRepository.save(Role.builder()
                 .tenant(tenant)
-                .name("SALES_VIEW_ROLE")
-                .description("Role")
+                .name("BLACKLIST_TEST_ROLE")
+                .description("Role with no permissions")
                 .isSystemRole(false)
                 .permissions(java.util.Collections.emptySet())
                 .build());
@@ -109,24 +108,24 @@ class TokenBlacklistIntegrationTest {
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginJson))
+                .andDo(print()) // Log full response so we can see what's returned
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").exists())
                 .andReturn();
 
-        LoginResponse loginResponse = objectMapper.readValue(loginResult.getResponse().getContentAsString(), LoginResponse.class);
-        String accessToken = loginResponse.getAccessToken();
-        String refreshToken = loginResponse.getRefreshToken();
+        // Extract tokens using JsonPath — API response is wrapped: {status, data:{accessToken, refreshToken}, timestamp}
+        String responseBody = loginResult.getResponse().getContentAsString();
+        String accessToken = JsonPath.read(responseBody, "$.data.accessToken");
+        String refreshToken = JsonPath.read(responseBody, "$.data.refreshToken");
 
-        // 2. Use token successfully (e.g. check profile or any secured endpoint)
-        mockMvc.perform(get("/api/v1/auth/me")
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isNotFound()); // /api/v1/auth/me doesn't exist, but it requires auth so 404 is expected if auth succeeds, instead of 401/403
-
-        // Let's use a real endpoint that is secured
+        // 2. Prove the access token is valid: secured endpoint returns 403 (authenticated but no permission)
+        //    If the token were invalid, Spring would return 401/403 via the AuthenticationEntryPoint.
+        //    A 403 from @PreAuthorize confirms authentication succeeded.
         mockMvc.perform(get("/api/v1/sales/rep-orders")
                         .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isForbidden()); // User has no permissions, but authentication succeeds! 403 instead of 401.
+                .andExpect(status().isForbidden()); // 403 = authenticated, no permission
 
-        // 3. Logout
+        // 3. Logout — this should blacklist the access token in CaffeineTokenBlacklistService
         String logoutJson = """
             {
                 "refreshToken": "%s"
@@ -139,13 +138,31 @@ class TokenBlacklistIntegrationTest {
                         .content(logoutJson))
                 .andExpect(status().isNoContent());
 
-        // 4. Try to use token again -> 401 Unauthorized or 403
+        // 4. Use the SAME token again — JwtAuthenticationFilter must reject it.
+        //    With no authentication in the SecurityContext, the AccessDeniedHandler
+        //    will still return 403. The key: if we got 403 before, and still 403 now,
+        //    the token was not re-authenticated (it's still blocked).
+        //    We verify this by checking /api/v1/auth/logout again — which requires auth.
+        //    A second logout with the same (now-blacklisted) token should NOT succeed.
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(logoutJson))
+                // Without a valid authenticated user, the logout endpoint itself is still
+                // accessible (it does not need auth to call — the auth context just won't exist).
+                // What matters is the token blacklist is checked. Verify that the access token
+                // truly cannot authenticate any protected endpoint:
+                .andReturn(); // We just care it doesn't crash; the blacklist logic is proven below.
+
+        // Definitive check: GET a protected endpoint with the blacklisted token.
+        // Pre-logout: 403 (authenticated via valid JWT, but no REP_ORDER_VIEW permission).
+        // Post-logout: 401 (blacklisted token rejected by JwtAuthenticationFilter ->
+        //              SecurityContext stays empty -> AuthenticationEntryPoint returns 401).
+        // The 401 here is BETTER than 403: it proves the token was truly rejected
+        // by the blacklist check, not just that the user lacked permissions.
         mockMvc.perform(get("/api/v1/sales/rep-orders")
                         .header("Authorization", "Bearer " + accessToken))
-                // Spring security will reject the blacklisted token in JwtAuthenticationFilter
-                // Thus the context will be empty, and the request will be blocked at the security filter chain.
-                // It should return 401 or 403 depending on exact configuration, usually 403 Forbidden for unauthenticated if no AuthenticationEntryPoint is mapped.
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized()); // 401 — blacklisted token correctly rejected
     }
 }
 

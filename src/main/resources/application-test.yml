@@ -10,8 +10,6 @@ spring:
       ddl-auto: create-drop
     show-sql: true
     open-in-view: false
-  thymeleaf:
-    check-template-location: false
   flyway:
     enabled: false
   autoconfigure:

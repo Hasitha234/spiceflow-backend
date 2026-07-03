@@ -37,7 +37,7 @@ public class InventoryTransactionController {
             @Valid @RequestBody InventoryTransactionRequest request) {
         log.info("Received request to create inventory transaction type: {} for item: {} by user: {}", 
             request.getTransactionType(), request.getInventoryItemId(), currentUser.getId());
-        InventoryTransactionResponse response = transactionService.recordTransaction(currentUser.getTenantId(), request);
+        InventoryTransactionResponse response = transactionService.recordTransaction(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -49,7 +49,7 @@ public class InventoryTransactionController {
             @RequestParam(required = false) String type,
             Pageable pageable) {
         log.info("Received request to fetch inventory transactions by user: {}", currentUser.getId());
-        Page<InventoryTransactionResponse> response = transactionService.getTransactions(currentUser.getTenantId(), inventoryItemId, type, pageable);
+        Page<InventoryTransactionResponse> response = transactionService.getTransactions(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), inventoryItemId, type, pageable);
         return ResponseEntity.ok(response);
     }
 
@@ -59,7 +59,8 @@ public class InventoryTransactionController {
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {
         log.info("Received request to fetch inventory transaction ID: {} by user: {}", id, currentUser.getId());
-        InventoryTransactionResponse response = transactionService.getTransaction(id, currentUser.getTenantId());
+        InventoryTransactionResponse response = transactionService.getTransaction(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
     }
 }
+

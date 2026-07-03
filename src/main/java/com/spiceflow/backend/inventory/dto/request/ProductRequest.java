@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class ProductRequest {
     
     @NotBlank(message = "SKU is required")
@@ -37,3 +38,4 @@ public class ProductRequest {
     private Integer soldUnitsPerBox;
     private BigDecimal ratePerSoldUnit;
 }
+

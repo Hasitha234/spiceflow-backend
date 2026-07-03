@@ -99,7 +99,7 @@ public class AdminService {
         User owner = User.builder()
             .tenant(tenant)
             .email(request.getOwnerEmail())
-            .passwordHash(passwordEncoder.encode(request.getOwnerPassword()))
+            .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.getOwnerPassword()), "Password hash cannot be null"))
             .assignedRole(ownerRole)
             .build();
         userRepository.save(owner);

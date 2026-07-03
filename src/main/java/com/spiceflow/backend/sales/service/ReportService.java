@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Async;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -26,10 +28,10 @@ public class ReportService {
 
     private final DeliveryRepository deliveryRepository;
     private final ShopRepository shopRepository;
-    private final RepRepository repRepository;
     private final InventoryItemRepository inventoryItemRepository;
 
-    public SalesSummaryResponse getSalesSummary(Long tenantId, LocalDate startDate, LocalDate endDate) {
+    @Async
+    public CompletableFuture<SalesSummaryResponse> getSalesSummary(Long tenantId, LocalDate startDate, LocalDate endDate) {
         log.info("Generating sales summary for tenant {}, from {} to {}", tenantId, startDate, endDate);
         
         List<com.spiceflow.backend.sales.entity.Delivery> deliveries = deliveryRepository.findDeliveriesInDateRange(tenantId, startDate, endDate);
@@ -67,7 +69,7 @@ public class ReportService {
             .build();
             
         log.debug("Sales summary calculated: Net Sales = {}, Collected = {}", netSales, totalCollected);
-        return response;
+        return CompletableFuture.completedFuture(response);
     }
 
     public List<ShopOutstandingResponse> getShopOutstandings(Long tenantId) {
@@ -160,3 +162,4 @@ public class ReportService {
         return performances;
     }
 }
+

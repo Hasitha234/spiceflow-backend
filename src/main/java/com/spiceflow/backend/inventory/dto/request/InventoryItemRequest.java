@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class InventoryItemRequest {
     
     @NotNull(message = "Product ID is required")
@@ -26,3 +27,4 @@ public class InventoryItemRequest {
     
     private LocalDate expirationDate;
 }
+
