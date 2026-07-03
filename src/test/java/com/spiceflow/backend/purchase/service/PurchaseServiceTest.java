@@ -89,16 +89,8 @@ class PurchaseServiceTest {
 
     @Test
     void createPurchase_Success() {
-        CreatePurchaseRequest request = new CreatePurchaseRequest();
-        request.setInvoiceNo("INV-123");
-        request.setSupplierId(1L);
-        PurchaseLineItemRequest lineItem = new PurchaseLineItemRequest();
-        lineItem.setProductId(1L);
-        lineItem.setSoldQuantity(10);
-        lineItem.setRate(BigDecimal.TEN);
-        lineItem.setNoOfBoxes(5);
-        request.setLineItems(List.of(lineItem));
-
+        PurchaseLineItemRequest lineItem = PurchaseLineItemRequest.builder().productId(1L).soldQuantity(10).rate(java.math.BigDecimal.TEN).noOfBoxes(1).build();
+        CreatePurchaseRequest request = CreatePurchaseRequest.builder().invoiceNo("INV-123").supplierId(1L).lineItems(java.util.List.of(lineItem)).build();
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(supplierService.getSupplierEntity(1L, 1L)).thenReturn(supplier);
         when(productService.getProductEntity(1L, 1L)).thenReturn(product);
@@ -115,7 +107,7 @@ class PurchaseServiceTest {
     void createPurchase_TenantNotFound() {
         when(tenantRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> purchaseService.createPurchase(1L, new CreatePurchaseRequest()));
+        assertThrows(ResourceNotFoundException.class, () -> purchaseService.createPurchase(1L, CreatePurchaseRequest.builder().supplierId(1L).build()));
     }
 
     @Test

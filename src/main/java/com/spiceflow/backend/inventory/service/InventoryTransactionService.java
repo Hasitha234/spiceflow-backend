@@ -32,25 +32,25 @@ public class InventoryTransactionService {
     @Transactional(rollbackFor = Exception.class)
     public InventoryTransactionResponse recordTransaction(Long tenantId, InventoryTransactionRequest request) {
         log.debug("Recording transaction for tenantId: {}, inventoryItemId: {}, type: {}", 
-                 tenantId, request.getInventoryItemId(), request.getTransactionType());
+                 tenantId, request.inventoryItemId(), request.transactionType());
         try {
             Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant with ID " + tenantId + " not found"));
                 
-            InventoryItem item = inventoryItemRepository.findByIdAndTenantId(request.getInventoryItemId(), tenantId)
+            InventoryItem item = inventoryItemRepository.findByIdAndTenantId(request.inventoryItemId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
                 
-            validateTransaction(item, request.getTransactionType(), request.getQuantity());
+            validateTransaction(item, request.transactionType(), request.quantity());
             
             // Update inventory quantities
-            updateInventoryQuantities(item, request.getTransactionType(), request.getQuantity());
+            updateInventoryQuantities(item, request.transactionType(), request.quantity());
             
             InventoryTransaction transaction = InventoryTransaction.builder()
                 .inventoryItem(item)
-                .transactionType(request.getTransactionType())
-                .quantity(request.getQuantity())
-                .referenceId(request.getReferenceId())
-                .notes(request.getNotes())
+                .transactionType(request.transactionType())
+                .quantity(request.quantity())
+                .referenceId(request.referenceId())
+                .notes(request.notes())
                 .tenant(tenant)
                 .build();
                 

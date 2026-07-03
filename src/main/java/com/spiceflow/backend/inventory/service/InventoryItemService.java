@@ -39,30 +39,30 @@ public class InventoryItemService {
     @Transactional(rollbackFor = Exception.class)
     public InventoryItemResponse createInventoryItem(Long tenantId, InventoryItemRequest request) {
         log.debug("Creating inventory item for tenantId: {}, productId: {}, warehouseId: {}", 
-                 tenantId, request.getProductId(), request.getWarehouseId());
+                 tenantId, request.productId(), request.warehouseId());
         try {
             Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant with ID " + tenantId + " not found"));
             
             // Check if product exists in this warehouse already
             inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
-                    request.getProductId(), request.getWarehouseId(), tenantId)
+                    request.productId(), request.warehouseId(), tenantId)
                 .ifPresent(i -> {
                     throw new BusinessRuleViolationException(
-                        "Inventory item already exists for product " + request.getProductId() + 
-                        " in warehouse " + request.getWarehouseId());
+                        "Inventory item already exists for product " + request.productId() + 
+                        " in warehouse " + request.warehouseId());
                 });
                 
-            Product product = productService.getProductEntity(request.getProductId(), tenantId);
-            Warehouse warehouse = warehouseService.getWarehouseEntity(request.getWarehouseId(), tenantId);
+            Product product = productService.getProductEntity(request.productId(), tenantId);
+            Warehouse warehouse = warehouseService.getWarehouseEntity(request.warehouseId(), tenantId);
             
             InventoryItem item = InventoryItem.builder()
                 .product(product)
                 .warehouse(warehouse)
-                .quantityAvailable(request.getQuantityAvailable() != null ? request.getQuantityAvailable() : 0)
-                .quantityReserved(request.getQuantityReserved() != null ? request.getQuantityReserved() : 0)
-                .batchNumber(request.getBatchNumber())
-                .expirationDate(request.getExpirationDate())
+                .quantityAvailable(request.quantityAvailable() != null ? request.quantityAvailable() : 0)
+                .quantityReserved(request.quantityReserved() != null ? request.quantityReserved() : 0)
+                .batchNumber(request.batchNumber())
+                .expirationDate(request.expirationDate())
                 .tenant(tenant)
                 .build();
                 
@@ -109,10 +109,10 @@ public class InventoryItemService {
         try {
             InventoryItem item = getInventoryItemEntity(id, tenantId);
             
-            item.setQuantityAvailable(request.getQuantityAvailable() != null ? request.getQuantityAvailable() : item.getQuantityAvailable());
-            item.setQuantityReserved(request.getQuantityReserved() != null ? request.getQuantityReserved() : item.getQuantityReserved());
-            item.setBatchNumber(request.getBatchNumber());
-            item.setExpirationDate(request.getExpirationDate());
+            item.setQuantityAvailable(request.quantityAvailable() != null ? request.quantityAvailable() : item.getQuantityAvailable());
+            item.setQuantityReserved(request.quantityReserved() != null ? request.quantityReserved() : item.getQuantityReserved());
+            item.setBatchNumber(request.batchNumber());
+            item.setExpirationDate(request.expirationDate());
             
             InventoryItem updatedItem = inventoryItemRepository.save(item);
             log.info("Successfully updated inventory item with ID: {} for tenantId: {}", id, tenantId);
@@ -145,9 +145,9 @@ public class InventoryItemService {
     
     @Transactional(rollbackFor = Exception.class)
     public void transferInventory(Long tenantId, InventoryTransferRequest request) {
-        log.info("Transferring inventory product {} from warehouse {} to warehouse {}", request.getProductId(), request.getFromWarehouseId(), request.getToWarehouseId());
+        log.info("Transferring inventory product {} from warehouse {} to warehouse {}", request.productId(), request.fromWarehouseId(), request.toWarehouseId());
         
-        if (request.getFromWarehouseId().equals(request.getToWarehouseId())) {
+        if (request.fromWarehouseId().equals(request.toWarehouseId())) {
             throw new BusinessRuleViolationException("Source and destination warehouses cannot be the same");
         }
         
@@ -155,43 +155,43 @@ public class InventoryItemService {
             .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
         InventoryItem sourceItem = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
-            request.getProductId(), request.getFromWarehouseId(), tenantId)
+            request.productId(), request.fromWarehouseId(), tenantId)
             .orElseThrow(() -> new BusinessRuleViolationException("Product not found in source warehouse"));
             
-        if (sourceItem.getQuantityAvailable() < request.getQuantity()) {
+        if (sourceItem.getQuantityAvailable() < request.quantity()) {
             throw new BusinessRuleViolationException("Insufficient quantity in source warehouse");
         }
         
         // Deduct from source
-        sourceItem.setQuantityAvailable(sourceItem.getQuantityAvailable() - request.getQuantity());
+        sourceItem.setQuantityAvailable(sourceItem.getQuantityAvailable() - request.quantity());
         inventoryItemRepository.save(sourceItem);
         
         // Transaction OUT
         InventoryTransaction outTx = InventoryTransaction.builder()
             .inventoryItem(sourceItem)
             .transactionType("TRANSFER_OUT")
-            .quantity(-request.getQuantity())
-            .referenceId("TO-" + request.getToWarehouseId())
-            .notes(request.getReason())
+            .quantity(-request.quantity())
+            .referenceId("TO-" + request.toWarehouseId())
+            .notes(request.reason())
             .tenant(tenant)
             .build();
         inventoryTransactionRepository.save(outTx);
         
         // Add to dest (create if not exists)
         Optional<InventoryItem> destItemOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
-            request.getProductId(), request.getToWarehouseId(), tenantId);
+            request.productId(), request.toWarehouseId(), tenantId);
             
         InventoryItem destItem;
         if (destItemOpt.isPresent()) {
             destItem = destItemOpt.get();
-            destItem.setQuantityAvailable(destItem.getQuantityAvailable() + request.getQuantity());
+            destItem.setQuantityAvailable(destItem.getQuantityAvailable() + request.quantity());
         } else {
-            Product product = productService.getProductEntity(request.getProductId(), tenantId);
-            Warehouse destWarehouse = warehouseService.getWarehouseEntity(request.getToWarehouseId(), tenantId);
+            Product product = productService.getProductEntity(request.productId(), tenantId);
+            Warehouse destWarehouse = warehouseService.getWarehouseEntity(request.toWarehouseId(), tenantId);
             destItem = InventoryItem.builder()
                 .product(product)
                 .warehouse(destWarehouse)
-                .quantityAvailable(request.getQuantity())
+                .quantityAvailable(request.quantity())
                 .tenant(tenant)
                 .build();
         }
@@ -201,9 +201,9 @@ public class InventoryItemService {
         InventoryTransaction inTx = InventoryTransaction.builder()
             .inventoryItem(destItem)
             .transactionType("TRANSFER_IN")
-            .quantity(request.getQuantity())
-            .referenceId("FROM-" + request.getFromWarehouseId())
-            .notes(request.getReason())
+            .quantity(request.quantity())
+            .referenceId("FROM-" + request.fromWarehouseId())
+            .notes(request.reason())
             .tenant(tenant)
             .build();
         inventoryTransactionRepository.save(inTx);
@@ -211,27 +211,27 @@ public class InventoryItemService {
     
     @Transactional(rollbackFor = Exception.class)
     public void markDamaged(Long tenantId, InventoryMarkDamagedRequest request) {
-        log.info("Marking {} of product {} as damaged in warehouse {}", request.getQuantity(), request.getProductId(), request.getWarehouseId());
+        log.info("Marking {} of product {} as damaged in warehouse {}", request.quantity(), request.productId(), request.warehouseId());
         
         Tenant tenant = tenantRepository.findById(tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
         InventoryItem item = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
-            request.getProductId(), request.getWarehouseId(), tenantId)
+            request.productId(), request.warehouseId(), tenantId)
             .orElseThrow(() -> new BusinessRuleViolationException("Product not found in warehouse"));
             
-        if (item.getQuantityAvailable() < request.getQuantity()) {
+        if (item.getQuantityAvailable() < request.quantity()) {
             throw new BusinessRuleViolationException("Insufficient quantity to mark as damaged");
         }
         
-        item.setQuantityAvailable(item.getQuantityAvailable() - request.getQuantity());
+        item.setQuantityAvailable(item.getQuantityAvailable() - request.quantity());
         inventoryItemRepository.save(item);
         
         InventoryTransaction tx = InventoryTransaction.builder()
             .inventoryItem(item)
             .transactionType("DAMAGED_OUT")
-            .quantity(-request.getQuantity())
-            .notes(request.getNotes())
+            .quantity(-request.quantity())
+            .notes(request.notes())
             .tenant(tenant)
             .build();
         inventoryTransactionRepository.save(tx);

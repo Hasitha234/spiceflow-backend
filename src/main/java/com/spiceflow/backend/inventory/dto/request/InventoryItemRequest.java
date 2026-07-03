@@ -1,30 +1,32 @@
 package com.spiceflow.backend.inventory.dto.request;
+import lombok.Builder;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
-import lombok.Data;
 
-@Data
-@SuppressWarnings("NullAway.Init")
-public class InventoryItemRequest {
+@Builder
+public record InventoryItemRequest(
+
     
     @NotNull(message = "Product ID is required")
-    private Long productId;
+    Long productId,
     
     @NotNull(message = "Warehouse ID is required")
-    private Long warehouseId;
+    Long warehouseId,
     
     @NotNull(message = "Quantity available is required")
     @Min(value = 0, message = "Quantity available must be zero or greater")
-    private Integer quantityAvailable;
+    Integer quantityAvailable,
     
     @NotNull(message = "Quantity reserved is required")
     @Min(value = 0, message = "Quantity reserved must be zero or greater")
-    private Integer quantityReserved;
+    Integer quantityReserved,
     
-    private String batchNumber;
+    String batchNumber,
     
-    private LocalDate expirationDate;
-}
+    LocalDate expirationDate
 
+
+
+) {}

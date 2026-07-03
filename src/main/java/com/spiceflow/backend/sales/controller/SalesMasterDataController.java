@@ -35,7 +35,7 @@ public class SalesMasterDataController {
     // --- REPS ---
     @PostMapping("/reps")
     @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
-    @Operation(summary = "Create a rep")
+    @Operation(summary = "Create a rep", operationId = "createRep")
     public ResponseEntity<RepResponse> createRep(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody RepRequest request) {
@@ -45,7 +45,7 @@ public class SalesMasterDataController {
 
     @GetMapping("/reps")
     @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
-    @Operation(summary = "List reps")
+    @Operation(summary = "List reps", operationId = "getReps")
     public ResponseEntity<Page<RepResponse>> getReps(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String name,
@@ -56,7 +56,7 @@ public class SalesMasterDataController {
     // --- DRIVERS ---
     @PostMapping("/drivers")
     @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
-    @Operation(summary = "Create a driver")
+    @Operation(summary = "Create a driver", operationId = "createDriver")
     public ResponseEntity<DriverResponse> createDriver(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody DriverRequest request) {
@@ -66,7 +66,7 @@ public class SalesMasterDataController {
 
     @GetMapping("/drivers")
     @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
-    @Operation(summary = "List drivers")
+    @Operation(summary = "List drivers", operationId = "getDrivers")
     public ResponseEntity<Page<DriverResponse>> getDrivers(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String name,
@@ -77,7 +77,7 @@ public class SalesMasterDataController {
     // --- SHOPS ---
     @PostMapping("/shops")
     @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
-    @Operation(summary = "Create a shop")
+    @Operation(summary = "Create a shop", operationId = "createShop")
     public ResponseEntity<ShopResponse> createShop(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody ShopRequest request) {
@@ -87,7 +87,7 @@ public class SalesMasterDataController {
 
     @GetMapping("/shops")
     @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
-    @Operation(summary = "List shops")
+    @Operation(summary = "List shops", operationId = "getShops")
     public ResponseEntity<Page<ShopResponse>> getShops(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String name,

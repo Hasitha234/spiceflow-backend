@@ -50,12 +50,8 @@ class AdminServiceIntegrationTest {
                 .build();
         type = businessTypeRepository.save(type);
 
-        CreateTenantRequest request = new CreateTenantRequest();
-        request.setBusinessName("Rollback Test Business");
-        request.setOwnerEmail("rollback@test.com");
-        request.setOwnerPassword("password123");
-        request.setBusinessTypeId(type.getId());
-
+        CreateTenantRequest request = CreateTenantRequest.builder().businessName("Test Biz").businessTypeId(1L).ownerEmail("owner@test.com").ownerPassword("pass1234").build();
+                                
         // We will create a proxy/spy or just force an exception in the service
         // Actually, to test checked exception rollback without modifying service, 
         // we can temporarily add a throw new Exception() in the service.

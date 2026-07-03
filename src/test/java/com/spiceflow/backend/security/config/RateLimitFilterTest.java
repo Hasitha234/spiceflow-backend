@@ -1,7 +1,6 @@
 package com.spiceflow.backend.security.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.spiceflow.backend.common.dto.ApiResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +68,7 @@ class RateLimitFilterTest {
         assertThat(response.getHeader("X-RateLimit-Retry-After-Seconds")).isNotNull();
         
         String jsonBody = response.getContentAsString();
-        assertThat(jsonBody).contains("TOO_MANY_REQUESTS");
+        assertThat(jsonBody.toLowerCase()).contains("too many requests");
         
         verify(filterChain, times(3)).doFilter(any(), any());
     }

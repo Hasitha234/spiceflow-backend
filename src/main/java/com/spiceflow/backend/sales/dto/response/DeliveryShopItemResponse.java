@@ -1,25 +1,26 @@
 package com.spiceflow.backend.sales.dto.response;
-
 import lombok.Builder;
-import lombok.Data;
+
 import java.math.BigDecimal;
 
-@Data
 @Builder
-public class DeliveryShopItemResponse {
+public record DeliveryShopItemResponse(
+
     
-    private Long id;
-    private Long productId;
-    private String productName;
-    private String productSku;
+    Long id,
+    Long productId,
+    String productName,
+    String productSku,
     
-    private Integer quantityDelivered;
-    private String unitType;
-    private BigDecimal rate;
+    Integer quantityDelivered,
+    String unitType,
+    BigDecimal rate,
     
-    private BigDecimal grossAmount;
-    private BigDecimal discountAmount;
-    private BigDecimal netAmount;
+    BigDecimal grossAmount,
+    BigDecimal discountAmount,
+    BigDecimal netAmount,
     
-    private Boolean isFreeItem;
-}
+    Boolean isFreeItem
+
+
+) {}

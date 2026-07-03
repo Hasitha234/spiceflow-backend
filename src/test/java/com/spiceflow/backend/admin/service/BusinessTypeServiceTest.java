@@ -40,25 +40,21 @@ class BusinessTypeServiceTest {
 
     @Test
     void createBusinessType_Success() {
-        BusinessTypeRequest request = new BusinessTypeRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "New Retail");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "description", "Description");
-        when(businessTypeRepository.existsByName(request.getName())).thenReturn(false);
+        BusinessTypeRequest request = BusinessTypeRequest.builder().name("Retail").description("Retail business").build();
+        when(businessTypeRepository.existsByName(request.name())).thenReturn(false);
         when(businessTypeRepository.save(any(BusinessType.class))).thenReturn(businessType);
 
         BusinessTypeResponse response = businessTypeService.createBusinessType(request);
 
         assertNotNull(response);
-        assertEquals(businessType.getName(), response.getName());
+        assertEquals(businessType.getName(), response.name());
         verify(businessTypeRepository).save(any(BusinessType.class));
     }
 
     @Test
     void createBusinessType_NameExists() {
-        BusinessTypeRequest request = new BusinessTypeRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Retail");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "description", "Description");
-        when(businessTypeRepository.existsByName(request.getName())).thenReturn(true);
+        BusinessTypeRequest request = BusinessTypeRequest.builder().name("Retail").description("Retail business").build();
+        when(businessTypeRepository.existsByName(request.name())).thenReturn(true);
 
         assertThrows(BusinessRuleViolationException.class, () -> businessTypeService.createBusinessType(request));
     }
@@ -70,7 +66,7 @@ class BusinessTypeServiceTest {
         BusinessTypeResponse response = businessTypeService.getBusinessType(1L);
 
         assertNotNull(response);
-        assertEquals(businessType.getName(), response.getName());
+        assertEquals(businessType.getName(), response.name());
     }
 
     @Test
@@ -88,16 +84,14 @@ class BusinessTypeServiceTest {
 
         assertNotNull(responses);
         assertEquals(1, responses.size());
-        assertEquals(businessType.getName(), responses.get(0).getName());
+        assertEquals(businessType.getName(), responses.get(0).name());
     }
 
     @Test
     void updateBusinessType_Success() {
-        BusinessTypeRequest request = new BusinessTypeRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Updated Retail");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "description", "New Description");
+        BusinessTypeRequest request = BusinessTypeRequest.builder().name("Updated Type").description("Retail business").build();
         when(businessTypeRepository.findById(1L)).thenReturn(Optional.of(businessType));
-        when(businessTypeRepository.existsByName(request.getName())).thenReturn(false);
+        when(businessTypeRepository.existsByName(request.name())).thenReturn(false);
         when(businessTypeRepository.save(any(BusinessType.class))).thenReturn(businessType);
 
         BusinessTypeResponse response = businessTypeService.updateBusinessType(1L, request);
@@ -108,11 +102,9 @@ class BusinessTypeServiceTest {
 
     @Test
     void updateBusinessType_NameExists() {
-        BusinessTypeRequest request = new BusinessTypeRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Existing Retail");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "description", "New Description");
+        BusinessTypeRequest request = BusinessTypeRequest.builder().name("Updated Type").description("Retail business").build();
         when(businessTypeRepository.findById(1L)).thenReturn(Optional.of(businessType));
-        when(businessTypeRepository.existsByName(request.getName())).thenReturn(true);
+        when(businessTypeRepository.existsByName(request.name())).thenReturn(true);
 
         assertThrows(BusinessRuleViolationException.class, () -> businessTypeService.updateBusinessType(1L, request));
     }

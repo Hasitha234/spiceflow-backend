@@ -71,10 +71,11 @@ public class InventoryTransactionServiceTest {
 
     @Test
     void testRecordTransaction_In() {
-        InventoryTransactionRequest request = new InventoryTransactionRequest();
-        request.setInventoryItemId(100L);
-        request.setTransactionType("IN");
-        request.setQuantity(50);
+        InventoryTransactionRequest request = InventoryTransactionRequest.builder()
+            .inventoryItemId(100L)
+            .transactionType("IN")
+            .quantity(50)
+            .build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
         when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
@@ -95,9 +96,9 @@ public class InventoryTransactionServiceTest {
         InventoryTransactionResponse response = transactionService.recordTransaction(1L, request);
 
         assertNotNull(response);
-        assertEquals(200L, response.getId());
-        assertEquals("IN", response.getTransactionType());
-        assertEquals(50, response.getQuantity());
+        assertEquals(200L, response.id());
+        assertEquals("IN", response.transactionType());
+        assertEquals(50, response.quantity());
         
         // Assert inventory item was updated
         assertEquals(150, mockItem.getQuantityAvailable());
@@ -106,10 +107,11 @@ public class InventoryTransactionServiceTest {
     
     @Test
     void testRecordTransaction_Out_Success() {
-        InventoryTransactionRequest request = new InventoryTransactionRequest();
-        request.setInventoryItemId(100L);
-        request.setTransactionType("OUT");
-        request.setQuantity(50);
+        InventoryTransactionRequest request = InventoryTransactionRequest.builder()
+            .inventoryItemId(100L)
+            .transactionType("OUT")
+            .quantity(50)
+            .build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
         when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
@@ -130,16 +132,17 @@ public class InventoryTransactionServiceTest {
         InventoryTransactionResponse response = transactionService.recordTransaction(1L, request);
 
         assertNotNull(response);
-        assertEquals(200L, response.getId());
+        assertEquals(200L, response.id());
         assertEquals(50, mockItem.getQuantityAvailable()); // 100 - 50 = 50
     }
     
     @Test
     void testRecordTransaction_Out_InsufficientQuantity() {
-        InventoryTransactionRequest request = new InventoryTransactionRequest();
-        request.setInventoryItemId(100L);
-        request.setTransactionType("OUT");
-        request.setQuantity(150); // Trying to take more than available (100)
+        InventoryTransactionRequest request = InventoryTransactionRequest.builder()
+            .inventoryItemId(100L)
+            .transactionType("OUT")
+            .quantity(150)
+            .build(); // Trying to take more than available (100)
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
         when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
@@ -151,10 +154,11 @@ public class InventoryTransactionServiceTest {
 
     @Test
     void testRecordTransaction_Reserve_Success() {
-        InventoryTransactionRequest request = new InventoryTransactionRequest();
-        request.setInventoryItemId(100L);
-        request.setTransactionType("RESERVE");
-        request.setQuantity(20);
+        InventoryTransactionRequest request = InventoryTransactionRequest.builder()
+            .inventoryItemId(100L)
+            .transactionType("RESERVE")
+            .quantity(20)
+            .build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
         when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
@@ -170,10 +174,11 @@ public class InventoryTransactionServiceTest {
 
     @Test
     void testRecordTransaction_Unreserve_Success() {
-        InventoryTransactionRequest request = new InventoryTransactionRequest();
-        request.setInventoryItemId(100L);
-        request.setTransactionType("UNRESERVE");
-        request.setQuantity(5);
+        InventoryTransactionRequest request = InventoryTransactionRequest.builder()
+            .inventoryItemId(100L)
+            .transactionType("UNRESERVE")
+            .quantity(5)
+            .build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
         when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
@@ -189,10 +194,11 @@ public class InventoryTransactionServiceTest {
 
     @Test
     void testRecordTransaction_ShipReserved_Success() {
-        InventoryTransactionRequest request = new InventoryTransactionRequest();
-        request.setInventoryItemId(100L);
-        request.setTransactionType("SHIP_RESERVED");
-        request.setQuantity(10);
+        InventoryTransactionRequest request = InventoryTransactionRequest.builder()
+            .inventoryItemId(100L)
+            .transactionType("SHIP_RESERVED")
+            .quantity(10)
+            .build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
         when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
@@ -208,10 +214,11 @@ public class InventoryTransactionServiceTest {
 
     @Test
     void testRecordTransaction_AdjustUp_Success() {
-        InventoryTransactionRequest request = new InventoryTransactionRequest();
-        request.setInventoryItemId(100L);
-        request.setTransactionType("ADJUST_UP");
-        request.setQuantity(10);
+        InventoryTransactionRequest request = InventoryTransactionRequest.builder()
+            .inventoryItemId(100L)
+            .transactionType("ADJUST_UP")
+            .quantity(10)
+            .build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
         when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
@@ -226,10 +233,11 @@ public class InventoryTransactionServiceTest {
 
     @Test
     void testRecordTransaction_AdjustDown_Success() {
-        InventoryTransactionRequest request = new InventoryTransactionRequest();
-        request.setInventoryItemId(100L);
-        request.setTransactionType("ADJUST_DOWN");
-        request.setQuantity(10);
+        InventoryTransactionRequest request = InventoryTransactionRequest.builder()
+            .inventoryItemId(100L)
+            .transactionType("ADJUST_DOWN")
+            .quantity(10)
+            .build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
         when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
@@ -244,10 +252,11 @@ public class InventoryTransactionServiceTest {
 
     @Test
     void testRecordTransaction_AdjustDown_Insufficient() {
-        InventoryTransactionRequest request = new InventoryTransactionRequest();
-        request.setInventoryItemId(100L);
-        request.setTransactionType("ADJUST_DOWN");
-        request.setQuantity(200);
+        InventoryTransactionRequest request = InventoryTransactionRequest.builder()
+            .inventoryItemId(100L)
+            .transactionType("ADJUST_DOWN")
+            .quantity(200)
+            .build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
         when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));

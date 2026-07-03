@@ -33,35 +33,35 @@ public class BusinessTypeController {
     private final BusinessTypeService businessTypeService;
 
     @PostMapping
-    @Operation(summary = "Create a new business type", description = "Provision a new business type for tenants")
+    @Operation(summary = "Create a new business type", description = "Provision a new business type for tenants", operationId = "createBusinessType")
     public ResponseEntity<BusinessTypeResponse> createBusinessType(@Valid @RequestBody BusinessTypeRequest request) {
         BusinessTypeResponse response = businessTypeService.createBusinessType(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get a business type by ID", description = "Fetch details of a single business type")
+    @Operation(summary = "Get a business type by ID", description = "Fetch details of a single business type", operationId = "getBusinessType")
     public ResponseEntity<BusinessTypeResponse> getBusinessType(@PathVariable Long id) {
         BusinessTypeResponse response = businessTypeService.getBusinessType(id);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
-    @Operation(summary = "List all business types", description = "Fetch all available business types")
+    @Operation(summary = "List all business types", description = "Fetch all available business types", operationId = "getAllBusinessTypes")
     public ResponseEntity<List<BusinessTypeResponse>> getAllBusinessTypes() {
         List<BusinessTypeResponse> responses = businessTypeService.getAllBusinessTypes();
         return ResponseEntity.ok(responses);
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update a business type", description = "Update the name or description of a business type")
+    @Operation(summary = "Update a business type", description = "Update the name or description of a business type", operationId = "updateBusinessType")
     public ResponseEntity<BusinessTypeResponse> updateBusinessType(@PathVariable Long id, @Valid @RequestBody BusinessTypeRequest request) {
         BusinessTypeResponse response = businessTypeService.updateBusinessType(id, request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a business type", description = "Delete a business type if no tenants are using it")
+    @Operation(summary = "Delete a business type", description = "Delete a business type if no tenants are using it", operationId = "deleteBusinessType")
     public ResponseEntity<Void> deleteBusinessType(@PathVariable Long id) {
         businessTypeService.deleteBusinessType(id);
         return ResponseEntity.noContent().build();

@@ -51,8 +51,7 @@ class ProductCategoryServiceTest {
 
     @Test
     void createCategory_Success() {
-        ProductCategoryRequest request = new ProductCategoryRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Category 1");
+        ProductCategoryRequest request = ProductCategoryRequest.builder().name("Category 1").description("Spices category").build();
         
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(productCategoryRepository.save(any(ProductCategory.class))).thenReturn(category);
@@ -66,9 +65,7 @@ class ProductCategoryServiceTest {
 
     @Test
     void createCategory_WithParent_Success() {
-        ProductCategoryRequest request = new ProductCategoryRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Category 2");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "parentCategoryId", 1L);
+        ProductCategoryRequest request = ProductCategoryRequest.builder().name("Category 2").parentCategoryId(1L).description("Spices category").build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(productCategoryRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(category));
@@ -122,8 +119,7 @@ class ProductCategoryServiceTest {
 
     @Test
     void updateCategory_Success() {
-        ProductCategoryRequest request = new ProductCategoryRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Updated Category");
+        ProductCategoryRequest request = ProductCategoryRequest.builder().name("Updated Category").description("Spices category").build();
 
         when(productCategoryRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(category));
         when(productCategoryRepository.save(any(ProductCategory.class))).thenReturn(category);
@@ -137,9 +133,7 @@ class ProductCategoryServiceTest {
 
     @Test
     void updateCategory_OwnParent_ThrowsException() {
-        ProductCategoryRequest request = new ProductCategoryRequest();
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "name", "Updated Category");
-        org.springframework.test.util.ReflectionTestUtils.setField(request, "parentCategoryId", 1L);
+        ProductCategoryRequest request = ProductCategoryRequest.builder().name("Updated Category").parentCategoryId(1L).description("Spices category").build();
 
         when(productCategoryRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(category));
 

@@ -19,27 +19,30 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'maven' # speeds up builds by caching dependencies
+          cache: 'maven'
           
       - name: Ensure wrapper is executable
         run: chmod +x ./mvnw
 
-      - name: Build, test and Quality Checks
-        # This single command runs:
-        # 1. Compilation
-        # 2. Unit Tests (JUnit 5)
-        # 3. Checkstyle (Google Java style)
-        # 4. SpotBugs (static bug analysis)
-        # 5. JaCoCo (test coverage check)
+      - name: Build, Test and Quality Checks (JUnit 5, Checkstyle, SpotBugs, JaCoCo)
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: ./mvnw clean verify -Dspring.profiles.active=test
 
+      - name: Generate and Validate OpenAPI Contract
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: ./mvnw spring-boot:start springdoc-openapi:generate spring-boot:stop -Popenapi -DskipTests
 
-      - name: Upload jacoco coverage report
+      - name: Upload JaCoCo Coverage Report
         uses: actions/upload-artifact@v4
-        if: always() #Upload even if previous step fails
+        if: always()
         with:
           name: jacoco-report
           path: target/site/jacoco/
-      
+
+      - name: Upload OpenAPI Contract Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-contract
+          path: target/openapi.yaml

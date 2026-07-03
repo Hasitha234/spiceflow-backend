@@ -33,7 +33,7 @@ public class ReportController {
 
     @GetMapping("/sales-summary")
     @PreAuthorize("hasAuthority('REPORTS_VIEW')")
-    @Operation(summary = "Get sales summary", description = "Returns a summary of sales, returns, and collections for a date range")
+    @Operation(summary = "Get sales summary", description = "Returns a summary of sales, returns, and collections for a date range", operationId = "getSalesSummary")
     public CompletableFuture<ResponseEntity<SalesSummaryResponse>> getSalesSummary(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -45,7 +45,7 @@ public class ReportController {
 
     @GetMapping("/shop-outstanding")
     @PreAuthorize("hasAuthority('REPORTS_VIEW')")
-    @Operation(summary = "Get shop outstanding", description = "Returns a list of shops with their outstanding balances")
+    @Operation(summary = "Get shop outstanding", description = "Returns a list of shops with their outstanding balances", operationId = "getShopOutstanding")
     public ResponseEntity<List<ShopOutstandingResponse>> getShopOutstanding(
             @AuthenticationPrincipal AuthenticatedUser currentUser) {
         log.info("User {} requesting shop outstanding report", currentUser.getId());
@@ -54,7 +54,7 @@ public class ReportController {
 
     @GetMapping("/stock-status")
     @PreAuthorize("hasAuthority('REPORTS_VIEW')")
-    @Operation(summary = "Get stock status", description = "Returns the current status of product stocks across warehouses")
+    @Operation(summary = "Get stock status", description = "Returns the current status of product stocks across warehouses", operationId = "getStockStatus")
     public ResponseEntity<List<StockStatusResponse>> getStockStatus(
             @AuthenticationPrincipal AuthenticatedUser currentUser) {
         log.info("User {} requesting stock status report", currentUser.getId());
@@ -63,7 +63,7 @@ public class ReportController {
     
     @GetMapping("/rep-performance")
     @PreAuthorize("hasAuthority('REPORTS_VIEW')")
-    @Operation(summary = "Get rep performance", description = "Returns performance metrics for sales reps")
+    @Operation(summary = "Get rep performance", description = "Returns performance metrics for sales reps", operationId = "getRepPerformance")
     public ResponseEntity<List<RepPerformanceResponse>> getRepPerformance(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,

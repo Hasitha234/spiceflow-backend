@@ -1,17 +1,17 @@
 package com.spiceflow.backend.admin.dto.response;
+import lombok.Builder;
 
 import java.time.OffsetDateTime;
-import lombok.Builder;
-import lombok.Data;
 
-@Data
 @Builder
-@SuppressWarnings("NullAway.Init")
-public class BusinessTypeResponse {
-    private Long id;
-    private String name;
-    private String description;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
-}
+public record BusinessTypeResponse(
 
+    Long id,
+    String name,
+    String description,
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt
+
+
+
+) {}

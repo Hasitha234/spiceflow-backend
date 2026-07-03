@@ -32,31 +32,31 @@ public class ProductService {
 
     @Transactional(rollbackFor = Exception.class)
     public ProductResponse createProduct(Long tenantId, ProductRequest request) {
-        log.debug("Creating product for tenantId: {}, SKU: {}", tenantId, request.getSku());
+        log.debug("Creating product for tenantId: {}, SKU: {}", tenantId, request.sku());
         try {
             Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant with ID " + tenantId + " not found"));
             
-            productRepository.findBySkuAndTenantId(request.getSku(), tenantId)
+            productRepository.findBySkuAndTenantId(request.sku(), tenantId)
                 .ifPresent(p -> {
-                    throw new BusinessRuleViolationException("Product with SKU already exists: " + request.getSku());
+                    throw new BusinessRuleViolationException("Product with SKU already exists: " + request.sku());
                 });
                 
-            ProductCategory category = productCategoryService.getCategoryEntity(request.getCategoryId(), tenantId);
-            Supplier supplier = supplierService.getSupplierEntity(tenantId, request.getSupplierId());
+            ProductCategory category = productCategoryService.getCategoryEntity(request.categoryId(), tenantId);
+            Supplier supplier = supplierService.getSupplierEntity(tenantId, request.supplierId());
             
             Product product = Product.builder()
-                .sku(request.getSku())
-                .name(request.getName())
-                .description(request.getDescription())
-                .basePrice(request.getBasePrice())
-                .unitOfMeasure(request.getUnitOfMeasure())
-                .netWeight(request.getNetWeight())
-                .unitType(request.getUnitType())
-                .boxConfiguration(request.getBoxConfiguration())
-                .itemsPerSoldUnit(request.getItemsPerSoldUnit())
-                .soldUnitsPerBox(request.getSoldUnitsPerBox())
-                .ratePerSoldUnit(request.getRatePerSoldUnit())
+                .sku(request.sku())
+                .name(request.name())
+                .description(request.description())
+                .basePrice(request.basePrice())
+                .unitOfMeasure(request.unitOfMeasure())
+                .netWeight(request.netWeight())
+                .unitType(request.unitType())
+                .boxConfiguration(request.boxConfiguration())
+                .itemsPerSoldUnit(request.itemsPerSoldUnit())
+                .soldUnitsPerBox(request.soldUnitsPerBox())
+                .ratePerSoldUnit(request.ratePerSoldUnit())
                 .category(category)
                 .supplier(supplier)
                 .tenant(tenant)
@@ -68,7 +68,7 @@ public class ProductService {
         } catch (BusinessRuleViolationException | ResourceNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Failed to create product for tenantId: {}, SKU: {}", tenantId, request.getSku(), e);
+            log.error("Failed to create product for tenantId: {}, SKU: {}", tenantId, request.sku(), e);
             throw new BusinessRuleViolationException("Failed to create product: " + e.getMessage());
         }
     }
@@ -100,27 +100,27 @@ public class ProductService {
         try {
             Product product = getProductEntity(id, tenantId);
             
-            if (!product.getSku().equals(request.getSku())) {
-                productRepository.findBySkuAndTenantId(request.getSku(), tenantId)
+            if (!product.getSku().equals(request.sku())) {
+                productRepository.findBySkuAndTenantId(request.sku(), tenantId)
                     .ifPresent(p -> {
-                        throw new BusinessRuleViolationException("Product with SKU already exists: " + request.getSku());
+                        throw new BusinessRuleViolationException("Product with SKU already exists: " + request.sku());
                     });
             }
             
-            ProductCategory category = productCategoryService.getCategoryEntity(request.getCategoryId(), tenantId);
-            Supplier supplier = supplierService.getSupplierEntity(tenantId, request.getSupplierId());
+            ProductCategory category = productCategoryService.getCategoryEntity(request.categoryId(), tenantId);
+            Supplier supplier = supplierService.getSupplierEntity(tenantId, request.supplierId());
             
-            product.setSku(request.getSku());
-            product.setName(request.getName());
-            product.setDescription(request.getDescription());
-            product.setBasePrice(request.getBasePrice());
-            product.setUnitOfMeasure(request.getUnitOfMeasure());
-            product.setNetWeight(request.getNetWeight());
-            product.setUnitType(request.getUnitType());
-            product.setBoxConfiguration(request.getBoxConfiguration());
-            product.setItemsPerSoldUnit(request.getItemsPerSoldUnit());
-            product.setSoldUnitsPerBox(request.getSoldUnitsPerBox());
-            product.setRatePerSoldUnit(request.getRatePerSoldUnit());
+            product.setSku(request.sku());
+            product.setName(request.name());
+            product.setDescription(request.description());
+            product.setBasePrice(request.basePrice());
+            product.setUnitOfMeasure(request.unitOfMeasure());
+            product.setNetWeight(request.netWeight());
+            product.setUnitType(request.unitType());
+            product.setBoxConfiguration(request.boxConfiguration());
+            product.setItemsPerSoldUnit(request.itemsPerSoldUnit());
+            product.setSoldUnitsPerBox(request.soldUnitsPerBox());
+            product.setRatePerSoldUnit(request.ratePerSoldUnit());
             product.setCategory(category);
             product.setSupplier(supplier);
             

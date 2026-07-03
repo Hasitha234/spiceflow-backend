@@ -28,17 +28,17 @@ public class WarehouseService {
 
     @Transactional(rollbackFor = Exception.class)
     public WarehouseResponse createWarehouse(Long tenantId, WarehouseRequest request) {
-        log.debug("Creating new warehouse for tenantId: {}, name: {}", tenantId, request.getName());
+        log.debug("Creating new warehouse for tenantId: {}, name: {}", tenantId, request.name());
         try {
             Tenant tenant = tenantRepository.findById(tenantId)
                     .orElseThrow(() -> new IllegalArgumentException("Tenant with ID " + tenantId + " not found"));
 
             Warehouse warehouse = Warehouse.builder()
-                    .name(request.getName())
-                    .location(request.getLocation())
-                    .capacity(request.getCapacity())
-                    .storeType(request.getStoreType() != null ? request.getStoreType() : "CUSTOM")
-                    .description(request.getDescription())
+                    .name(request.name())
+                    .location(request.location())
+                    .capacity(request.capacity())
+                    .storeType(request.storeType() != null ? request.storeType() : "CUSTOM")
+                    .description(request.description())
                     .tenant(tenant)
                     .build();
 
@@ -78,13 +78,13 @@ public class WarehouseService {
         try {
             Warehouse warehouse = getWarehouseEntity(tenantId, warehouseId);
 
-            warehouse.setName(request.getName());
-            warehouse.setLocation(request.getLocation());
-            warehouse.setCapacity(request.getCapacity());
-            if (request.getStoreType() != null) {
-                warehouse.setStoreType(request.getStoreType());
+            warehouse.setName(request.name());
+            warehouse.setLocation(request.location());
+            warehouse.setCapacity(request.capacity());
+            if (request.storeType() != null) {
+                warehouse.setStoreType(request.storeType());
             }
-            warehouse.setDescription(request.getDescription());
+            warehouse.setDescription(request.description());
 
             Warehouse updatedWarehouse = warehouseRepository.save(warehouse);
             log.info("Successfully updated warehouse with ID: {} for tenantId: {}", updatedWarehouse.getId(), tenantId);

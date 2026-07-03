@@ -1,30 +1,31 @@
 package com.spiceflow.backend.sales.dto.response;
-
 import lombok.Builder;
-import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-@Data
 @Builder
-public class DeliveryShopResponse {
+public record DeliveryShopResponse(
+
     
-    private Long id;
-    private Long shopId;
-    private String shopName;
+    Long id,
+    Long shopId,
+    String shopName,
     
-    private BigDecimal grossBillAmount;
-    private BigDecimal totalDiscount;
-    private BigDecimal returnsDeducted;
-    private BigDecimal netPayable;
+    BigDecimal grossBillAmount,
+    BigDecimal totalDiscount,
+    BigDecimal returnsDeducted,
+    BigDecimal netPayable,
     
-    private BigDecimal paidAmount;
-    private BigDecimal creditAmount;
+    BigDecimal paidAmount,
+    BigDecimal creditAmount,
     
-    private OffsetDateTime createdAt;
+    OffsetDateTime createdAt,
     
-    private List<DeliveryShopItemResponse> items;
-    private List<DeliveryShopReturnResponse> returns;
-    private List<DeliveryPaymentResponse> payments;
-}
+    List<DeliveryShopItemResponse> items,
+    List<DeliveryShopReturnResponse> returns,
+    List<DeliveryPaymentResponse> payments
+
+
+) {}

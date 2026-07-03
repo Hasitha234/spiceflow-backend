@@ -1,24 +1,25 @@
 package com.spiceflow.backend.inventory.dto.response;
+import lombok.Builder;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import lombok.Builder;
-import lombok.Data;
 
-@Data
 @Builder
-public class InventoryItemResponse {
-    private Long id;
-    private Long productId;
-    private String productName;
-    private String productSku;
-    private Long warehouseId;
-    private String warehouseName;
-    private Integer quantityAvailable;
-    private Integer quantityReserved;
-    private String batchNumber;
-    private LocalDate expirationDate;
-    private Long version;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
-}
+public record InventoryItemResponse(
+
+    Long id,
+    Long productId,
+    String productName,
+    String productSku,
+    Long warehouseId,
+    String warehouseName,
+    Integer quantityAvailable,
+    Integer quantityReserved,
+    String batchNumber,
+    LocalDate expirationDate,
+    Long version,
+    OffsetDateTime createdAt,
+    OffsetDateTime updatedAt
+
+
+) {}

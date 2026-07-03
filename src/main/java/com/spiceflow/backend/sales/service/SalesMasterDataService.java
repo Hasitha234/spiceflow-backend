@@ -43,10 +43,10 @@ public class SalesMasterDataService {
             
         Rep rep = Rep.builder()
             .tenant(tenant)
-            .name(request.getName())
-            .phone(request.getPhone())
-            .area(request.getArea())
-            .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+            .name(request.name())
+            .phone(request.phone())
+            .area(request.area())
+            .isActive(request.isActive() != null ? request.isActive() : true)
             .build();
             
         return salesMapper.toRepResponse(repRepository.save(rep));
@@ -70,10 +70,10 @@ public class SalesMasterDataService {
             
         Driver driver = Driver.builder()
             .tenant(tenant)
-            .name(request.getName())
-            .phone(request.getPhone())
-            .vehicleNo(request.getVehicleNo())
-            .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+            .name(request.name())
+            .phone(request.phone())
+            .vehicleNo(request.vehicleNo())
+            .isActive(request.isActive() != null ? request.isActive() : true)
             .build();
             
         return salesMapper.toDriverResponse(driverRepository.save(driver));
@@ -96,21 +96,21 @@ public class SalesMasterDataService {
             .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             
         Rep assignedRep = null;
-        if (request.getAssignedRepId() != null) {
-            assignedRep = repRepository.findByIdAndTenantId(request.getAssignedRepId(), tenantId)
+        if (request.assignedRepId() != null) {
+            assignedRep = repRepository.findByIdAndTenantId(request.assignedRepId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Rep not found"));
         }
             
         Shop shop = Shop.builder()
             .tenant(tenant)
-            .name(request.getName())
-            .ownerName(request.getOwnerName())
-            .phone(request.getPhone())
-            .address(request.getAddress())
-            .area(request.getArea())
-            .route(request.getRoute())
+            .name(request.name())
+            .ownerName(request.ownerName())
+            .phone(request.phone())
+            .address(request.address())
+            .area(request.area())
+            .route(request.route())
             .assignedRep(assignedRep)
-            .outstandingLoan(request.getOutstandingLoan() != null ? request.getOutstandingLoan() : java.math.BigDecimal.ZERO)
+            .outstandingLoan(request.outstandingLoan() != null ? request.outstandingLoan() : java.math.BigDecimal.ZERO)
             .build();
             
         return salesMapper.toShopResponse(shopRepository.save(shop));

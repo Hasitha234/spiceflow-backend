@@ -1,16 +1,17 @@
 package com.spiceflow.backend.sales.dto.response;
-
 import lombok.Builder;
-import lombok.Data;
 
-@Data
+
 @Builder
-public class LoadingSheetItemResponse {
-    private Long id;
-    private Long productId;
-    private String productName;
-    private String productSku;
+public record LoadingSheetItemResponse(
+
+    Long id,
+    Long productId,
+    String productName,
+    String productSku,
     
-    private Integer quantityLoaded;
-    private String unitType;
-}
+    Integer quantityLoaded,
+    String unitType
+
+
+) {}

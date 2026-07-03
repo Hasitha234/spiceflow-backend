@@ -30,7 +30,7 @@ public class PurchaseController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('PURCHASE_CREATE')")
-    @Operation(summary = "Create a purchase", description = "Creates a new purchase record in DRAFT status")
+    @Operation(summary = "Create a purchase", description = "Creates a new purchase record in DRAFT status", operationId = "createPurchase")
     public ResponseEntity<PurchaseResponse> createPurchase(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody CreatePurchaseRequest request) {
@@ -41,7 +41,7 @@ public class PurchaseController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
-    @Operation(summary = "List all purchases", description = "Returns a paginated list of purchases")
+    @Operation(summary = "List all purchases", description = "Returns a paginated list of purchases", operationId = "getPurchases")
     public ResponseEntity<Page<PurchaseResponse>> getPurchases(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String invoiceNo,
@@ -53,7 +53,7 @@ public class PurchaseController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
-    @Operation(summary = "Get purchase by ID", description = "Returns details of a specific purchase")
+    @Operation(summary = "Get purchase by ID", description = "Returns details of a specific purchase", operationId = "getPurchase")
     public ResponseEntity<PurchaseResponse> getPurchase(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
@@ -64,7 +64,7 @@ public class PurchaseController {
 
     @PostMapping("/{id}/confirm")
     @PreAuthorize("hasAuthority('PURCHASE_UPDATE')")
-    @Operation(summary = "Confirm purchase", description = "Confirms a draft purchase and updates inventory in the MAIN store")
+    @Operation(summary = "Confirm purchase", description = "Confirms a draft purchase and updates inventory in the MAIN store", operationId = "confirmPurchase")
     public ResponseEntity<PurchaseResponse> confirmPurchase(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {

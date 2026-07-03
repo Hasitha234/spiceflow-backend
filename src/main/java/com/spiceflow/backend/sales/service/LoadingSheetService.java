@@ -48,26 +48,26 @@ public class LoadingSheetService {
 
     @Transactional(rollbackFor = Exception.class)
     public LoadingSheetResponse createLoadingSheet(Long tenantId, CreateLoadingSheetRequest request) {
-        log.info("Creating loading sheet for repOrderId: {}", request.getRepOrderId());
+        log.info("Creating loading sheet for repOrderId: {}", request.repOrderId());
         log.debug("Tenant ID: {}", tenantId);
 
         Tenant tenant = tenantRepository.findById(tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
-        RepOrder repOrder = repOrderRepository.findByIdAndTenantId(request.getRepOrderId(), tenantId)
+        RepOrder repOrder = repOrderRepository.findByIdAndTenantId(request.repOrderId(), tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("RepOrder not found"));
 
         if (!"DRAFT".equals(repOrder.getLoadingStatus())) {
             throw new BusinessRuleViolationException("RepOrder is already loaded or in progress");
         }
 
-        Driver driver = salesMasterDataService.getDriverEntity(request.getDriverId(), tenantId);
+        Driver driver = salesMasterDataService.getDriverEntity(request.driverId(), tenantId);
 
         LoadingSheet loadingSheet = LoadingSheet.builder()
             .tenant(tenant)
             .repOrder(repOrder)
             .driver(driver)
-            .loadingDate(request.getLoadingDate())
+            .loadingDate(request.loadingDate())
             .status("DRAFT")
             .build();
 
@@ -163,12 +163,13 @@ public class LoadingSheetService {
         // Transfer items
         for (LoadingSheetItem item : sheet.getItems()) {
             if (item.getQuantityLoaded() > 0) {
-                InventoryTransferRequest transferRequest = new InventoryTransferRequest();
-                transferRequest.setFromWarehouseId(mainStore.getId());
-                transferRequest.setToWarehouseId(vehicleStore.getId());
-                transferRequest.setProductId(item.getProduct().getId());
-                transferRequest.setQuantity(item.getQuantityLoaded());
-                transferRequest.setReason("Loading Sheet " + sheet.getId());
+                InventoryTransferRequest transferRequest = new InventoryTransferRequest(
+                        mainStore.getId(),
+                        vehicleStore.getId(),
+                        item.getProduct().getId(),
+                        item.getQuantityLoaded(),
+                        "Loading Sheet " + sheet.getId()
+                );
                 
                 inventoryItemService.transferInventory(tenantId, transferRequest);
             }

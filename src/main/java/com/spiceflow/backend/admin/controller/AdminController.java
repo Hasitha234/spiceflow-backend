@@ -44,7 +44,7 @@ public class AdminController {
      */
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @Operation(summary = "Provision a new Tenant", description = "Creates a new business and its owner account. Returns 201 Created on success.")
+    @Operation(summary = "Provision a new Tenant", description = "Creates a new business and its owner account. Returns 201 Created on success.", operationId = "createTenant")
     public ResponseEntity<TenantResponse> createTenant(@Valid @RequestBody CreateTenantRequest request) {
         TenantResponse response = adminService.createTenant(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -52,7 +52,7 @@ public class AdminController {
 
   @GetMapping
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  @Operation(summary = "List all Tenants", description = "Returns all active businesses on the platform.")
+  @Operation(summary = "List all Tenants", description = "Returns all active businesses on the platform.", operationId = "getAllTenants")
   public ResponseEntity<PageResponse<TenantResponse>> getAllTenants(
       @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
     return ResponseEntity.ok(adminService.getAllTenants(pageable));
@@ -60,14 +60,14 @@ public class AdminController {
 
   @GetMapping("/{id}")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  @Operation(summary = "Get Tenant by ID", description = "Returns a single business by its ID. Returns 404 if not found or deleted.")
+  @Operation(summary = "Get Tenant by ID", description = "Returns a single business by its ID. Returns 404 if not found or deleted.", operationId = "getTenantById")
   public ResponseEntity<TenantResponse> getTenantById(@PathVariable Long id) {
     return ResponseEntity.ok(adminService.getTenantById(id));
   }
 
   @PutMapping("/{id}")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
-  @Operation(summary = "Update Tenant", description = "Updates an existing business's name, type, status, and plan.")
+  @Operation(summary = "Update Tenant", description = "Updates an existing business's name, type, status, and plan.", operationId = "updateTenant")
   public ResponseEntity<TenantResponse> updateTenant(
       @PathVariable Long id,
       @Valid @RequestBody UpdateTenantRequest request) {
@@ -77,7 +77,7 @@ public class AdminController {
   @DeleteMapping("/{id}")
   @PreAuthorize("hasRole('SUPER_ADMIN')")
   @ApiResponse(responseCode = "204", description = "Tenant successfully deleted")
-  @Operation(summary = "Soft-Delete Tenant", description = "Marks the business as deleted. Data is preserved for audit history. Returns 204 on success.")
+  @Operation(summary = "Soft-Delete Tenant", description = "Marks the business as deleted. Data is preserved for audit history. Returns 204 on success.", operationId = "deleteTenant")
   public ResponseEntity<Void> deleteTenant(@PathVariable Long id) {
     adminService.deleteTenant(id);
     return ResponseEntity.noContent().build();

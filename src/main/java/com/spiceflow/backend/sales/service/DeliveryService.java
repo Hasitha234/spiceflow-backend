@@ -51,23 +51,23 @@ public class DeliveryService {
     
     @Transactional(rollbackFor = Exception.class)
     public DeliveryResponse createDelivery(Long tenantId, CreateDeliveryRequest request) {
-        log.info("Creating delivery for loadingSheetId: {}", request.getLoadingSheetId());
+        log.info("Creating delivery for loadingSheetId: {}", request.loadingSheetId());
         
         Tenant tenant = tenantRepository.findById(tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             
-        LoadingSheet loadingSheet = loadingSheetRepository.findByIdAndTenantId(request.getLoadingSheetId(), tenantId)
+        LoadingSheet loadingSheet = loadingSheetRepository.findByIdAndTenantId(request.loadingSheetId(), tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Loading sheet not found"));
             
         if (!"CONFIRMED".equals(loadingSheet.getStatus())) {
-            log.error("Failed to create delivery: Loading sheet {} is not CONFIRMED", request.getLoadingSheetId());
+            log.error("Failed to create delivery: Loading sheet {} is not CONFIRMED", request.loadingSheetId());
             throw new BusinessRuleViolationException("Only CONFIRMED loading sheets can be delivered");
         }
         
         Delivery delivery = Delivery.builder()
             .tenant(tenant)
             .loadingSheet(loadingSheet)
-            .deliveryDate(request.getDeliveryDate())
+            .deliveryDate(request.deliveryDate())
             .status("IN_PROGRESS")
             .build();
             
@@ -109,19 +109,19 @@ public class DeliveryService {
         BigDecimal totalDiscount = BigDecimal.ZERO;
         
         List<DeliveryShopItem> items = new ArrayList<>();
-        for (DeliveryShopItemRequest itemReq : request.getItems()) {
-            Product product = productService.getProductEntity(itemReq.getProductId(), tenantId);
+        for (DeliveryShopItemRequest itemReq : request.items()) {
+            Product product = productService.getProductEntity(itemReq.productId(), tenantId);
             
             DeliveryShopItem item = DeliveryShopItem.builder()
                 .tenant(tenant)
                 .deliveryShop(deliveryShop)
                 .product(product)
-                .quantityDelivered(itemReq.getQuantityDelivered())
-                .unitType(itemReq.getUnitType())
-                .rate(itemReq.getRate())
-                .grossAmount(itemReq.getRate().multiply(BigDecimal.valueOf(itemReq.getQuantityDelivered())))
-                .discountAmount(itemReq.getDiscountAmount() != null ? itemReq.getDiscountAmount() : BigDecimal.ZERO)
-                .isFreeItem(itemReq.getIsFreeItem() != null ? itemReq.getIsFreeItem() : false)
+                .quantityDelivered(itemReq.quantityDelivered())
+                .unitType(itemReq.unitType())
+                .rate(itemReq.rate())
+                .grossAmount(itemReq.rate().multiply(BigDecimal.valueOf(itemReq.quantityDelivered())))
+                .discountAmount(itemReq.discountAmount() != null ? itemReq.discountAmount() : BigDecimal.ZERO)
+                .isFreeItem(itemReq.isFreeItem() != null ? itemReq.isFreeItem() : false)
                 .build();
                 
             item.setNetAmount(item.getGrossAmount().subtract(item.getDiscountAmount()));
@@ -133,18 +133,18 @@ public class DeliveryService {
         
         BigDecimal returnsDeducted = BigDecimal.ZERO;
         List<DeliveryShopReturn> returns = new ArrayList<>();
-        if (request.getReturns() != null) {
-            for (DeliveryShopReturnRequest retReq : request.getReturns()) {
-                Product product = productService.getProductEntity(retReq.getProductId(), tenantId);
+        if (request.returns() != null) {
+            for (DeliveryShopReturnRequest retReq : request.returns()) {
+                Product product = productService.getProductEntity(retReq.productId(), tenantId);
                 
                 DeliveryShopReturn ret = DeliveryShopReturn.builder()
                     .tenant(tenant)
                     .deliveryShop(deliveryShop)
                     .product(product)
-                    .quantityReturned(retReq.getQuantityReturned())
-                    .unitType(retReq.getUnitType())
-                    .creditValue(retReq.getCreditValue())
-                    .returnType(retReq.getReturnType())
+                    .quantityReturned(retReq.quantityReturned())
+                    .unitType(retReq.unitType())
+                    .creditValue(retReq.creditValue())
+                    .returnType(retReq.returnType())
                     .build();
                     
                 returnsDeducted = returnsDeducted.add(ret.getCreditValue());
@@ -156,16 +156,16 @@ public class DeliveryService {
         
         BigDecimal paidAmount = BigDecimal.ZERO;
         List<DeliveryPayment> payments = new ArrayList<>();
-        if (request.getPayments() != null) {
-            for (DeliveryPaymentRequest payReq : request.getPayments()) {
+        if (request.payments() != null) {
+            for (DeliveryPaymentRequest payReq : request.payments()) {
                 DeliveryPayment payment = DeliveryPayment.builder()
                     .tenant(tenant)
                     .deliveryShop(deliveryShop)
-                    .paymentMethod(payReq.getPaymentMethod())
-                    .amount(payReq.getAmount())
-                    .chequeNo(payReq.getChequeNo())
-                    .chequeBankName(payReq.getChequeBankName())
-                    .chequeDate(payReq.getChequeDate())
+                    .paymentMethod(payReq.paymentMethod())
+                    .amount(payReq.amount())
+                    .chequeNo(payReq.chequeNo())
+                    .chequeBankName(payReq.chequeBankName())
+                    .chequeDate(payReq.chequeDate())
                     .build();
                     
                 paidAmount = paidAmount.add(payment.getAmount());

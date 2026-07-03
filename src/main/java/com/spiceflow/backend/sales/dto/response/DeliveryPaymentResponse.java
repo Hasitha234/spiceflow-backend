@@ -1,22 +1,23 @@
 package com.spiceflow.backend.sales.dto.response;
-
 import lombok.Builder;
-import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
-@Data
 @Builder
-public class DeliveryPaymentResponse {
+public record DeliveryPaymentResponse(
+
     
-    private Long id;
-    private String paymentMethod;
-    private BigDecimal amount;
+    Long id,
+    String paymentMethod,
+    BigDecimal amount,
     
-    private String chequeNo;
-    private String chequeBankName;
-    private LocalDate chequeDate;
+    String chequeNo,
+    String chequeBankName,
+    LocalDate chequeDate,
     
-    private OffsetDateTime createdAt;
-}
+    OffsetDateTime createdAt
+
+
+) {}
