@@ -27,6 +27,7 @@ import org.hibernate.annotations.ParamDef;
 @Getter
 @Setter
 @EntityListeners(AuditingEntityListener.class)
+@SuppressWarnings("NullAway.Init")
 public abstract class BaseEntity {
 
     @Id
@@ -52,3 +53,4 @@ public abstract class BaseEntity {
     @Column(name = "last_modified_by")
     private String lastModifiedBy;
 }
+

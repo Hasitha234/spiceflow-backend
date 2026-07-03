@@ -13,16 +13,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class BusinessTypeService {
 
     private final BusinessTypeRepository businessTypeRepository;
     private final TenantRepository tenantRepository;
 
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "businessTypes", allEntries = true)
     public BusinessTypeResponse createBusinessType(BusinessTypeRequest request) {
         log.info("Creating new business type: {}", request.getName());
         
@@ -39,11 +43,13 @@ public class BusinessTypeService {
         return mapToResponse(businessType);
     }
 
+    @Cacheable(value = "businessTypes", keyGenerator = "simpleKeyGenerator")
     public BusinessTypeResponse getBusinessType(Long id) {
         BusinessType businessType = getBusinessTypeEntity(id);
         return mapToResponse(businessType);
     }
 
+    @Cacheable(value = "businessTypes", keyGenerator = "simpleKeyGenerator")
     public List<BusinessTypeResponse> getAllBusinessTypes() {
         return businessTypeRepository.findAll().stream()
             .map(this::mapToResponse)
@@ -51,6 +57,7 @@ public class BusinessTypeService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "businessTypes", allEntries = true)
     public BusinessTypeResponse updateBusinessType(Long id, BusinessTypeRequest request) {
         log.info("Updating business type with ID: {}", id);
         
@@ -68,6 +75,7 @@ public class BusinessTypeService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "businessTypes", allEntries = true)
     public void deleteBusinessType(Long id) {
         log.info("Deleting business type with ID: {}", id);
         

@@ -1,5 +1,6 @@
 package com.spiceflow.backend.admin.controller;
 
+import org.springframework.validation.annotation.Validated;
 import com.spiceflow.backend.admin.dto.request.BusinessTypeRequest;
 import com.spiceflow.backend.admin.dto.response.BusinessTypeResponse;
 import com.spiceflow.backend.admin.service.BusinessTypeService;
@@ -19,8 +20,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 
 @RestController
+@Validated
 @RequestMapping("/api/v1/admin/business-types")
 @RequiredArgsConstructor
 @Tag(name = "1. Super Admin Operations")
@@ -64,3 +67,5 @@ public class BusinessTypeController {
         return ResponseEntity.noContent().build();
     }
 }
+
+

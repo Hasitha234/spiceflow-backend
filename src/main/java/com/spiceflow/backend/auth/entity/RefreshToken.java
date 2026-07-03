@@ -16,6 +16,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 /**
@@ -42,6 +43,7 @@ public class RefreshToken {
     private Long platformAdminId;
 
     @Column(name = "token_hash", nullable = false, unique = true, length = 255)
+    @ToString.Exclude // token hash must never appear in log output
     private String tokenHash;
 
     @Column(name = "expires_at", nullable = false)

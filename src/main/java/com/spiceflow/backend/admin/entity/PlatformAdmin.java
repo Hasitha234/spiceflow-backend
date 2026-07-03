@@ -14,6 +14,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -37,6 +38,7 @@ public class PlatformAdmin extends BaseEntity implements UserDetails {
   private String email;
 
   @Column(name = "password_hash", nullable = false, length = 255)
+  @ToString.Exclude // Never expose password hash in logs
   private String passwordHash;
 
   @Column(name = "name", nullable = false, length = 255)

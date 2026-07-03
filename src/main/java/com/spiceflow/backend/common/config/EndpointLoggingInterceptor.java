@@ -25,15 +25,20 @@ public class EndpointLoggingInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, @org.jspecify.annotations.Nullable Exception ex) {
         // Calculate the exact execution time
         long startTime = (Long) request.getAttribute(START_TIME_ATTR);
         long duration = System.currentTimeMillis() - startTime;
         
         // Grab the user who made the request (if authenticated)
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String user = (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser"))
-                ? auth.getName() : "Anonymous";
+        String user = "Anonymous";
+        if (auth != null && auth.isAuthenticated()) {
+            Object principal = auth.getPrincipal();
+            if (principal != null && !"anonymousUser".equals(principal)) {
+                user = auth.getName();
+            }
+        }
 
         // Determine if it was an error or success to adjust log format slightly if needed,
         // but log.info gives us a beautiful audit trail of all traffic.

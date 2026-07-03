@@ -53,9 +53,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if ("PLATFORM_ADMIN".equals(userType)) {
           platformAdminRepository.findByEmailAndDeletedAtIsNull(email).ifPresent(admin -> {
             if (admin.isEnabled()) {
+              com.spiceflow.backend.auth.dto.AuthenticatedUser authUser = com.spiceflow.backend.auth.dto.AuthenticatedUser.builder()
+                  .id(admin.getId())
+                  .email(admin.getEmail())
+                  .authorities(admin.getAuthorities())
+                  .accountNonExpired(true)
+                  .accountNonLocked(true)
+                  .credentialsNonExpired(true)
+                  .enabled(admin.isEnabled())
+                  .build();
+                  
               UsernamePasswordAuthenticationToken auth =
                   new UsernamePasswordAuthenticationToken(
-                      admin, null, admin.getAuthorities());
+                      authUser, null, authUser.getAuthorities());
               auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
               SecurityContextHolder.getContext().setAuthentication(auth);
               org.slf4j.MDC.put("userId", admin.getEmail());
@@ -65,12 +75,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } else {
           userRepository.findByEmailAndDeletedAtIsNull(email).ifPresent(user -> {
             if (user.isEnabled() && user.isAccountNonLocked()) {
+              com.spiceflow.backend.auth.dto.AuthenticatedUser authUser = com.spiceflow.backend.auth.dto.AuthenticatedUser.builder()
+                  .id(user.getId())
+                  .email(user.getEmail())
+                  .tenantId(user.getTenantId())
+                  .authorities(user.getAuthorities())
+                  .accountNonExpired(true)
+                  .accountNonLocked(user.isAccountNonLocked())
+                  .credentialsNonExpired(true)
+                  .enabled(user.isEnabled())
+                  .build();
+
               UsernamePasswordAuthenticationToken auth =
                   new UsernamePasswordAuthenticationToken(
-                      user, null, user.getAuthorities());
+                      authUser, null, authUser.getAuthorities());
               auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
               SecurityContextHolder.getContext().setAuthentication(auth);
               org.slf4j.MDC.put("userId", user.getEmail());
+              if (user.getTenantId() != null) {
+                  com.spiceflow.backend.common.context.TenantContext.setTenantId(user.getTenantId());
+                  org.slf4j.MDC.put("tenantId", user.getTenantId().toString());
+              }
               log.debug("Authenticated tenant user: {} for tenant: {}",
                   email, user.getTenantId());
             }
@@ -83,10 +108,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       chain.doFilter(request, response);
     } finally {
       org.slf4j.MDC.remove("userId");
+      org.slf4j.MDC.remove("tenantId");
+      com.spiceflow.backend.common.context.TenantContext.clear();
     }
   }
 
-  private String extractToken(HttpServletRequest request) {
+  private @org.jspecify.annotations.Nullable String extractToken(HttpServletRequest request) {
     String header = request.getHeader("Authorization");
     if (StringUtils.hasText(header) && header.startsWith(BEARER_PREFIX)) {
       return header.substring(BEARER_PREFIX.length());
@@ -94,3 +121,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     return null;
   }
 }
+

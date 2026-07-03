@@ -148,4 +148,110 @@ public class InventoryTransactionServiceTest {
             transactionService.recordTransaction(1L, request);
         });
     }
+
+    @Test
+    void testRecordTransaction_Reserve_Success() {
+        InventoryTransactionRequest request = new InventoryTransactionRequest();
+        request.setInventoryItemId(100L);
+        request.setTransactionType("RESERVE");
+        request.setQuantity(20);
+
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
+        when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
+        when(transactionRepository.save(any(InventoryTransaction.class))).thenAnswer(i -> i.getArgument(0));
+
+        InventoryTransactionResponse mockResponse = InventoryTransactionResponse.builder().build();
+        when(transactionMapper.toResponse(any(InventoryTransaction.class))).thenReturn(mockResponse);
+
+        transactionService.recordTransaction(1L, request);
+        assertEquals(80, mockItem.getQuantityAvailable());
+        assertEquals(30, mockItem.getQuantityReserved());
+    }
+
+    @Test
+    void testRecordTransaction_Unreserve_Success() {
+        InventoryTransactionRequest request = new InventoryTransactionRequest();
+        request.setInventoryItemId(100L);
+        request.setTransactionType("UNRESERVE");
+        request.setQuantity(5);
+
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
+        when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
+        when(transactionRepository.save(any(InventoryTransaction.class))).thenAnswer(i -> i.getArgument(0));
+
+        InventoryTransactionResponse mockResponse = InventoryTransactionResponse.builder().build();
+        when(transactionMapper.toResponse(any(InventoryTransaction.class))).thenReturn(mockResponse);
+
+        transactionService.recordTransaction(1L, request);
+        assertEquals(105, mockItem.getQuantityAvailable());
+        assertEquals(5, mockItem.getQuantityReserved());
+    }
+
+    @Test
+    void testRecordTransaction_ShipReserved_Success() {
+        InventoryTransactionRequest request = new InventoryTransactionRequest();
+        request.setInventoryItemId(100L);
+        request.setTransactionType("SHIP_RESERVED");
+        request.setQuantity(10);
+
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
+        when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
+        when(transactionRepository.save(any(InventoryTransaction.class))).thenAnswer(i -> i.getArgument(0));
+
+        InventoryTransactionResponse mockResponse = InventoryTransactionResponse.builder().build();
+        when(transactionMapper.toResponse(any(InventoryTransaction.class))).thenReturn(mockResponse);
+
+        transactionService.recordTransaction(1L, request);
+        assertEquals(100, mockItem.getQuantityAvailable());
+        assertEquals(0, mockItem.getQuantityReserved());
+    }
+
+    @Test
+    void testRecordTransaction_AdjustUp_Success() {
+        InventoryTransactionRequest request = new InventoryTransactionRequest();
+        request.setInventoryItemId(100L);
+        request.setTransactionType("ADJUST_UP");
+        request.setQuantity(10);
+
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
+        when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
+        when(transactionRepository.save(any(InventoryTransaction.class))).thenAnswer(i -> i.getArgument(0));
+
+        InventoryTransactionResponse mockResponse = InventoryTransactionResponse.builder().build();
+        when(transactionMapper.toResponse(any(InventoryTransaction.class))).thenReturn(mockResponse);
+
+        transactionService.recordTransaction(1L, request);
+        assertEquals(110, mockItem.getQuantityAvailable());
+    }
+
+    @Test
+    void testRecordTransaction_AdjustDown_Success() {
+        InventoryTransactionRequest request = new InventoryTransactionRequest();
+        request.setInventoryItemId(100L);
+        request.setTransactionType("ADJUST_DOWN");
+        request.setQuantity(10);
+
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
+        when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
+        when(transactionRepository.save(any(InventoryTransaction.class))).thenAnswer(i -> i.getArgument(0));
+
+        InventoryTransactionResponse mockResponse = InventoryTransactionResponse.builder().build();
+        when(transactionMapper.toResponse(any(InventoryTransaction.class))).thenReturn(mockResponse);
+
+        transactionService.recordTransaction(1L, request);
+        assertEquals(90, mockItem.getQuantityAvailable());
+    }
+
+    @Test
+    void testRecordTransaction_AdjustDown_Insufficient() {
+        InventoryTransactionRequest request = new InventoryTransactionRequest();
+        request.setInventoryItemId(100L);
+        request.setTransactionType("ADJUST_DOWN");
+        request.setQuantity(200);
+
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
+        when(itemRepository.findByIdAndTenantId(100L, 1L)).thenReturn(Optional.of(mockItem));
+
+        assertThrows(BusinessRuleViolationException.class, () -> transactionService.recordTransaction(1L, request));
+    }
 }

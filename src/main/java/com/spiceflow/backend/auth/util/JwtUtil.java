@@ -71,7 +71,7 @@ public String generateAdminToken(PlatformAdmin admin) {
 
 
   /** Extracts the email (subject) from a JWT. Returns null if token is invalid. */
-  public String extractEmail(String token) {
+  public @org.jspecify.annotations.Nullable String extractEmail(String token) {
     try {
       return parseClaims(token).getSubject();
         } catch (JwtException | IllegalArgumentException e) {
@@ -82,7 +82,7 @@ public String generateAdminToken(PlatformAdmin admin) {
   }
 
   /** Extracts the tenantId claim from a JWT. Returns null if token is invalid. */
-  public Long extractTenantId(String token) {
+  public @org.jspecify.annotations.Nullable Long extractTenantId(String token) {
     try {
       Object tenantId = parseClaims(token).get(CLAIM_TENANT_ID);
       return tenantId != null ? Long.valueOf(tenantId.toString()) : null;
@@ -94,7 +94,7 @@ public String generateAdminToken(PlatformAdmin admin) {
   }
 
   /** Extracts the userType claim. Returns null if token is invalid. */
-public String extractUserType(String token) {
+public @org.jspecify.annotations.Nullable String extractUserType(String token) {
   try {
     Object userType = parseClaims(token).get(CLAIM_USER_TYPE);
     return userType != null ? userType.toString() : null;
@@ -147,3 +147,4 @@ public String extractUserType(String token) {
 }
 
 }
+

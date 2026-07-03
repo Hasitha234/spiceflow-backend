@@ -33,10 +33,12 @@ public class ProductCategory extends BaseEntity {
     private String name;
 
     @Column(columnDefinition = "TEXT")
+    @org.jspecify.annotations.Nullable
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_category_id")
+    @org.jspecify.annotations.Nullable
     private ProductCategory parentCategory;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

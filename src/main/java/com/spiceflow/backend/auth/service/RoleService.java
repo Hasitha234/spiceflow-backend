@@ -6,6 +6,7 @@ import com.spiceflow.backend.auth.entity.Permission;
 import com.spiceflow.backend.auth.entity.Role;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.auth.repository.PermissionRepository;
 import com.spiceflow.backend.auth.repository.RoleRepository;
 import com.spiceflow.backend.auth.repository.UserRepository;
@@ -21,6 +22,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,34 +42,38 @@ public class RoleService {
         this.userRepository = userRepository;
     }
 
-    public PageResponse<RoleResponse> getRolesForTenant(User currentUser, Pageable pageable) {
-        Page<Role> roles = roleRepository.findByTenantIdAndDeletedAtIsNull(currentUser.getTenantId(), pageable);
-        
-        log.debug("Fetched {} roles from database for tenant {}", roles.getNumberOfElements(), currentUser.getTenantId());
-        
+    private Long getRequiredTenantId(AuthenticatedUser currentUser) {
+        return java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null for role operations");
+    }
+
+    @Cacheable(value = "roles")
+    public PageResponse<RoleResponse> getRolesForTenant(AuthenticatedUser currentUser, Pageable pageable) {
+        Page<Role> roles = roleRepository.findByTenantIdAndDeletedAtIsNull(getRequiredTenantId(currentUser), pageable);
+        log.debug("Fetched {} roles from database for tenant {}", roles.getNumberOfElements(), getRequiredTenantId(currentUser));
         Page<RoleResponse> responsePage = roles.map(this::mapToResponse);
         return PageResponse.of(responsePage);
     }
 
-
-    @Transactional
-    public RoleResponse createRole(RoleRequest request, User currentUser) {
-        // Check if role name already exists for this tenant
-        if (roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(currentUser.getTenantId(), request.getName()).isPresent()) {
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "roles", allEntries = true)
+    public RoleResponse createRole(RoleRequest request, AuthenticatedUser currentUser) {
+        if (roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(getRequiredTenantId(currentUser), request.getName()).isPresent()) {
             throw new ResourceConflictException("A role with this name already exists");
         }
 
-        // Fetch permissions from database
         Set<Permission> permissions = permissionRepository.findByCodeIn(request.getPermissionCodes());
         if (permissions.isEmpty()) {
             throw new BusinessRuleViolationException("Invalid permission codes provided");
         }
 
+        Tenant tenantRef = new Tenant();
+        tenantRef.setId(getRequiredTenantId(currentUser));
+
         Role role = Role.builder()
-                .tenant(currentUser.getTenant())
+                .tenant(tenantRef)
                 .name(request.getName())
                 .description(request.getDescription())
-                .isSystemRole(false) // Custom roles are never system roles
+                .isSystemRole(false)
                 .permissions(permissions)
                 .build();
 
@@ -75,17 +82,17 @@ public class RoleService {
         return mapToResponse(savedRole);
     }
 
-    @Transactional
-    public RoleResponse updateRole(Long roleId, RoleRequest request, User currentUser) {
-        Role role = roleRepository.findByIdAndTenantIdAndDeletedAtIsNull(roleId, currentUser.getTenantId())
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "roles", allEntries = true)
+    public RoleResponse updateRole(Long roleId, RoleRequest request, AuthenticatedUser currentUser) {
+        Role role = roleRepository.findByIdAndTenantIdAndDeletedAtIsNull(roleId, getRequiredTenantId(currentUser))
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
         if (role.getIsSystemRole()) {
             throw new BusinessRuleViolationException("System roles (like Owner) cannot be modified");
         }
 
-        // Check if new name conflicts with an existing role
-        roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(currentUser.getTenantId(), request.getName())
+        roleRepository.findByTenantIdAndNameAndDeletedAtIsNull(getRequiredTenantId(currentUser), request.getName())
                 .ifPresent(existingRole -> {
                     if (!existingRole.getId().equals(roleId)) {
                         throw new ResourceConflictException("A role with this name already exists");
@@ -106,10 +113,10 @@ public class RoleService {
         return mapToResponse(savedRole);
     }
 
-
-    @Transactional
-    public void deleteRole(Long roleId, User currentUser) {
-        Role role = roleRepository.findByIdAndTenantIdAndDeletedAtIsNull(roleId, currentUser.getTenantId())
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "roles", allEntries = true)
+    public void deleteRole(Long roleId, AuthenticatedUser currentUser) {
+        Role role = roleRepository.findByIdAndTenantIdAndDeletedAtIsNull(roleId, getRequiredTenantId(currentUser))
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
         if (role.getIsSystemRole()) {
@@ -126,7 +133,6 @@ public class RoleService {
         log.info("User {} soft-deleted role: '{}' (ID: {})", currentUser.getEmail(), role.getName(), role.getId());
     }
 
-
     private RoleResponse mapToResponse(Role role) {
         Set<String> permissionCodes = role.getPermissions().stream()
                 .map(Permission::getCode)
@@ -142,3 +148,4 @@ public class RoleService {
                 .build();
     }
 }
+

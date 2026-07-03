@@ -18,6 +18,7 @@ import com.spiceflow.backend.common.filter.CorrelationIdFilter;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@SuppressWarnings("NullAway.Init")
 public class ApiResponse<T> {
 
     private String status;
@@ -43,3 +44,4 @@ public class ApiResponse<T> {
                 .build();
     }
 }
+

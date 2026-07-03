@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class ProductCategoryRequest {
     
     @NotBlank(message = "Category name is required")
@@ -13,3 +14,4 @@ public class ProductCategoryRequest {
     
     private Long parentCategoryId;
 }
+

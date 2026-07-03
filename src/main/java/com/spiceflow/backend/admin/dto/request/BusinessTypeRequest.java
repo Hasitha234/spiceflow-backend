@@ -6,6 +6,7 @@ import lombok.Data;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class BusinessTypeRequest {
 
     @Schema(description = "The name of the business type", example = "SPICE")
@@ -17,3 +18,4 @@ public class BusinessTypeRequest {
     @Size(max = 255, message = "Description cannot exceed 255 characters")
     private String description;
 }
+

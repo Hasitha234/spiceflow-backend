@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class WarehouseRequest {
 
     @NotBlank(message = "Warehouse name is required")
@@ -16,4 +17,11 @@ public class WarehouseRequest {
 
     @PositiveOrZero(message = "Capacity must be zero or positive")
     private Integer capacity;
+    
+    @Size(max = 30, message = "Store type cannot exceed 30 characters")
+    private String storeType;
+    
+    @Size(max = 255, message = "Description cannot exceed 255 characters")
+    private String description;
 }
+

@@ -117,4 +117,39 @@ public class WarehouseServiceTest {
         assertEquals(20L, response.getId());
         assertEquals("West Coast Hub", response.getName());
     }
+
+    @Test
+    void testUpdateWarehouse() {
+        WarehouseRequest request = new WarehouseRequest();
+        request.setName("Updated Hub");
+
+        when(warehouseRepository.findByIdAndTenantId(10L, 1L)).thenReturn(Optional.of(mockWarehouse));
+        when(warehouseRepository.save(any(Warehouse.class))).thenAnswer(i -> i.getArgument(0));
+
+        WarehouseResponse mockResponse = WarehouseResponse.builder().id(10L).name("Updated Hub").build();
+        when(warehouseMapper.toResponse(any(Warehouse.class))).thenReturn(mockResponse);
+
+        WarehouseResponse response = warehouseService.updateWarehouse(1L, 10L, request);
+
+        assertNotNull(response);
+        assertEquals("Updated Hub", response.getName());
+    }
+
+    @Test
+    void testDeleteWarehouse() {
+        mockWarehouse.setIsSystemStore(false);
+        when(warehouseRepository.findByIdAndTenantId(10L, 1L)).thenReturn(Optional.of(mockWarehouse));
+
+        warehouseService.deleteWarehouse(1L, 10L);
+
+        verify(warehouseRepository).delete(mockWarehouse);
+    }
+
+    @Test
+    void testDeleteWarehouse_SystemStore() {
+        mockWarehouse.setIsSystemStore(true);
+        when(warehouseRepository.findByIdAndTenantId(10L, 1L)).thenReturn(Optional.of(mockWarehouse));
+
+        assertThrows(BusinessRuleViolationException.class, () -> warehouseService.deleteWarehouse(1L, 10L));
+    }
 }

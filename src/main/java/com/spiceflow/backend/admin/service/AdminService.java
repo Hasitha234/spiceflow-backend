@@ -23,10 +23,11 @@ import com.spiceflow.backend.common.exception.ResourceNotFoundException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-import com.spiceflow.backend.auth.entity.Permission;
 import com.spiceflow.backend.auth.entity.Role;
 import com.spiceflow.backend.auth.repository.PermissionRepository;
 import com.spiceflow.backend.auth.repository.RoleRepository;
+import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.repository.WarehouseRepository;
 import java.util.HashSet;
 
 
@@ -42,23 +43,26 @@ public class AdminService {
     private final PermissionRepository permissionRepository;
     private final RoleRepository roleRepository;
     private final BusinessTypeRepository businessTypeRepository;
+    private final WarehouseRepository warehouseRepository;
 
     public AdminService(TenantRepository tenantRepository, UserRepository userRepository,
         PasswordEncoder passwordEncoder, PermissionRepository permissionRepository,
-        RoleRepository roleRepository, BusinessTypeRepository businessTypeRepository) {
+        RoleRepository roleRepository, BusinessTypeRepository businessTypeRepository,
+        WarehouseRepository warehouseRepository) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.permissionRepository = permissionRepository;
         this.roleRepository = roleRepository;
         this.businessTypeRepository = businessTypeRepository;
+        this.warehouseRepository = warehouseRepository;
     }
 
 
     /**
      * Atomically creates a new Tenant (business) and its Owner User account.
      */
-        @Transactional
+        @Transactional(rollbackFor = Exception.class)
     public TenantResponse createTenant(CreateTenantRequest request) {
         
         // 1. Validate that the email is not already used by another tenant
@@ -95,11 +99,19 @@ public class AdminService {
         User owner = User.builder()
             .tenant(tenant)
             .email(request.getOwnerEmail())
-            .passwordHash(passwordEncoder.encode(request.getOwnerPassword()))
+            .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.getOwnerPassword()), "Password hash cannot be null"))
             .assignedRole(ownerRole)
             .build();
-            
         userRepository.save(owner);
+
+        // 4.5. Seed default System Stores
+        List<Warehouse> defaultStores = List.of(
+            Warehouse.builder().tenant(tenant).name("Main Store").storeType("MAIN").isSystemStore(true).description("Default primary store").build(),
+            Warehouse.builder().tenant(tenant).name("Second Store").storeType("SECONDARY").isSystemStore(true).description("Default secondary store for excess").build(),
+            Warehouse.builder().tenant(tenant).name("Closed-Shop Returns").storeType("CLOSED_SHOP_RETURNS").isSystemStore(true).description("Store for items returned from closed shops").build(),
+            Warehouse.builder().tenant(tenant).name("Expired Returns").storeType("EXPIRED_RETURNS").isSystemStore(true).description("Store for expired/damaged items").build()
+        );
+        warehouseRepository.saveAll(defaultStores);
 
         log.info("Platform Admin created new {} business: {} with owner {}", 
             businessType.getName(), request.getBusinessName(), request.getOwnerEmail());
@@ -160,7 +172,7 @@ public class AdminService {
   }
 
   /** Updates a tenant's business details. Email cannot be changed. */
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
   public TenantResponse updateTenant(Long id, UpdateTenantRequest request) {
     Tenant tenant = tenantRepository.findById(id)
         .filter(t -> t.getDeletedAt() == null)
@@ -190,7 +202,7 @@ public class AdminService {
   }
 
   /** Soft-deletes a tenant — sets deleted_at timestamp, never removes the database record. */
-  @Transactional
+  @Transactional(rollbackFor = Exception.class)
   public void deleteTenant(Long id) {
     Tenant tenant = tenantRepository.findById(id)
         .filter(t -> t.getDeletedAt() == null)

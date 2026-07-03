@@ -11,5 +11,6 @@ import org.springframework.stereotype.Repository;
 public interface WarehouseRepository extends JpaRepository<Warehouse, Long> {
     Optional<Warehouse> findByIdAndTenantId(Long id, Long tenantId);
     Page<Warehouse> findByTenantId(Long tenantId, Pageable pageable);
+    java.util.List<Warehouse> findAllByTenantId(Long tenantId);
     Page<Warehouse> findByTenantIdAndNameContainingIgnoreCase(Long tenantId, String name, Pageable pageable);
 }

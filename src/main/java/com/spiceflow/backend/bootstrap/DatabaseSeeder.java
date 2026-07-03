@@ -1,4 +1,4 @@
-package com.spiceflow.backend.common.config;
+package com.spiceflow.backend.bootstrap;
 
 import com.spiceflow.backend.admin.entity.PlatformAdmin;
 import com.spiceflow.backend.admin.repository.PlatformAdminRepository;
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 
@@ -41,7 +42,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final BusinessTypeRepository businessTypeRepository;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void run(String... args) {
         log.info("Checking if Platform Admin needs to be seeded...");
         if (platformAdminRepository.count() == 0) {
@@ -50,11 +51,11 @@ public class DatabaseSeeder implements CommandLineRunner {
             PlatformAdmin admin = PlatformAdmin.builder()
                 .name("Super Admin")
                 .email("admin@spiceflow.com")
-                .passwordHash(passwordEncoder.encode("password"))
+                .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode("password"), "Password hash cannot be null"))
                 .build();
                 
-            admin.setCreatedAt(OffsetDateTime.now());
-            admin.setUpdatedAt(OffsetDateTime.now());
+            admin.setCreatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
+            admin.setUpdatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
             
             platformAdminRepository.save(admin);
             log.info("Successfully seeded default Platform Admin!");
@@ -81,10 +82,10 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .status("ACTIVE")
                 .plan("PREMIUM")
                 .businessType(businessType)
-                .trialStartDate(LocalDate.now())
+                .trialStartDate(LocalDate.now(ZoneId.systemDefault()))
                 .build();
-            tenant.setCreatedAt(OffsetDateTime.now());
-            tenant.setUpdatedAt(OffsetDateTime.now());
+            tenant.setCreatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
+            tenant.setUpdatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
             tenant = tenantRepository.save(tenant);
 
             Role ownerRole = Role.builder()
@@ -94,20 +95,20 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .isSystemRole(true)
                 .permissions(new HashSet<>(permissionRepository.findAll()))
                 .build();
-            ownerRole.setCreatedAt(OffsetDateTime.now());
-            ownerRole.setUpdatedAt(OffsetDateTime.now());
+            ownerRole.setCreatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
+            ownerRole.setUpdatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
             ownerRole = roleRepository.save(ownerRole);
 
             User user = User.builder()
                 .tenant(tenant)
                 .email("user@spiceflow.com")
-                .passwordHash(passwordEncoder.encode("password"))
+                .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode("password"), "Password hash cannot be null"))
                 .assignedRole(ownerRole)
                 .passwordChangeRequired(false)
                 .failedLoginAttempts(0)
                 .build();
-            user.setCreatedAt(OffsetDateTime.now());
-            user.setUpdatedAt(OffsetDateTime.now());
+            user.setCreatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
+            user.setUpdatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
             userRepository.save(user);
 
             log.info("Successfully seeded default Tenant and User!");
@@ -116,3 +117,6 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
     }
 }
+
+
+

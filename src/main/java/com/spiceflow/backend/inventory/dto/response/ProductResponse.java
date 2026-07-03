@@ -20,4 +20,11 @@ public class ProductResponse {
     private String supplierName;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    
+    private String netWeight;
+    private String unitType;
+    private String boxConfiguration;
+    private Integer itemsPerSoldUnit;
+    private Integer soldUnitsPerBox;
+    private BigDecimal ratePerSoldUnit;
 }

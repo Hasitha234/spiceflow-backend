@@ -1,5 +1,6 @@
 package com.spiceflow.backend.inventory.controller;
 
+import org.springframework.validation.annotation.Validated;
 import com.spiceflow.backend.auth.entity.User;
 import com.spiceflow.backend.inventory.dto.request.WarehouseRequest;
 import com.spiceflow.backend.inventory.dto.response.WarehouseResponse;
@@ -25,8 +26,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 
 @RestController
+@Validated
 @RequestMapping("/api/v1/warehouses")
 @RequiredArgsConstructor
 @Tag(name = "Warehouses", description = "Endpoints for managing inventory warehouses")
@@ -41,7 +44,7 @@ public class WarehouseController {
             @AuthenticationPrincipal User currentUser,
             @RequestParam(required = false) String search,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(warehouseService.getAllWarehouses(currentUser.getTenantId(), search, pageable));
+        return ResponseEntity.ok(warehouseService.getAllWarehouses(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), search, pageable));
     }
 
     @GetMapping("/{id}")
@@ -50,7 +53,7 @@ public class WarehouseController {
     public ResponseEntity<WarehouseResponse> getWarehouse(
             @PathVariable Long id,
             @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(warehouseService.getWarehouse(currentUser.getTenantId(), id));
+        return ResponseEntity.ok(warehouseService.getWarehouse(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id));
     }
 
     @PostMapping
@@ -59,7 +62,7 @@ public class WarehouseController {
     public ResponseEntity<WarehouseResponse> createWarehouse(
             @AuthenticationPrincipal User currentUser,
             @Valid @RequestBody WarehouseRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(warehouseService.createWarehouse(currentUser.getTenantId(), request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(warehouseService.createWarehouse(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request));
     }
 
     @PutMapping("/{id}")
@@ -69,7 +72,7 @@ public class WarehouseController {
             @PathVariable Long id,
             @Valid @RequestBody WarehouseRequest request,
             @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(warehouseService.updateWarehouse(currentUser.getTenantId(), id, request));
+        return ResponseEntity.ok(warehouseService.updateWarehouse(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id, request));
     }
 
     @DeleteMapping("/{id}")
@@ -78,7 +81,8 @@ public class WarehouseController {
     public ResponseEntity<Void> deleteWarehouse(
             @AuthenticationPrincipal User currentUser,
             @PathVariable Long id) {
-        warehouseService.deleteWarehouse(currentUser.getTenantId(), id);
+        warehouseService.deleteWarehouse(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id);
         return ResponseEntity.noContent().build();
     }
 }
+

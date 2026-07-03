@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class InventoryTransactionRequest {
     
     @NotNull(message = "Inventory item ID is required")

@@ -19,6 +19,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
@@ -57,6 +58,7 @@ public class User extends BaseEntity implements UserDetails {
     private String email;
 
     @Column(name = "password_hash", nullable = false, length = 255)
+    @ToString.Exclude // Never expose password hash in logs
     private String passwordHash;
 
     @Override
@@ -88,6 +90,7 @@ public class User extends BaseEntity implements UserDetails {
     private int failedLoginAttempts = 0;
 
     @Column(name = "locked_until")
+    @org.jspecify.annotations.Nullable
     private OffsetDateTime lockedUntil;
 
     // -- Userdetails Contract----- 
@@ -113,7 +116,8 @@ public class User extends BaseEntity implements UserDetails {
     }
 
     /** Convenience method - returns the tenant's ID without loading the full Tenant object. */
-    public Long getTenantId() {
+    public @org.jspecify.annotations.Nullable Long getTenantId() {
         return tenant != null ? tenant.getId() : null;
     }
 }
+

@@ -87,19 +87,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private String resolveBucketKey(HttpServletRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated() && !authentication.getPrincipal().equals("anonymousUser")) {
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
             return "user:" + authentication.getName();
         }
         return "ip:" + extractIpAddress(request);
     }
 
     private String extractIpAddress(HttpServletRequest request) {
-        // Look for X-Forwarded-For if behind a proxy
-        String xfHeader = request.getHeader("X-Forwarded-For");
-        if (StringUtils.hasText(xfHeader)) {
-            // Can contain multiple IPs if passing through multiple proxies
-            return xfHeader.split(",")[0].trim();
-        }
+        // Rely exclusively on the Servlet API's getRemoteAddr().
+        // If we are behind a proxy, Spring's ForwardedHeaderFilter
+        // (enabled via server.forward-headers-strategy=FRAMEWORK)
+        // will safely extract the real IP. We do not trust X-Forwarded-For blindly here.
         return request.getRemoteAddr();
     }
 

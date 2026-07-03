@@ -6,6 +6,7 @@ import lombok.Data;
 
 @Data
 @Builder
+@SuppressWarnings("NullAway.Init")
 public class BusinessTypeResponse {
     private Long id;
     private String name;
@@ -13,3 +14,4 @@ public class BusinessTypeResponse {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }
+

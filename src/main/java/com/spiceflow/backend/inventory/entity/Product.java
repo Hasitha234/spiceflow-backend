@@ -45,6 +45,24 @@ public class Product extends BaseEntity {
     @Column(name = "unit_of_measure", length = 50)
     private String unitOfMeasure;
 
+    @Column(name = "net_weight", length = 20)
+    private String netWeight;
+
+    @Column(name = "unit_type", length = 10)
+    private String unitType;
+
+    @Column(name = "box_configuration", length = 50)
+    private String boxConfiguration;
+
+    @Column(name = "items_per_sold_unit")
+    private Integer itemsPerSoldUnit;
+
+    @Column(name = "sold_units_per_box")
+    private Integer soldUnitsPerBox;
+
+    @Column(name = "rate_per_sold_unit", precision = 15, scale = 2)
+    private BigDecimal ratePerSoldUnit;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private ProductCategory category;

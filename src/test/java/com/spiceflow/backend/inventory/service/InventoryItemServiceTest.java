@@ -1,20 +1,24 @@
 package com.spiceflow.backend.inventory.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
 import com.spiceflow.backend.inventory.dto.request.InventoryItemRequest;
+import com.spiceflow.backend.inventory.dto.request.InventoryMarkDamagedRequest;
+import com.spiceflow.backend.inventory.dto.request.InventoryTransferRequest;
 import com.spiceflow.backend.inventory.dto.response.InventoryItemResponse;
 import com.spiceflow.backend.inventory.entity.InventoryItem;
+import com.spiceflow.backend.inventory.entity.InventoryTransaction;
 import com.spiceflow.backend.inventory.entity.Product;
 import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.mapper.InventoryItemMapper;
 import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
+import com.spiceflow.backend.inventory.repository.InventoryTransactionRepository;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,99 +30,170 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
-public class InventoryItemServiceTest {
+class InventoryItemServiceTest {
 
-    @Mock
-    private InventoryItemRepository inventoryItemRepository;
+    @Mock private InventoryItemRepository inventoryItemRepository;
+    @Mock private InventoryTransactionRepository inventoryTransactionRepository;
+    @Mock private TenantRepository tenantRepository;
+    @Mock private ProductService productService;
+    @Mock private WarehouseService warehouseService;
+    @Mock private InventoryItemMapper inventoryItemMapper;
 
-    @Mock
-    private TenantRepository tenantRepository;
+    @InjectMocks private InventoryItemService inventoryItemService;
 
-    @Mock
-    private ProductService productService;
-
-    @Mock
-    private WarehouseService warehouseService;
-
-    @Mock
-    private com.spiceflow.backend.inventory.mapper.InventoryItemMapper inventoryItemMapper;
-
-    @InjectMocks
-    private InventoryItemService inventoryItemService;
-
-    private Tenant mockTenant;
-    private InventoryItem mockItem;
-    private Product mockProduct;
-    private Warehouse mockWarehouse;
+    private Tenant tenant;
+    private Product product;
+    private Warehouse warehouse;
+    private InventoryItem inventoryItem;
+    @Mock private InventoryItemResponse response;
 
     @BeforeEach
     void setUp() {
-        mockTenant = new Tenant();
-        mockTenant.setId(1L);
+        tenant = new Tenant();
+        tenant.setId(1L);
 
-        mockProduct = Product.builder().name("Product A").build();
-        mockProduct.setId(10L);
+        product = new Product();
+        product.setId(1L);
 
-        mockWarehouse = Warehouse.builder().name("Warehouse A").build();
-        mockWarehouse.setId(20L);
+        warehouse = new Warehouse();
+        warehouse.setId(1L);
 
-        mockItem = InventoryItem.builder()
-                .product(mockProduct)
-                .warehouse(mockWarehouse)
-                .quantityAvailable(100)
-                .tenant(mockTenant)
-                .build();
-        mockItem.setId(100L);
+        inventoryItem = new InventoryItem();
+        inventoryItem.setId(1L);
+        inventoryItem.setTenant(tenant);
+        inventoryItem.setProduct(product);
+        inventoryItem.setWarehouse(warehouse);
+        inventoryItem.setQuantityAvailable(100);
+        inventoryItem.setQuantityReserved(10);
     }
 
     @Test
-    void testGetInventoryItems_WithoutSearch() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<InventoryItem> page = new PageImpl<>(List.of(mockItem));
-
-        when(inventoryItemRepository.findByTenantId(1L, pageable)).thenReturn(page);
-
-        InventoryItemResponse mockResponse = InventoryItemResponse.builder().id(100L).quantityAvailable(100).build();
-        when(inventoryItemMapper.toResponse(any(InventoryItem.class))).thenReturn(mockResponse);
-
-        Page<InventoryItemResponse> responsePage = inventoryItemService.getInventoryItems(1L, null, null, pageable);
-
-        assertNotNull(responsePage);
-        assertEquals(1, responsePage.getTotalElements());
-        assertEquals(100, responsePage.getContent().get(0).getQuantityAvailable());
-        verify(inventoryItemRepository).findByTenantId(1L, pageable);
-    }
-
-    @Test
-    void testCreateInventoryItem_Success() {
+    void createInventoryItem_Success() {
         InventoryItemRequest request = new InventoryItemRequest();
-        request.setProductId(10L);
-        request.setWarehouseId(20L);
-        request.setQuantityAvailable(50);
-        request.setQuantityReserved(0);
-        request.setBatchNumber("BATCH-001");
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "productId", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "warehouseId", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "quantityAvailable", 50);
 
-        when(tenantRepository.findById(1L)).thenReturn(Optional.of(mockTenant));
-        when(productService.getProductEntity(10L, 1L)).thenReturn(mockProduct);
-        when(warehouseService.getWarehouseEntity(20L, 1L)).thenReturn(mockWarehouse);
-        when(inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(10L, 20L, 1L)).thenReturn(Optional.empty());
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
+        when(inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(1L, 1L, 1L)).thenReturn(Optional.empty());
+        when(productService.getProductEntity(1L, 1L)).thenReturn(product);
+        when(warehouseService.getWarehouseEntity(1L, 1L)).thenReturn(warehouse);
+        when(inventoryItemRepository.save(any(InventoryItem.class))).thenReturn(inventoryItem);
+        when(inventoryItemMapper.toResponse(inventoryItem)).thenReturn(response);
 
-        when(inventoryItemRepository.save(any(InventoryItem.class))).thenAnswer(i -> {
-            InventoryItem item = i.getArgument(0);
-            item.setId(200L);
-            return item;
-        });
+        InventoryItemResponse result = inventoryItemService.createInventoryItem(1L, request);
 
-        InventoryItemResponse mockResponse = InventoryItemResponse.builder().id(200L).quantityAvailable(50).build();
-        when(inventoryItemMapper.toResponse(any(InventoryItem.class))).thenReturn(mockResponse);
+        assertNotNull(result);
+        verify(inventoryItemRepository).save(any(InventoryItem.class));
+    }
 
-        InventoryItemResponse response = inventoryItemService.createInventoryItem(1L, request);
+    @Test
+    void createInventoryItem_AlreadyExists() {
+        InventoryItemRequest request = new InventoryItemRequest();
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "productId", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "warehouseId", 1L);
 
-        assertNotNull(response);
-        assertEquals(200L, response.getId());
-        assertEquals(50, response.getQuantityAvailable());
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
+        when(inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(1L, 1L, 1L)).thenReturn(Optional.of(inventoryItem));
+
+        assertThrows(BusinessRuleViolationException.class, () -> inventoryItemService.createInventoryItem(1L, request));
+    }
+
+    @Test
+    void getInventoryItems_WithoutFilters() {
+        Page<InventoryItem> page = new PageImpl<>(List.of(inventoryItem));
+        when(inventoryItemRepository.findByTenantId(eq(1L), any(PageRequest.class))).thenReturn(page);
+        when(inventoryItemMapper.toResponse(inventoryItem)).thenReturn(response);
+
+        Page<InventoryItemResponse> result = inventoryItemService.getInventoryItems(1L, null, null, PageRequest.of(0, 10));
+
+        assertEquals(1, result.getContent().size());
+    }
+
+    @Test
+    void getInventoryItems_WithFilters() {
+        Page<InventoryItem> page = new PageImpl<>(List.of(inventoryItem));
+        when(inventoryItemRepository.findByWarehouseIdAndProductIdAndTenantId(eq(1L), eq(1L), eq(1L), any(PageRequest.class))).thenReturn(page);
+        when(inventoryItemMapper.toResponse(inventoryItem)).thenReturn(response);
+
+        Page<InventoryItemResponse> result = inventoryItemService.getInventoryItems(1L, 1L, 1L, PageRequest.of(0, 10));
+
+        assertEquals(1, result.getContent().size());
+    }
+
+    @Test
+    void updateInventoryItem_Success() {
+        InventoryItemRequest request = new InventoryItemRequest();
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "quantityAvailable", 150);
+
+        when(inventoryItemRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(inventoryItem));
+        when(inventoryItemRepository.save(any(InventoryItem.class))).thenReturn(inventoryItem);
+        when(inventoryItemMapper.toResponse(inventoryItem)).thenReturn(response);
+
+        InventoryItemResponse result = inventoryItemService.updateInventoryItem(1L, 1L, request);
+
+        assertNotNull(result);
+        assertEquals(150, inventoryItem.getQuantityAvailable());
+    }
+
+    @Test
+    void deleteInventoryItem_Success() {
+        inventoryItem.setQuantityAvailable(0);
+        inventoryItem.setQuantityReserved(0);
+        when(inventoryItemRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(inventoryItem));
+
+        inventoryItemService.deleteInventoryItem(1L, 1L);
+
+        verify(inventoryItemRepository).delete(inventoryItem);
+    }
+
+    @Test
+    void deleteInventoryItem_NonZeroQuantity() {
+        when(inventoryItemRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(inventoryItem));
+
+        assertThrows(BusinessRuleViolationException.class, () -> inventoryItemService.deleteInventoryItem(1L, 1L));
+    }
+
+    @Test
+    void transferInventory_Success() {
+        InventoryTransferRequest request = new InventoryTransferRequest();
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "productId", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "fromWarehouseId", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "toWarehouseId", 2L);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "quantity", 50);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "reason", "Transfer");
+
+        InventoryItem destItem = new InventoryItem();
+        destItem.setQuantityAvailable(10);
+
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
+        when(inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(1L, 1L, 1L)).thenReturn(Optional.of(inventoryItem));
+        when(inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(1L, 2L, 1L)).thenReturn(Optional.of(destItem));
+        when(inventoryItemRepository.save(any())).thenReturn(destItem);
+
+        inventoryItemService.transferInventory(1L, request);
+
+        assertEquals(50, inventoryItem.getQuantityAvailable());
+        assertEquals(60, destItem.getQuantityAvailable());
+        verify(inventoryTransactionRepository, times(2)).save(any(InventoryTransaction.class));
+    }
+
+    @Test
+    void markDamaged_Success() {
+        InventoryMarkDamagedRequest request = new InventoryMarkDamagedRequest();
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "productId", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "warehouseId", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "quantity", 20);
+        org.springframework.test.util.ReflectionTestUtils.setField(request, "notes", "Damaged");
+
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
+        when(inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(1L, 1L, 1L)).thenReturn(Optional.of(inventoryItem));
+
+        inventoryItemService.markDamaged(1L, request);
+
+        assertEquals(80, inventoryItem.getQuantityAvailable());
+        verify(inventoryTransactionRepository).save(any(InventoryTransaction.class));
     }
 }

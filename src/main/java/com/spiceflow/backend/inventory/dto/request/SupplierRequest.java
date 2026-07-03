@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
+@SuppressWarnings("NullAway.Init")
 public class SupplierRequest {
 
     @NotBlank(message = "Supplier name is required")
@@ -24,3 +25,4 @@ public class SupplierRequest {
     @Size(max = 100)
     private String taxId;
 }
+
