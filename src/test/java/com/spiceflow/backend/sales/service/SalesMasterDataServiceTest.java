@@ -17,6 +17,7 @@ import com.spiceflow.backend.sales.entity.Driver;
 import com.spiceflow.backend.sales.entity.Rep;
 import com.spiceflow.backend.sales.entity.Shop;
 import com.spiceflow.backend.sales.mapper.SalesMapper;
+import com.spiceflow.backend.inventory.repository.WarehouseRepository;
 import com.spiceflow.backend.sales.repository.DriverRepository;
 import com.spiceflow.backend.sales.repository.RepRepository;
 import com.spiceflow.backend.sales.repository.ShopRepository;
@@ -39,6 +40,7 @@ class SalesMasterDataServiceTest {
     @Mock private ShopRepository shopRepository;
     @Mock private RepRepository repRepository;
     @Mock private DriverRepository driverRepository;
+    @Mock private WarehouseRepository warehouseRepository;
     @Mock private TenantRepository tenantRepository;
     @Mock private SalesMapper salesMapper;
 
@@ -139,7 +141,7 @@ class SalesMasterDataServiceTest {
 
     @Test
     void createDriver_Success() {
-        DriverRequest request = DriverRequest.builder().name("Driver").phone("077").vehicleNo("CAB-123").isActive(true).build();
+        DriverRequest request = DriverRequest.builder().name("Driver").phone("077").assignedVehicle("CAB-123").isActive(true).build();
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(driverRepository.save(any(Driver.class))).thenReturn(driver);
         when(salesMapper.toDriverResponse(driver)).thenReturn(driverResponse);
@@ -169,6 +171,38 @@ class SalesMasterDataServiceTest {
         Page<DriverResponse> result = salesMasterDataService.getDrivers(1L, "test", PageRequest.of(0, 10));
 
         assertEquals(1, result.getContent().size());
+    }
+
+    @Test
+    void getDriver_Success() {
+        when(driverRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(driver));
+        when(salesMapper.toDriverResponse(driver)).thenReturn(driverResponse);
+
+        DriverResponse result = salesMasterDataService.getDriver(1L, 1L);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void updateDriver_Success() {
+        DriverRequest request = DriverRequest.builder().name("Updated Driver").phone("077").assignedVehicle("CAB-123").isActive(true).build();
+        when(driverRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(driver));
+        when(driverRepository.save(any(Driver.class))).thenReturn(driver);
+        when(salesMapper.toDriverResponse(driver)).thenReturn(driverResponse);
+
+        DriverResponse result = salesMasterDataService.updateDriver(1L, 1L, request);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void deleteDriver_Success() {
+        when(driverRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(driver));
+        doNothing().when(driverRepository).delete(driver);
+
+        salesMasterDataService.deleteDriver(1L, 1L);
+
+        verify(driverRepository, times(1)).delete(driver);
     }
 
     @Test

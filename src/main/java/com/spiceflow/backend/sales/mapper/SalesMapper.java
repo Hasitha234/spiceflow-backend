@@ -34,5 +34,7 @@ public interface SalesMapper {
     @Mapping(target = "assignedShopsCount", source = "assignedShopsCount")
     RepResponse toRepResponseWithCount(Rep rep, Long assignedShopsCount);
     
+    @Mapping(source = "defaultWarehouse.id", target = "defaultWarehouseId")
+    @Mapping(source = "defaultWarehouse.name", target = "defaultWarehouseName")
     DriverResponse toDriverResponse(Driver driver);
 }
