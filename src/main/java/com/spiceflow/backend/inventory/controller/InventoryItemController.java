@@ -1,7 +1,7 @@
 package com.spiceflow.backend.inventory.controller;
 
 import org.springframework.validation.annotation.Validated;
-import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.inventory.dto.request.InventoryItemRequest;
 import com.spiceflow.backend.inventory.dto.response.InventoryItemResponse;
 import com.spiceflow.backend.inventory.service.InventoryItemService;
@@ -33,7 +33,7 @@ public class InventoryItemController {
     @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
     @Operation(summary = "Create an inventory item", description = "Registers a product in a warehouse with an initial quantity", operationId = "createInventoryItem")
     public ResponseEntity<InventoryItemResponse> createInventoryItem(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody InventoryItemRequest request) {
         log.info("Received request to create inventory item for product: {} at warehouse: {} by user: {}", 
             request.productId(), request.warehouseId(), currentUser.getId());
@@ -44,7 +44,7 @@ public class InventoryItemController {
     @GetMapping
     @Operation(summary = "List all inventory items", description = "Returns a paginated list of inventory items, optionally filtered by warehouse and product", operationId = "getInventoryItems")
     public ResponseEntity<Page<InventoryItemResponse>> getInventoryItems(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) Long warehouseId,
             @RequestParam(required = false) Long productId,
             Pageable pageable) {
@@ -56,7 +56,7 @@ public class InventoryItemController {
     @GetMapping("/{id}")
     @Operation(summary = "Get inventory item by ID", description = "Returns details of a specific inventory item", operationId = "getInventoryItem")
     public ResponseEntity<InventoryItemResponse> getInventoryItem(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("Received request to fetch inventory item ID: {} by user: {}", id, currentUser.getId());
         InventoryItemResponse response = inventoryItemService.getInventoryItem(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
@@ -67,7 +67,7 @@ public class InventoryItemController {
     @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
     @Operation(summary = "Update an inventory item", description = "Updates details (like batch number/expiration) of an existing inventory item", operationId = "updateInventoryItem")
     public ResponseEntity<InventoryItemResponse> updateInventoryItem(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id, @Valid @RequestBody InventoryItemRequest request) {
         log.info("Received request to update inventory item ID: {} by user: {}", id, currentUser.getId());
         InventoryItemResponse response = inventoryItemService.updateInventoryItem(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
@@ -78,7 +78,7 @@ public class InventoryItemController {
     @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
     @Operation(summary = "Delete an inventory item", description = "Deletes an inventory item only if quantities are zero", operationId = "deleteInventoryItem")
     public ResponseEntity<Void> deleteInventoryItem(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("Received request to delete inventory item ID: {} by user: {}", id, currentUser.getId());
         inventoryItemService.deleteInventoryItem(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
@@ -89,7 +89,7 @@ public class InventoryItemController {
     @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
     @Operation(summary = "Transfer inventory", description = "Transfer products between warehouses", operationId = "transferInventory")
     public ResponseEntity<Void> transferInventory(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody com.spiceflow.backend.inventory.dto.request.InventoryTransferRequest request) {
         log.info("Received request to transfer inventory by user: {}", currentUser.getId());
         inventoryItemService.transferInventory(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
@@ -100,11 +100,10 @@ public class InventoryItemController {
     @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
     @Operation(summary = "Mark inventory damaged", description = "Mark products as damaged and deduct from available stock", operationId = "markDamaged")
     public ResponseEntity<Void> markDamaged(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody com.spiceflow.backend.inventory.dto.request.InventoryMarkDamagedRequest request) {
         log.info("Received request to mark inventory damaged by user: {}", currentUser.getId());
         inventoryItemService.markDamaged(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.ok().build();
     }
 }
-

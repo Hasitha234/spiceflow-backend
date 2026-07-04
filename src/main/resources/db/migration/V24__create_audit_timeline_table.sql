@@ -2,7 +2,7 @@
 -- Creates the immutable append-only audit timeline projection table for operational workflows.
 
 CREATE TABLE audit_entries (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     tenant_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
     correlation_id VARCHAR(100) NOT NULL,

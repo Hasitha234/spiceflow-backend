@@ -43,6 +43,9 @@ public class Delivery extends BaseEntity {
     @Builder.Default
     private String status = "IN_PROGRESS";
 
+    @Column(name = "delivery_number", length = 50)
+    private String deliveryNumber;
+
     @Column(name = "total_sales_value", nullable = false, precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal totalSalesValue = BigDecimal.ZERO;
