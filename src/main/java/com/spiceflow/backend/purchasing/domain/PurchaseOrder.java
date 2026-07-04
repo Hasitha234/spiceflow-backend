@@ -25,6 +25,8 @@ public class PurchaseOrder implements WorkflowAggregate<PurchaseOrder, PurchaseO
     private String correlationId;
     private Instant createdAt;
     private Instant updatedAt;
+    private @Nullable Instant submittedAt;
+    private @Nullable Instant receivedAt;
 
     protected PurchaseOrder() {
         // JPA only
@@ -38,6 +40,8 @@ public class PurchaseOrder implements WorkflowAggregate<PurchaseOrder, PurchaseO
         this.correlationId = "";
         this.createdAt = Instant.EPOCH;
         this.updatedAt = Instant.EPOCH;
+        this.submittedAt = null;
+        this.receivedAt = null;
     }
 
     // COPY-ON-WRITE constructor (Rule 15 compliant)
@@ -53,6 +57,8 @@ public class PurchaseOrder implements WorkflowAggregate<PurchaseOrder, PurchaseO
         this.createdBy = source.createdBy;
         this.createdAt = source.createdAt;
         this.updatedAt = Instant.now();
+        this.submittedAt = source.submittedAt;
+        this.receivedAt = source.receivedAt;
 
         // IMPORTANT: defensive copy (no shared references)
         this.lines = newLines != null
@@ -73,6 +79,13 @@ public class PurchaseOrder implements WorkflowAggregate<PurchaseOrder, PurchaseO
                          PurchaseOrderState state, Instant orderDate, BigDecimal totalAmount,
                          String createdBy, @Nullable Long version, String correlationId,
                          Instant createdAt, Instant updatedAt, List<PurchaseOrderLine> lines) {
+        this(id, poNumber, tenantId, supplierId, state, orderDate, totalAmount, createdBy, version, correlationId, createdAt, updatedAt, null, null, lines);
+    }
+
+    public PurchaseOrder(@Nullable Long id, String poNumber, Long tenantId, Long supplierId,
+                         PurchaseOrderState state, Instant orderDate, BigDecimal totalAmount,
+                         String createdBy, @Nullable Long version, String correlationId,
+                         Instant createdAt, Instant updatedAt, @Nullable Instant submittedAt, @Nullable Instant receivedAt, List<PurchaseOrderLine> lines) {
         this.id = id;
         this.poNumber = poNumber;
         this.tenantId = tenantId;
@@ -85,6 +98,8 @@ public class PurchaseOrder implements WorkflowAggregate<PurchaseOrder, PurchaseO
         this.correlationId = correlationId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.submittedAt = submittedAt;
+        this.receivedAt = receivedAt;
         this.lines = new ArrayList<>(lines);
     }
 
@@ -121,6 +136,12 @@ public class PurchaseOrder implements WorkflowAggregate<PurchaseOrder, PurchaseO
     @Override
     public WorkflowTransitionOutput<PurchaseOrder> transitionTo(PurchaseOrderState targetState, WorkflowContext context) {
         PurchaseOrder copy = new PurchaseOrder(this, targetState, this.lines);
+        if (targetState == PurchaseOrderState.SUBMITTED && copy.submittedAt == null) {
+            copy.submittedAt = context.timestamp();
+        }
+        if ((targetState == PurchaseOrderState.RECEIVED || targetState == PurchaseOrderState.CLOSED) && copy.receivedAt == null) {
+            copy.receivedAt = context.timestamp();
+        }
         DomainEventType eventType = switch (targetState) {
             case SUBMITTED -> DomainEventType.PURCHASE_ORDER_SUBMITTED;
             case APPROVED -> DomainEventType.PURCHASE_ORDER_APPROVED;
@@ -155,4 +176,6 @@ public class PurchaseOrder implements WorkflowAggregate<PurchaseOrder, PurchaseO
     public String getCorrelationId() { return correlationId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public @Nullable Instant getSubmittedAt() { return submittedAt; }
+    public @Nullable Instant getReceivedAt() { return receivedAt; }
 }
