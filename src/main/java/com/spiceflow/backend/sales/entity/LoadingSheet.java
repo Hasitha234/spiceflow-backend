@@ -42,6 +42,9 @@ public class LoadingSheet extends BaseEntity {
     @Column(name = "loading_date", nullable = false)
     private LocalDate loadingDate;
 
+    @Column(name = "sheet_number", length = 50)
+    private String sheetNumber;
+
     @Column(nullable = false, length = 50)
     @Builder.Default
     private String status = "DRAFT";

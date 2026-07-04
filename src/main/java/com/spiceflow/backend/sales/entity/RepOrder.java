@@ -58,6 +58,13 @@ public class RepOrder extends BaseEntity {
     @Builder.Default
     private String loadingStatus = "DRAFT";
 
+    @Column(name = "status", nullable = false, length = 50)
+    @Builder.Default
+    private String status = "DRAFT";
+
+    @Column(name = "order_number", length = 50)
+    private String orderNumber;
+
     @OneToMany(mappedBy = "repOrder", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
     @Builder.Default
     private List<RepOrderShop> shops = new ArrayList<>();

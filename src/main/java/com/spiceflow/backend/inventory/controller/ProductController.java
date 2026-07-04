@@ -1,7 +1,7 @@
 package com.spiceflow.backend.inventory.controller;
 
 import org.springframework.validation.annotation.Validated;
-import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.inventory.dto.request.ProductRequest;
 import com.spiceflow.backend.inventory.dto.response.ProductResponse;
 import com.spiceflow.backend.inventory.service.ProductService;
@@ -32,7 +32,7 @@ public class ProductController {
     @PostMapping
     @Operation(summary = "Create a new product", description = "Creates a new product under the authenticated tenant's scope", operationId = "createProduct")
     public ResponseEntity<ProductResponse> createProduct(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody ProductRequest request) {
         log.info("Received request to create product: {} by user: {}", request.name(), currentUser.getId());
         ProductResponse response = productService.createProduct(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
@@ -42,7 +42,7 @@ public class ProductController {
     @GetMapping
     @Operation(summary = "List all products", description = "Returns a paginated list of products, optionally filtered by search text", operationId = "getProducts")
     public ResponseEntity<Page<ProductResponse>> getProducts(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String search,
             Pageable pageable) {
         log.info("Received request to fetch products by user: {}", currentUser.getId());
@@ -53,7 +53,7 @@ public class ProductController {
     @GetMapping("/{id}")
     @Operation(summary = "Get product by ID", description = "Returns details of a specific product", operationId = "getProduct")
     public ResponseEntity<ProductResponse> getProduct(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("Received request to fetch product ID: {} by user: {}", id, currentUser.getId());
         ProductResponse response = productService.getProduct(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
@@ -63,7 +63,7 @@ public class ProductController {
     @PutMapping("/{id}")
     @Operation(summary = "Update product", description = "Updates details of an existing product", operationId = "updateProduct")
     public ResponseEntity<ProductResponse> updateProduct(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id, @Valid @RequestBody ProductRequest request) {
         log.info("Received request to update product ID: {} by user: {}", id, currentUser.getId());
         ProductResponse response = productService.updateProduct(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
@@ -73,11 +73,10 @@ public class ProductController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete product", description = "Deletes a product if it has no associated inventory items", operationId = "deleteProduct")
     public ResponseEntity<Void> deleteProduct(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("Received request to delete product ID: {} by user: {}", id, currentUser.getId());
         productService.deleteProduct(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.noContent().build();
     }
 }
-

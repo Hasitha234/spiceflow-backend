@@ -1,7 +1,7 @@
 package com.spiceflow.backend.inventory.controller;
 
 import org.springframework.validation.annotation.Validated;
-import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.inventory.dto.request.SupplierRequest;
 import com.spiceflow.backend.inventory.dto.response.SupplierResponse;
 import com.spiceflow.backend.inventory.service.SupplierService;
@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.validation.annotation.Validated;
 
 @RestController
 @Validated
@@ -41,7 +40,7 @@ public class SupplierController {
     @Operation(summary = "List all suppliers (with pagination and search)", description = "Returns suppliers for the authenticated tenant", operationId = "getSuppliers")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT')")
     public ResponseEntity<Page<SupplierResponse>> getSuppliers(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String search,
             @PageableDefault(size = 20, sort = "name") Pageable pageable) {
         Page<SupplierResponse> page = supplierService.getSuppliers(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), search, pageable);
@@ -53,7 +52,7 @@ public class SupplierController {
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT')")
     public ResponseEntity<SupplierResponse> getSupplier(
             @PathVariable Long id,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
         return ResponseEntity.ok(supplierService.getSupplier(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id));
     }
 
@@ -61,7 +60,7 @@ public class SupplierController {
     @Operation(summary = "Create supplier", description = "Creates a new supplier for the authenticated tenant", operationId = "createSupplier")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT')")
     public ResponseEntity<SupplierResponse> createSupplier(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody SupplierRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(supplierService.createSupplier(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request));
     }
@@ -72,7 +71,7 @@ public class SupplierController {
     public ResponseEntity<SupplierResponse> updateSupplier(
             @PathVariable Long id,
             @Valid @RequestBody SupplierRequest request,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
         return ResponseEntity.ok(supplierService.updateSupplier(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id, request));
     }
 
@@ -80,10 +79,9 @@ public class SupplierController {
     @Operation(summary = "Delete supplier", description = "Soft deletes a supplier", operationId = "deleteSupplier")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER')")
     public ResponseEntity<Void> deleteSupplier(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         supplierService.deleteSupplier(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id);
         return ResponseEntity.noContent().build();
     }
 }
-

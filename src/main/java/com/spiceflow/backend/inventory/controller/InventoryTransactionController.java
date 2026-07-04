@@ -1,7 +1,7 @@
 package com.spiceflow.backend.inventory.controller;
 
 import org.springframework.validation.annotation.Validated;
-import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.inventory.dto.request.InventoryTransactionRequest;
 import com.spiceflow.backend.inventory.dto.response.InventoryTransactionResponse;
 import com.spiceflow.backend.inventory.service.InventoryTransactionService;
@@ -33,7 +33,7 @@ public class InventoryTransactionController {
     @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
     @Operation(summary = "Create an inventory transaction", description = "Records a stock movement (IN, OUT, RESERVE, RELEASE) and updates inventory quantities", operationId = "createTransaction")
     public ResponseEntity<InventoryTransactionResponse> createTransaction(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody InventoryTransactionRequest request) {
         log.info("Received request to create inventory transaction type: {} for item: {} by user: {}", 
             request.transactionType(), request.inventoryItemId(), currentUser.getId());
@@ -44,7 +44,7 @@ public class InventoryTransactionController {
     @GetMapping
     @Operation(summary = "List all inventory transactions", description = "Returns an immutable paginated ledger of all stock movements", operationId = "getTransactions")
     public ResponseEntity<Page<InventoryTransactionResponse>> getTransactions(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) Long inventoryItemId,
             @RequestParam(required = false) String type,
             Pageable pageable) {
@@ -56,11 +56,10 @@ public class InventoryTransactionController {
     @GetMapping("/{id}")
     @Operation(summary = "Get inventory transaction by ID", description = "Returns details of a specific stock movement", operationId = "getTransaction")
     public ResponseEntity<InventoryTransactionResponse> getTransaction(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("Received request to fetch inventory transaction ID: {} by user: {}", id, currentUser.getId());
         InventoryTransactionResponse response = transactionService.getTransaction(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
     }
 }
-

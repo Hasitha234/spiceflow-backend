@@ -1,7 +1,7 @@
 package com.spiceflow.backend.inventory.controller;
 
 import org.springframework.validation.annotation.Validated;
-import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.inventory.dto.request.WarehouseRequest;
 import com.spiceflow.backend.inventory.dto.response.WarehouseResponse;
 import com.spiceflow.backend.inventory.service.WarehouseService;
@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.validation.annotation.Validated;
 
 @RestController
 @Validated
@@ -41,7 +40,7 @@ public class WarehouseController {
     @Operation(summary = "List all warehouses (with pagination and search)", description = "Returns warehouses for the authenticated tenant", operationId = "getAllWarehouses")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'WAREHOUSE_STAFF')")
     public ResponseEntity<Page<WarehouseResponse>> getAllWarehouses(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String search,
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(warehouseService.getAllWarehouses(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), search, pageable));
@@ -52,7 +51,7 @@ public class WarehouseController {
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'WAREHOUSE_STAFF')")
     public ResponseEntity<WarehouseResponse> getWarehouse(
             @PathVariable Long id,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
         return ResponseEntity.ok(warehouseService.getWarehouse(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id));
     }
 
@@ -60,7 +59,7 @@ public class WarehouseController {
     @Operation(summary = "Create warehouse", description = "Creates a new warehouse for the authenticated tenant", operationId = "createWarehouse")
     @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER')")
     public ResponseEntity<WarehouseResponse> createWarehouse(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody WarehouseRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(warehouseService.createWarehouse(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request));
     }
@@ -71,7 +70,7 @@ public class WarehouseController {
     public ResponseEntity<WarehouseResponse> updateWarehouse(
             @PathVariable Long id,
             @Valid @RequestBody WarehouseRequest request,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
         return ResponseEntity.ok(warehouseService.updateWarehouse(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id, request));
     }
 
@@ -79,10 +78,9 @@ public class WarehouseController {
     @Operation(summary = "Delete warehouse", description = "Soft deletes a warehouse", operationId = "deleteWarehouse")
     @PreAuthorize("hasRole('TENANT_OWNER')")
     public ResponseEntity<Void> deleteWarehouse(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         warehouseService.deleteWarehouse(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id);
         return ResponseEntity.noContent().build();
     }
 }
-

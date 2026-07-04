@@ -1,7 +1,7 @@
 package com.spiceflow.backend.inventory.controller;
 
 import org.springframework.validation.annotation.Validated;
-import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.inventory.dto.request.ProductCategoryRequest;
 import com.spiceflow.backend.inventory.dto.response.ProductCategoryResponse;
 import com.spiceflow.backend.inventory.service.ProductCategoryService;
@@ -32,7 +32,7 @@ public class ProductCategoryController {
     @PostMapping
     @Operation(summary = "Create a new product category", description = "Creates a new category under the authenticated tenant's scope", operationId = "createCategory")
     public ResponseEntity<ProductCategoryResponse> createCategory(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody ProductCategoryRequest request) {
         log.info("Received request to create product category: {} by user: {}", request.name(), currentUser.getId());
         ProductCategoryResponse response = productCategoryService.createCategory(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
@@ -42,7 +42,7 @@ public class ProductCategoryController {
     @GetMapping
     @Operation(summary = "List all product categories", description = "Returns a paginated list of categories, optionally filtered by search text", operationId = "getCategories")
     public ResponseEntity<Page<ProductCategoryResponse>> getCategories(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String search,
             Pageable pageable) {
         log.info("Received request to fetch product categories by user: {}", currentUser.getId());
@@ -53,7 +53,7 @@ public class ProductCategoryController {
     @GetMapping("/{id}")
     @Operation(summary = "Get product category by ID", description = "Returns details of a specific category", operationId = "getCategory")
     public ResponseEntity<ProductCategoryResponse> getCategory(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("Received request to fetch product category ID: {} by user: {}", id, currentUser.getId());
         ProductCategoryResponse response = productCategoryService.getCategory(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
@@ -63,7 +63,7 @@ public class ProductCategoryController {
     @PutMapping("/{id}")
     @Operation(summary = "Update product category", description = "Updates details of an existing category", operationId = "updateCategory")
     public ResponseEntity<ProductCategoryResponse> updateCategory(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id, @Valid @RequestBody ProductCategoryRequest request) {
         log.info("Received request to update product category ID: {} by user: {}", id, currentUser.getId());
         ProductCategoryResponse response = productCategoryService.updateCategory(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
@@ -73,11 +73,10 @@ public class ProductCategoryController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete product category", description = "Deletes a category if it has no child categories or products", operationId = "deleteCategory")
     public ResponseEntity<Void> deleteCategory(
-            @AuthenticationPrincipal User currentUser,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
         log.info("Received request to delete product category ID: {} by user: {}", id, currentUser.getId());
         productCategoryService.deleteCategory(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.noContent().build();
     }
 }
-
