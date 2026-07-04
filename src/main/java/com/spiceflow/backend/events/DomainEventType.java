@@ -1,0 +1,20 @@
+package com.spiceflow.backend.events;
+
+/**
+ * Vocabulary of domain events emitted by operational workflows.
+ */
+public enum DomainEventType {
+    PURCHASE_ORDER_CREATED,
+    PURCHASE_ORDER_SUBMITTED,
+    PURCHASE_ORDER_APPROVED,
+    PURCHASE_ORDER_REJECTED,
+    GOODS_RECEIVED,
+    INVENTORY_ADJUSTED,
+    WAREHOUSE_TRANSFER_REQUESTED,
+    WAREHOUSE_TRANSFER_COMPLETED,
+    REP_ORDER_CREATED,
+    LOADING_SHEET_GENERATED,
+    DELIVERY_DISPATCHED,
+    DELIVERY_COMPLETED,
+    CASH_COLLECTED
+}
