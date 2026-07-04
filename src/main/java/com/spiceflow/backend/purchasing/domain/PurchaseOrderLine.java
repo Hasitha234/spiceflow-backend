@@ -1,33 +1,15 @@
 package com.spiceflow.backend.purchasing.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import org.jspecify.annotations.Nullable;
 
-@Entity
-@Table(name = "purchase_order_lines")
 public class PurchaseOrderLine {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private @Nullable Long id;
-
-    @Column(name = "product_id", nullable = false)
     private Long productId;
-
-    @Column(name = "quantity", nullable = false, precision = 19, scale = 2)
     private BigDecimal quantity;
-
-    @Column(name = "unit_price", nullable = false, precision = 19, scale = 2)
     private BigDecimal unitPrice;
-
-    @Column(name = "line_total", nullable = false, precision = 19, scale = 2)
     private BigDecimal lineTotal;
 
     protected PurchaseOrderLine() {

@@ -4,67 +4,26 @@ import com.spiceflow.backend.events.DomainEventType;
 import com.spiceflow.backend.workflow.WorkflowAggregate;
 import com.spiceflow.backend.workflow.WorkflowContext;
 import com.spiceflow.backend.workflow.WorkflowTransitionOutput;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
-@Entity
-@Table(name = "purchase_orders")
 public class PurchaseOrder implements WorkflowAggregate<PurchaseOrder, PurchaseOrderState> {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private @Nullable Long id;
-
-    @Column(nullable = false, unique = true)
     private String poNumber;
-
-    @Column(nullable = false)
     private Long tenantId;
-
-    @Column(nullable = false)
     private Long supplierId;
-
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "purchase_order_id")
     private List<PurchaseOrderLine> lines = new ArrayList<>();
-
-    @Enumerated(EnumType.STRING)
     private PurchaseOrderState state;
-
-    @Column(name = "order_date", nullable = false)
     private Instant orderDate;
-
-    @Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal totalAmount;
-
-    @Column(name = "created_by", nullable = false)
     private String createdBy;
-
-    @Version
     private @Nullable Long version;
-
-    @Column(name = "correlation_id", nullable = false)
     private String correlationId;
-
-    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
-
-    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     protected PurchaseOrder() {
