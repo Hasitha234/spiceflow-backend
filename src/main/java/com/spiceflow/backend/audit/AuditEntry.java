@@ -31,6 +31,9 @@ public class AuditEntry {
     @Column(name = "correlation_id", nullable = false, updatable = false, length = 100)
     private String correlationId;
 
+    @Column(name = "aggregate_id", updatable = false, length = 100)
+    private @Nullable String aggregateId;
+
     @Column(name = "command_name", nullable = false, updatable = false, length = 100)
     private String commandName;
 
@@ -61,6 +64,7 @@ public class AuditEntry {
         this.tenantId = Objects.requireNonNull(builder.tenantId, "tenantId must not be null");
         this.userId = Objects.requireNonNull(builder.userId, "userId must not be null");
         this.correlationId = Objects.requireNonNull(builder.correlationId, "correlationId must not be null");
+        this.aggregateId = builder.aggregateId;
         this.commandName = Objects.requireNonNull(builder.commandName, "commandName must not be null");
         this.fromState = Objects.requireNonNull(builder.fromState, "fromState must not be null");
         this.toState = Objects.requireNonNull(builder.toState, "toState must not be null");
@@ -76,6 +80,7 @@ public class AuditEntry {
     public Long getTenantId() { return tenantId; }
     public Long getUserId() { return userId; }
     public String getCorrelationId() { return correlationId; }
+    public @Nullable String getAggregateId() { return aggregateId; }
     public String getCommandName() { return commandName; }
     public String getFromState() { return fromState; }
     public String getToState() { return toState; }
@@ -86,6 +91,7 @@ public class AuditEntry {
         private @Nullable Long tenantId;
         private @Nullable Long userId;
         private @Nullable String correlationId;
+        private @Nullable String aggregateId;
         private @Nullable String commandName;
         private @Nullable String fromState;
         private @Nullable String toState;
@@ -95,6 +101,7 @@ public class AuditEntry {
         public Builder tenantId(Long tenantId) { this.tenantId = tenantId; return this; }
         public Builder userId(Long userId) { this.userId = userId; return this; }
         public Builder correlationId(String correlationId) { this.correlationId = correlationId; return this; }
+        public Builder aggregateId(@Nullable String aggregateId) { this.aggregateId = aggregateId; return this; }
         public Builder commandName(String commandName) { this.commandName = commandName; return this; }
         public Builder fromState(String fromState) { this.fromState = fromState; return this; }
         public Builder toState(String toState) { this.toState = toState; return this; }

@@ -45,6 +45,7 @@ public class WorkflowEngine {
                 .tenantId(context.tenantId())
                 .userId(context.userId())
                 .correlationId(context.correlationId())
+                .aggregateId(aggregate.getAggregateId())
                 .commandName(command.getCommandName())
                 .fromState(fromState.name())
                 .toState(toState.name())
