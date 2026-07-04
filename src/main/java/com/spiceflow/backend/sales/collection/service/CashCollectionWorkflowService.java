@@ -8,8 +8,12 @@ import com.spiceflow.backend.events.DomainEventPublisher;
 import com.spiceflow.backend.sales.collection.adapter.CashCollectionPersistenceAdapter;
 import com.spiceflow.backend.sales.collection.domain.CashCollection;
 import com.spiceflow.backend.sales.collection.domain.CashCollectionState;
+import com.spiceflow.backend.sales.collection.dto.CashCollectionResponse;
+import com.spiceflow.backend.sales.collection.dto.CreateCashCollectionRequest;
 import com.spiceflow.backend.sales.collection.entity.CashCollectionWorkflowEntity;
 import com.spiceflow.backend.sales.collection.repository.CashCollectionWorkflowRepository;
+import com.spiceflow.backend.sales.collection.workflow.command.CancelCashCollectionCommand;
+import com.spiceflow.backend.sales.collection.workflow.command.ConfirmCashCollectionCommand;
 import com.spiceflow.backend.sales.entity.Shop;
 import com.spiceflow.backend.sales.repository.ShopRepository;
 import com.spiceflow.backend.workflow.WorkflowCommand;
@@ -17,7 +21,10 @@ import com.spiceflow.backend.workflow.WorkflowContext;
 import com.spiceflow.backend.workflow.WorkflowEngine;
 import com.spiceflow.backend.workflow.WorkflowResult;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -67,6 +74,55 @@ public class CashCollectionWorkflowService {
         CashCollectionWorkflowEntity saved = repository.save(entity);
         log.info("Created cash collection {} for tenant {}", collection.getCollectionNumber(), collection.getTenantId());
         return adapter.toAggregate(saved);
+    }
+
+    @Transactional
+    public CashCollectionResponse createCollection(Long tenantId, CreateCashCollectionRequest request, String username) {
+        String collectionNumber = "COL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        CashCollection collection = CashCollection.create(
+                collectionNumber,
+                tenantId,
+                request.shopId(),
+                request.repId(),
+                request.collectionDate(),
+                request.amount(),
+                request.paymentMethod(),
+                request.chequeNo(),
+                request.chequeBankName(),
+                request.chequeDate(),
+                request.notes(),
+                username
+        );
+        CashCollection created = createCollection(collection);
+        return CashCollectionResponse.from(created);
+    }
+
+    @Transactional
+    public CashCollectionResponse confirmCollection(String collectionNumber, Long tenantId, Long userId, @Nullable String comment) {
+        WorkflowContext context = new WorkflowContext(
+                userId != null ? userId : 1L,
+                tenantId,
+                collectionNumber,
+                Instant.now(Clock.systemUTC())
+        );
+        WorkflowResult<CashCollection> result = executeCommand(
+                collectionNumber, tenantId, new ConfirmCashCollectionCommand(comment), context
+        );
+        return CashCollectionResponse.from(result.updatedAggregate());
+    }
+
+    @Transactional
+    public CashCollectionResponse cancelCollection(String collectionNumber, Long tenantId, Long userId, @Nullable String comment) {
+        WorkflowContext context = new WorkflowContext(
+                userId != null ? userId : 1L,
+                tenantId,
+                collectionNumber,
+                Instant.now(Clock.systemUTC())
+        );
+        WorkflowResult<CashCollection> result = executeCommand(
+                collectionNumber, tenantId, new CancelCashCollectionCommand(comment), context
+        );
+        return CashCollectionResponse.from(result.updatedAggregate());
     }
 
     @Transactional(readOnly = true)

@@ -6,18 +6,11 @@ import com.spiceflow.backend.sales.collection.domain.CashCollectionState;
 import com.spiceflow.backend.sales.collection.dto.CashCollectionResponse;
 import com.spiceflow.backend.sales.collection.dto.CreateCashCollectionRequest;
 import com.spiceflow.backend.sales.collection.service.CashCollectionWorkflowService;
-import com.spiceflow.backend.sales.collection.workflow.command.CancelCashCollectionCommand;
-import com.spiceflow.backend.sales.collection.workflow.command.ConfirmCashCollectionCommand;
-import com.spiceflow.backend.workflow.WorkflowContext;
-import com.spiceflow.backend.workflow.WorkflowResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.time.Clock;
-import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -52,24 +45,8 @@ public class CashCollectionWorkflowController {
         Long tenantId = Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
         log.info("User {} creating cash collection for shop {}", currentUser.getId(), request.shopId());
 
-        String collectionNumber = "COL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        CashCollection collection = CashCollection.create(
-                collectionNumber,
-                tenantId,
-                request.shopId(),
-                request.repId(),
-                request.collectionDate(),
-                request.amount(),
-                request.paymentMethod(),
-                request.chequeNo(),
-                request.chequeBankName(),
-                request.chequeDate(),
-                request.notes(),
-                currentUser.getUsername()
-        );
-
-        CashCollection created = workflowService.createCollection(collection);
-        return ResponseEntity.status(HttpStatus.CREATED).body(CashCollectionResponse.from(created));
+        CashCollectionResponse response = workflowService.createCollection(tenantId, request, currentUser.getUsername());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/{collectionNumber}/confirm")
@@ -82,16 +59,8 @@ public class CashCollectionWorkflowController {
         Long tenantId = Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
         log.info("User {} confirming cash collection {}", currentUser.getId(), collectionNumber);
 
-        WorkflowContext context = new WorkflowContext(
-                currentUser.getId() != null ? currentUser.getId() : 1L,
-                tenantId,
-                collectionNumber,
-                Instant.now(Clock.systemUTC())
-        );
-        WorkflowResult<CashCollection> result = workflowService.executeCommand(
-                collectionNumber, tenantId, new ConfirmCashCollectionCommand(comment), context
-        );
-        return ResponseEntity.ok(CashCollectionResponse.from(result.updatedAggregate()));
+        CashCollectionResponse response = workflowService.confirmCollection(collectionNumber, tenantId, currentUser.getId(), comment);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{collectionNumber}/cancel")
@@ -104,16 +73,8 @@ public class CashCollectionWorkflowController {
         Long tenantId = Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
         log.info("User {} cancelling cash collection {}", currentUser.getId(), collectionNumber);
 
-        WorkflowContext context = new WorkflowContext(
-                currentUser.getId() != null ? currentUser.getId() : 1L,
-                tenantId,
-                collectionNumber,
-                Instant.now(Clock.systemUTC())
-        );
-        WorkflowResult<CashCollection> result = workflowService.executeCommand(
-                collectionNumber, tenantId, new CancelCashCollectionCommand(comment), context
-        );
-        return ResponseEntity.ok(CashCollectionResponse.from(result.updatedAggregate()));
+        CashCollectionResponse response = workflowService.cancelCollection(collectionNumber, tenantId, currentUser.getId(), comment);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping

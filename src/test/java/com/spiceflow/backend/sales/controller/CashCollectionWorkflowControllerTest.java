@@ -5,12 +5,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.sales.collection.domain.CashCollection;
 import com.spiceflow.backend.sales.collection.domain.CashCollectionState;
+import com.spiceflow.backend.sales.collection.dto.CashCollectionResponse;
 import com.spiceflow.backend.sales.collection.dto.CreateCashCollectionRequest;
 import com.spiceflow.backend.sales.collection.service.CashCollectionWorkflowService;
-import com.spiceflow.backend.audit.AuditEntry;
-import com.spiceflow.backend.workflow.WorkflowResult;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,7 +85,8 @@ class CashCollectionWorkflowControllerTest {
         CashCollection created = CashCollection.create("COL-12345678", 10L, 100L, 5L,
                 LocalDate.of(2026, 7, 4), BigDecimal.valueOf(5000), "CASH", null, null, null, "Payment received", "admin@spiceflow.com");
 
-        when(workflowService.createCollection(any(CashCollection.class))).thenReturn(created);
+        when(workflowService.createCollection(eq(10L), any(CreateCashCollectionRequest.class), eq("admin@spiceflow.com")))
+                .thenReturn(CashCollectionResponse.from(created));
 
         mockMvc.perform(post("/api/v1/sales/collections")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -106,17 +105,8 @@ class CashCollectionWorkflowControllerTest {
                 CashCollectionState.CONFIRMED
         );
 
-        AuditEntry dummyAudit = AuditEntry.builder()
-                .tenantId(10L)
-                .userId(1L)
-                .correlationId("COL-12345678")
-                .commandName("ConfirmCashCollection")
-                .fromState("PENDING")
-                .toState("CONFIRMED")
-                .timestamp(Instant.now())
-                .build();
-        when(workflowService.executeCommand(eq("COL-12345678"), eq(10L), any(), any()))
-                .thenReturn(new WorkflowResult<>(confirmed, List.of(), dummyAudit));
+        when(workflowService.confirmCollection(eq("COL-12345678"), eq(10L), eq(1L), eq("Verified")))
+                .thenReturn(CashCollectionResponse.from(confirmed));
 
         mockMvc.perform(post("/api/v1/sales/collections/COL-12345678/confirm?comment=Verified"))
                 .andExpect(status().isOk())
