@@ -1,45 +1,39 @@
 package com.spiceflow.backend.purchasing.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.jspecify.annotations.Nullable;
 
-@Entity
-@Table(name = "purchase_order_lines")
 public class PurchaseOrderLine {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private @Nullable Long id;
-
-    @Column(name = "product_id", nullable = false)
     private Long productId;
-
-    @Column(name = "quantity", nullable = false)
-    private Integer quantity;
-
-    @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
+    private BigDecimal quantity;
     private BigDecimal unitPrice;
+    private BigDecimal lineTotal;
 
     protected PurchaseOrderLine() {
         this.productId = 0L;
-        this.quantity = 0;
+        this.quantity = BigDecimal.ZERO;
         this.unitPrice = BigDecimal.ZERO;
+        this.lineTotal = BigDecimal.ZERO;
     }
 
-    public PurchaseOrderLine(Long productId, Integer quantity, BigDecimal unitPrice) {
+    public PurchaseOrderLine(Long productId, BigDecimal quantity, BigDecimal unitPrice) {
+        this(null, productId, quantity, unitPrice);
+    }
+
+    public PurchaseOrderLine(@Nullable Long id, Long productId, BigDecimal quantity, BigDecimal unitPrice) {
+        this.id = id;
         this.productId = productId;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
+        this.lineTotal = quantity.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
     }
 
     public @Nullable Long getId() { return id; }
     public Long getProductId() { return productId; }
-    public Integer getQuantity() { return quantity; }
+    public BigDecimal getQuantity() { return quantity; }
     public BigDecimal getUnitPrice() { return unitPrice; }
+    public BigDecimal getLineTotal() { return lineTotal; }
 }

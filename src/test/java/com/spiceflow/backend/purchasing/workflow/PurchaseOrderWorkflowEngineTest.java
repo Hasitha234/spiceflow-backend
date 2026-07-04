@@ -90,6 +90,8 @@ class PurchaseOrderWorkflowEngineTest {
 
         assertEquals("PO-TEST-001",
                 result.auditEntry().getCorrelationId());
+        assertEquals("PO-2026-0001",
+                result.auditEntry().getAggregateId());
     }
 
     // 5. IMMUTABILITY (RULE 15 ENFORCEMENT)
