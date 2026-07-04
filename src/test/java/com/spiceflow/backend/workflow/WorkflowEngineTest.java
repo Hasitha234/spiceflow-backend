@@ -45,7 +45,7 @@ class WorkflowEngineTest {
         @Override public Long getTenantId() { return tenantId; }
     }
 
-    static class TestAggregate implements WorkflowAggregate<TestState> {
+    static class TestAggregate implements WorkflowAggregate<TestAggregate, TestState> {
         private String id = "TEST-AGG-1";
         private TestState state = TestState.DRAFT;
 
@@ -56,11 +56,13 @@ class WorkflowEngineTest {
         public TestState getWorkflowState() { return state; }
 
         @Override
-        public List<DomainEvent> transitionTo(TestState targetState, WorkflowContext context) {
-            this.state = targetState;
+        public WorkflowTransitionOutput<TestAggregate> transitionTo(TestState targetState, WorkflowContext context) {
+            TestAggregate copy = new TestAggregate();
+            copy.id = this.id;
+            copy.state = targetState;
             List<DomainEvent> events = new ArrayList<>();
             events.add(new TestEvent(id, DomainEventType.PURCHASE_ORDER_SUBMITTED, context.correlationId(), context.timestamp(), context.tenantId()));
-            return events;
+            return new WorkflowTransitionOutput<>(copy, events);
         }
     }
 
@@ -78,7 +80,7 @@ class WorkflowEngineTest {
     }
 
     @Test
-    @DisplayName("execute() performs stateless transition and returns immutable result without side effects inside aggregate")
+    @DisplayName("execute() performs stateless transition and returns immutable copy-on-write result without side effects inside aggregate")
     void execute_successfulTransition_returnsResultWithEventsAndAudit() {
         TestAggregate aggregate = new TestAggregate();
         SubmitCommand command = new SubmitCommand("Submitting for review");
@@ -86,6 +88,7 @@ class WorkflowEngineTest {
         WorkflowResult<TestAggregate> result = workflowEngine.execute(command, aggregate, context);
 
         assertThat(result.updatedAggregate().getWorkflowState()).isEqualTo(TestState.SUBMITTED);
+        assertThat(aggregate.getWorkflowState()).isEqualTo(TestState.DRAFT); // original unmodified (Rule 15)
         assertThat(result.events()).hasSize(1);
         assertThat(result.events().get(0).getEventType()).isEqualTo(DomainEventType.PURCHASE_ORDER_SUBMITTED);
         assertThat(result.events().get(0).getCorrelationId()).isEqualTo("PO-2026-0001");

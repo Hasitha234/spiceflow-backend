@@ -14,6 +14,7 @@ public class WorkflowEngine {
 
     /**
      * Executes a workflow command against a target aggregate within the provided context.
+     * Enforces Rule 15 copy-on-write immutability: returns a new aggregate instance without mutating input.
      *
      * @param command   The intention and prerequisites
      * @param aggregate The target aggregate to transition
@@ -22,7 +23,7 @@ public class WorkflowEngine {
      * @param <S>       The workflow state type
      * @return Immutable WorkflowResult containing updated aggregate, domain events, and audit entry
      */
-    public <T extends WorkflowAggregate<S>, S extends WorkflowState> WorkflowResult<T> execute(
+    public <T extends WorkflowAggregate<T, S>, S extends WorkflowState> WorkflowResult<T> execute(
             WorkflowCommand<T, S> command,
             T aggregate,
             WorkflowContext context) {
@@ -34,8 +35,10 @@ public class WorkflowEngine {
         S fromState = aggregate.getWorkflowState();
         S toState = command.getTargetState();
 
-        // 3. Perform transition on aggregate (generates domain events)
-        List<DomainEvent> events = aggregate.transitionTo(toState, context);
+        // 3. Perform transition on aggregate (returns copy-on-write updated aggregate and generated domain events)
+        WorkflowTransitionOutput<T> output = aggregate.transitionTo(toState, context);
+        T updatedAggregate = output.updatedAggregate();
+        List<DomainEvent> events = output.events();
 
         // 4. Create immutable audit timeline projection entry
         AuditEntry auditEntry = AuditEntry.builder()
@@ -50,6 +53,6 @@ public class WorkflowEngine {
                 .build();
 
         // 5. Return immutable result (events are emitted outside aggregate by service/engine caller)
-        return new WorkflowResult<>(aggregate, events, auditEntry);
+        return new WorkflowResult<>(updatedAggregate, events, auditEntry);
     }
 }

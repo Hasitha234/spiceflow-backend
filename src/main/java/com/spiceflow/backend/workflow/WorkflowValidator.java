@@ -9,7 +9,7 @@ import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
  * @param <T> The aggregate type
  * @param <S> The workflow state type
  */
-public interface WorkflowValidator<T extends WorkflowAggregate<S>, S extends WorkflowState> {
+public interface WorkflowValidator<T extends WorkflowAggregate<T, S>, S extends WorkflowState> {
     /**
      * Returns the set of allowed transitions for this state machine.
      */
