@@ -57,6 +57,12 @@ public class PurchaseOrderEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "submitted_at")
+    private @Nullable Instant submittedAt;
+
+    @Column(name = "received_at")
+    private @Nullable Instant receivedAt;
+
     @OneToMany(
         mappedBy = "purchaseOrder",
         cascade = CascadeType.ALL,
@@ -108,6 +114,12 @@ public class PurchaseOrderEntity {
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+    public @Nullable Instant getSubmittedAt() { return submittedAt; }
+    public void setSubmittedAt(@Nullable Instant submittedAt) { this.submittedAt = submittedAt; }
+
+    public @Nullable Instant getReceivedAt() { return receivedAt; }
+    public void setReceivedAt(@Nullable Instant receivedAt) { this.receivedAt = receivedAt; }
 
     public List<PurchaseOrderLineEntity> getLines() { return lines; }
     public void setLines(List<PurchaseOrderLineEntity> lines) {

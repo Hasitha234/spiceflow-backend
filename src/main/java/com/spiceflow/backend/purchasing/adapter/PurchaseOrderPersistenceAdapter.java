@@ -28,6 +28,8 @@ public class PurchaseOrderPersistenceAdapter {
         entity.setCreatedBy(aggregate.getCreatedBy());
         entity.setCreatedAt(aggregate.getCreatedAt());
         entity.setUpdatedAt(aggregate.getUpdatedAt());
+        entity.setSubmittedAt(aggregate.getSubmittedAt());
+        entity.setReceivedAt(aggregate.getReceivedAt());
 
         List<PurchaseOrderLineEntity> lineEntities = new ArrayList<>();
         for (PurchaseOrderLine line : aggregate.getLines()) {
@@ -67,6 +69,8 @@ public class PurchaseOrderPersistenceAdapter {
             entity.getCorrelationId(),
             entity.getCreatedAt(),
             entity.getUpdatedAt(),
+            entity.getSubmittedAt(),
+            entity.getReceivedAt(),
             lines
         );
     }
