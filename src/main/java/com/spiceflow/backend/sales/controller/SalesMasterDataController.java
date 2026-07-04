@@ -103,6 +103,35 @@ public class SalesMasterDataController {
         return ResponseEntity.ok(salesMasterDataService.getDrivers(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), name, pageable));
     }
 
+    @GetMapping("/drivers/{id}")
+    @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
+    @Operation(summary = "Get a driver by ID", operationId = "getDriver")
+    public ResponseEntity<DriverResponse> getDriver(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        return ResponseEntity.ok(salesMasterDataService.getDriver(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null")));
+    }
+
+    @PutMapping("/drivers/{id}")
+    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @Operation(summary = "Update a driver", operationId = "updateDriver")
+    public ResponseEntity<DriverResponse> updateDriver(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @Valid @RequestBody DriverRequest request) {
+        return ResponseEntity.ok(salesMasterDataService.updateDriver(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request));
+    }
+
+    @DeleteMapping("/drivers/{id}")
+    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @Operation(summary = "Delete a driver", operationId = "deleteDriver")
+    public ResponseEntity<Void> deleteDriver(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        salesMasterDataService.deleteDriver(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
+        return ResponseEntity.noContent().build();
+    }
+
     // --- SHOPS ---
     @PostMapping("/shops")
     @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")

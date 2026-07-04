@@ -3,6 +3,8 @@ package com.spiceflow.backend.sales.service;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.repository.WarehouseRepository;
 import com.spiceflow.backend.sales.dto.request.DriverRequest;
 import com.spiceflow.backend.sales.dto.request.RepRequest;
 import com.spiceflow.backend.sales.dto.request.ShopRequest;
@@ -32,6 +34,7 @@ public class SalesMasterDataService {
     private final ShopRepository shopRepository;
     private final RepRepository repRepository;
     private final DriverRepository driverRepository;
+    private final WarehouseRepository warehouseRepository;
     private final TenantRepository tenantRepository;
     private final SalesMapper salesMapper;
     
@@ -104,11 +107,26 @@ public class SalesMasterDataService {
         Tenant tenant = tenantRepository.findById(tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             
+        Warehouse defaultWarehouse = null;
+        if (request.defaultWarehouseId() != null) {
+            defaultWarehouse = warehouseRepository.findByIdAndTenantId(request.defaultWarehouseId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"));
+        }
+            
         Driver driver = Driver.builder()
             .tenant(tenant)
             .name(request.name())
+            .employeeId(request.employeeId())
+            .email(request.email())
             .phone(request.phone())
-            .vehicleNo(request.vehicleNo())
+            .employmentDate(request.employmentDate())
+            .terminationDate(request.terminationDate())
+            .licenseNumber(request.licenseNumber())
+            .licenseClass(request.licenseClass())
+            .licenseExpiry(request.licenseExpiry())
+            .defaultWarehouse(defaultWarehouse)
+            .assignedVehicle(request.assignedVehicle())
+            .status(request.status() != null ? request.status() : com.spiceflow.backend.common.enums.DriverStatus.AVAILABLE)
             .isActive(request.isActive() != null ? request.isActive() : true)
             .build();
             
@@ -123,6 +141,47 @@ public class SalesMasterDataService {
             drivers = driverRepository.findByTenantId(tenantId, pageable);
         }
         return drivers.map(salesMapper::toDriverResponse);
+    }
+
+    public DriverResponse getDriver(Long id, Long tenantId) {
+        return salesMapper.toDriverResponse(getDriverEntity(id, tenantId));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public DriverResponse updateDriver(Long id, Long tenantId, DriverRequest request) {
+        Driver driver = getDriverEntity(id, tenantId);
+
+        Warehouse defaultWarehouse = null;
+        if (request.defaultWarehouseId() != null) {
+            defaultWarehouse = warehouseRepository.findByIdAndTenantId(request.defaultWarehouseId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"));
+        }
+
+        driver.setName(request.name());
+        driver.setEmployeeId(request.employeeId());
+        driver.setEmail(request.email());
+        driver.setPhone(request.phone());
+        driver.setEmploymentDate(request.employmentDate());
+        driver.setTerminationDate(request.terminationDate());
+        driver.setLicenseNumber(request.licenseNumber());
+        driver.setLicenseClass(request.licenseClass());
+        driver.setLicenseExpiry(request.licenseExpiry());
+        driver.setDefaultWarehouse(defaultWarehouse);
+        driver.setAssignedVehicle(request.assignedVehicle());
+        if (request.status() != null) {
+            driver.setStatus(request.status());
+        }
+        if (request.isActive() != null) {
+            driver.setIsActive(request.isActive());
+        }
+
+        return salesMapper.toDriverResponse(driverRepository.save(driver));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteDriver(Long id, Long tenantId) {
+        Driver driver = getDriverEntity(id, tenantId);
+        driverRepository.delete(driver);
     }
     
     // --- SHOP ---
