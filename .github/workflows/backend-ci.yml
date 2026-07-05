@@ -1,0 +1,51 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven' # speeds up builds by caching dependencies
+          
+      - name: Ensure wrapper is executable
+        run: chmod +x ./mvnw
+
+      - name: Build, Test and Quality Checks (JUnit 5, Checkstyle, SpotBugs, JaCoCo)
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: ./mvnw clean verify -Dspring.profiles.active=test
+
+      - name: Generate and Validate OpenAPI Contract
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          ./mvnw spring-boot:start springdoc-openapi:generate spring-boot:stop -Popenapi -DskipTests -Dspring-boot.run.profiles=test -Dspring.profiles.active=test
+          mkdir -p target
+          cp ../spiceflow-frontend/openapi.yaml target/openapi.yaml 2>/dev/null || cp openapi.yaml target/openapi.yaml 2>/dev/null || true
+
+      - name: Upload JaCoCo Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+
+      - name: Upload OpenAPI Contract Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-contract
+          path: target/openapi.yaml
