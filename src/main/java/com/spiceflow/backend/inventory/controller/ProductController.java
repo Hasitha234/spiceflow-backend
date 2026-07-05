@@ -40,15 +40,18 @@ public class ProductController {
     }
 
     @GetMapping
-    @Operation(summary = "List all products", description = "Returns a paginated list of products, optionally filtered by search text", operationId = "getProducts")
+    @Operation(summary = "List all products", description = "Returns a paginated list of products, optionally filtered by search text, category, or supplier", operationId = "getProducts")
     public ResponseEntity<Page<ProductResponse>> getProducts(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long supplierId,
             Pageable pageable) {
         log.info("Received request to fetch products by user: {}", currentUser.getId());
-        Page<ProductResponse> response = productService.getProducts(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), search, pageable);
+        Page<ProductResponse> response = productService.getProducts(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), search, categoryId, supplierId, pageable);
         return ResponseEntity.ok(response);
     }
+
 
     @GetMapping("/{id}")
     @Operation(summary = "Get product by ID", description = "Returns details of a specific product", operationId = "getProduct")

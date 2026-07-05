@@ -84,8 +84,12 @@ public class PurchaseService {
             
         for (PurchaseLineItemRequest itemReq : request.lineItems()) {
             Product product = productService.getProductEntity(itemReq.productId(), tenantId);
+            if (product.getSupplier() != null && !product.getSupplier().getId().equals(request.supplierId())) {
+                throw new BusinessRuleViolationException("Product '" + product.getName() + "' (SKU: " + product.getSku() + ") does not belong to the selected supplier.");
+            }
             
             BigDecimal amount = itemReq.rate().multiply(BigDecimal.valueOf(itemReq.soldQuantity()));
+
             
             PurchaseLineItem lineItem = PurchaseLineItem.builder()
                 .tenant(tenant)

@@ -74,10 +74,17 @@ public class ProductService {
     }
     
     public Page<ProductResponse> getProducts(Long tenantId, String search, Pageable pageable) {
-        log.debug("Fetching products for tenantId: {}, search: {}", tenantId, search);
+        return getProducts(tenantId, search, null, null, pageable);
+    }
+
+    public Page<ProductResponse> getProducts(Long tenantId, String search, Long categoryId, Long supplierId, Pageable pageable) {
+        log.debug("Fetching products for tenantId: {}, search: {}, categoryId: {}, supplierId: {}", tenantId, search, categoryId, supplierId);
         try {
             Page<Product> productPage;
-            if (search != null && !search.trim().isEmpty()) {
+            if (categoryId != null || supplierId != null) {
+                String searchTerm = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+                productPage = productRepository.findByFilters(tenantId, searchTerm, categoryId, supplierId, pageable);
+            } else if (search != null && !search.trim().isEmpty()) {
                 productPage = productRepository.searchByTenantId(tenantId, search.trim(), pageable);
             } else {
                 productPage = productRepository.findByTenantId(tenantId, pageable);
@@ -88,6 +95,7 @@ public class ProductService {
             throw new BusinessRuleViolationException("Failed to fetch products");
         }
     }
+
     
     public ProductResponse getProduct(Long id, Long tenantId) {
         log.debug("Fetching product with ID: {} for tenantId: {}", id, tenantId);
