@@ -34,7 +34,7 @@ public class SalesMasterDataController {
 
     // --- REPS ---
     @PostMapping("/reps")
-    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @PreAuthorize("hasAuthority('SETTINGS_REPS')")
     @Operation(summary = "Create a rep", operationId = "createRep")
     public ResponseEntity<RepResponse> createRep(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -44,7 +44,7 @@ public class SalesMasterDataController {
     }
 
     @GetMapping("/reps")
-    @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
+    @PreAuthorize("hasAuthority('SETTINGS_REPS')")
     @Operation(summary = "List reps", operationId = "getReps")
     public ResponseEntity<Page<RepResponse>> getReps(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -54,7 +54,7 @@ public class SalesMasterDataController {
     }
 
     @GetMapping("/reps/{id}")
-    @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
+    @PreAuthorize("hasAuthority('SETTINGS_REPS')")
     @Operation(summary = "Get a rep by ID", operationId = "getRep")
     public ResponseEntity<RepResponse> getRep(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -63,7 +63,7 @@ public class SalesMasterDataController {
     }
 
     @PutMapping("/reps/{id}")
-    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @PreAuthorize("hasAuthority('SETTINGS_REPS')")
     @Operation(summary = "Update a rep", operationId = "updateRep")
     public ResponseEntity<RepResponse> updateRep(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -73,7 +73,7 @@ public class SalesMasterDataController {
     }
 
     @DeleteMapping("/reps/{id}")
-    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @PreAuthorize("hasAuthority('SETTINGS_REPS')")
     @Operation(summary = "Delete a rep", operationId = "deleteRep")
     public ResponseEntity<Void> deleteRep(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -84,7 +84,7 @@ public class SalesMasterDataController {
 
     // --- DRIVERS ---
     @PostMapping("/drivers")
-    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @PreAuthorize("hasAuthority('SETTINGS_DRIVERS')")
     @Operation(summary = "Create a driver", operationId = "createDriver")
     public ResponseEntity<DriverResponse> createDriver(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -94,7 +94,7 @@ public class SalesMasterDataController {
     }
 
     @GetMapping("/drivers")
-    @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
+    @PreAuthorize("hasAuthority('SETTINGS_DRIVERS')")
     @Operation(summary = "List drivers", operationId = "getDrivers")
     public ResponseEntity<Page<DriverResponse>> getDrivers(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -104,7 +104,7 @@ public class SalesMasterDataController {
     }
 
     @GetMapping("/drivers/{id}")
-    @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
+    @PreAuthorize("hasAuthority('SETTINGS_DRIVERS')")
     @Operation(summary = "Get a driver by ID", operationId = "getDriver")
     public ResponseEntity<DriverResponse> getDriver(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -113,7 +113,7 @@ public class SalesMasterDataController {
     }
 
     @PutMapping("/drivers/{id}")
-    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @PreAuthorize("hasAuthority('SETTINGS_DRIVERS')")
     @Operation(summary = "Update a driver", operationId = "updateDriver")
     public ResponseEntity<DriverResponse> updateDriver(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -123,7 +123,7 @@ public class SalesMasterDataController {
     }
 
     @DeleteMapping("/drivers/{id}")
-    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @PreAuthorize("hasAuthority('SETTINGS_DRIVERS')")
     @Operation(summary = "Delete a driver", operationId = "deleteDriver")
     public ResponseEntity<Void> deleteDriver(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -134,7 +134,7 @@ public class SalesMasterDataController {
 
     // --- SHOPS ---
     @PostMapping("/shops")
-    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @PreAuthorize("hasAuthority('SETTINGS_SHOPS')")
     @Operation(summary = "Create a shop", operationId = "createShop")
     public ResponseEntity<ShopResponse> createShop(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -144,7 +144,7 @@ public class SalesMasterDataController {
     }
 
     @GetMapping("/shops")
-    @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
+    @PreAuthorize("hasAuthority('SETTINGS_SHOPS')")
     @Operation(summary = "List shops", operationId = "getShops")
     public ResponseEntity<Page<ShopResponse>> getShops(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -154,7 +154,7 @@ public class SalesMasterDataController {
     }
 
     @GetMapping("/shops/{id}")
-    @PreAuthorize("hasAuthority('MASTER_DATA_VIEW')")
+    @PreAuthorize("hasAuthority('SETTINGS_SHOPS')")
     @Operation(summary = "Get a shop by ID", operationId = "getShop")
     public ResponseEntity<ShopResponse> getShop(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -163,7 +163,7 @@ public class SalesMasterDataController {
     }
 
     @PutMapping("/shops/{id}")
-    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @PreAuthorize("hasAuthority('SETTINGS_SHOPS')")
     @Operation(summary = "Update a shop", operationId = "updateShop")
     public ResponseEntity<ShopResponse> updateShop(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -173,7 +173,7 @@ public class SalesMasterDataController {
     }
 
     @DeleteMapping("/shops/{id}")
-    @PreAuthorize("hasAuthority('MASTER_DATA_MANAGE')")
+    @PreAuthorize("hasAuthority('SETTINGS_SHOPS')")
     @Operation(summary = "Delete a shop", operationId = "deleteShop")
     public ResponseEntity<Void> deleteShop(
             @AuthenticationPrincipal AuthenticatedUser currentUser,

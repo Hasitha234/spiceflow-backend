@@ -29,8 +29,8 @@ public class RepOrderController {
     private final RepOrderService repOrderService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('REP_ORDER_CREATE')")
-    @Operation(summary = "Create a rep order", description = "Creates a rep order with multiple shops and line items", operationId = "createRepOrder")
+    @PreAuthorize("hasAuthority('ORDER_CREATE')")
+    @Operation(summary = "Create rep order", description = "Creates a new order from a sales rep", operationId = "createRepOrder")
     public ResponseEntity<RepOrderResponse> createRepOrder(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody CreateRepOrderRequest request) {
@@ -40,7 +40,7 @@ public class RepOrderController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('REP_ORDER_VIEW')")
+    @PreAuthorize("hasAuthority('ORDER_VIEW')")
     @Operation(summary = "List rep orders", description = "Returns a paginated list of rep orders", operationId = "getRepOrders")
     public ResponseEntity<Page<RepOrderResponse>> getRepOrders(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -52,7 +52,7 @@ public class RepOrderController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('REP_ORDER_VIEW')")
+    @PreAuthorize("hasAuthority('ORDER_VIEW')")
     @Operation(summary = "Get rep order by ID", description = "Returns details of a specific rep order", operationId = "getRepOrder")
     public ResponseEntity<RepOrderResponse> getRepOrder(
             @AuthenticationPrincipal AuthenticatedUser currentUser,

@@ -29,7 +29,7 @@ public class LoadingSheetController {
     private final LoadingSheetService loadingSheetService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('LOADING_WRITE')")
+    @PreAuthorize("hasAuthority('LOADING_CREATE')")
     @Operation(summary = "Create a loading sheet", description = "Generates a loading sheet from a rep order", operationId = "createLoadingSheet")
     public ResponseEntity<LoadingSheetResponse> createLoadingSheet(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -40,7 +40,7 @@ public class LoadingSheetController {
     }
 
     @PostMapping("/{id}/confirm")
-    @PreAuthorize("hasAuthority('LOADING_WRITE')")
+    @PreAuthorize("hasAuthority('LOADING_CONFIRM')")
     @Operation(summary = "Confirm a loading sheet", description = "Confirms loading and transfers inventory to the vehicle", operationId = "confirmLoadingSheet")
     public ResponseEntity<LoadingSheetResponse> confirmLoadingSheet(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -51,7 +51,7 @@ public class LoadingSheetController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('LOADING_READ')")
+    @PreAuthorize("hasAuthority('LOADING_VIEW')")
     @Operation(summary = "List loading sheets", description = "Returns a paginated list of loading sheets", operationId = "getLoadingSheets")
     public ResponseEntity<Page<LoadingSheetResponse>> getLoadingSheets(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -62,7 +62,7 @@ public class LoadingSheetController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('LOADING_READ')")
+    @PreAuthorize("hasAuthority('LOADING_VIEW')")
     @Operation(summary = "Get loading sheet by ID", description = "Returns details of a specific loading sheet", operationId = "getLoadingSheet")
     public ResponseEntity<LoadingSheetResponse> getLoadingSheet(
             @AuthenticationPrincipal AuthenticatedUser currentUser,

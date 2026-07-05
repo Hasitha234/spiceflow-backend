@@ -31,7 +31,7 @@ public class DeliveryController {
     private final DeliveryService deliveryService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('DELIVERY_WRITE')")
+    @PreAuthorize("hasAuthority('DELIVERY_CREATE')")
     @Operation(summary = "Start a delivery", description = "Creates a delivery from a confirmed loading sheet", operationId = "createDelivery")
     public ResponseEntity<DeliveryResponse> createDelivery(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -42,7 +42,7 @@ public class DeliveryController {
     }
 
     @PostMapping("/{id}/shops/{shopId}")
-    @PreAuthorize("hasAuthority('DELIVERY_WRITE')")
+    @PreAuthorize("hasAuthority('DELIVERY_UPDATE')")
     @Operation(summary = "Record shop delivery", description = "Records delivered items, returns, and payments for a specific shop", operationId = "recordShopDelivery")
     public ResponseEntity<DeliveryShopResponse> recordShopDelivery(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -55,7 +55,7 @@ public class DeliveryController {
     }
 
     @PostMapping("/{id}/complete")
-    @PreAuthorize("hasAuthority('DELIVERY_WRITE')")
+    @PreAuthorize("hasAuthority('DELIVERY_UPDATE')")
     @Operation(summary = "Complete delivery", description = "Marks the delivery as completed and calculates final totals", operationId = "completeDelivery")
     public ResponseEntity<DeliveryResponse> completeDelivery(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -66,7 +66,7 @@ public class DeliveryController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('DELIVERY_READ')")
+    @PreAuthorize("hasAuthority('DELIVERY_VIEW')")
     @Operation(summary = "List deliveries", description = "Returns a paginated list of deliveries", operationId = "getDeliveries")
     public ResponseEntity<Page<DeliveryResponse>> getDeliveries(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -77,7 +77,7 @@ public class DeliveryController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('DELIVERY_READ')")
+    @PreAuthorize("hasAuthority('DELIVERY_VIEW')")
     @Operation(summary = "Get delivery by ID", description = "Returns details of a specific delivery", operationId = "getDelivery")
     public ResponseEntity<DeliveryResponse> getDelivery(
             @AuthenticationPrincipal AuthenticatedUser currentUser,

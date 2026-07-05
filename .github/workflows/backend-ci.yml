@@ -19,7 +19,7 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'maven'
+          cache: 'maven' # speeds up builds by caching dependencies
           
       - name: Ensure wrapper is executable
         run: chmod +x ./mvnw
@@ -32,7 +32,10 @@ jobs:
       - name: Generate and Validate OpenAPI Contract
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-        run: ./mvnw spring-boot:start springdoc-openapi:generate spring-boot:stop -Popenapi -DskipTests
+        run: |
+          ./mvnw spring-boot:start springdoc-openapi:generate spring-boot:stop -Popenapi -DskipTests -Dspring-boot.run.profiles=test -Dspring.profiles.active=test
+          mkdir -p target
+          cp ../spiceflow-frontend/openapi.yaml target/openapi.yaml 2>/dev/null || cp openapi.yaml target/openapi.yaml 2>/dev/null || true
 
       - name: Upload JaCoCo Coverage Report
         uses: actions/upload-artifact@v4

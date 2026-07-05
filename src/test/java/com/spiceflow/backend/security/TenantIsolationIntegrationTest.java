@@ -127,8 +127,8 @@ class TenantIsolationIntegrationTest {
                 .plan("PRO")
                 .build());
 
-        Permission p1 = permissionRepository.save(Permission.builder().code("REP_ORDER_VIEW").description("View").module("SALES").build());
-        Permission p2 = permissionRepository.save(Permission.builder().code("REP_ORDER_CREATE").description("Manage").module("SALES").build());
+        Permission p1 = permissionRepository.save(Permission.builder().code("ORDER_VIEW").description("View").module("SALES").build());
+        Permission p2 = permissionRepository.save(Permission.builder().code("ORDER_CREATE").description("Manage").module("SALES").build());
 
         Role role = roleRepository.save(Role.builder()
                 .tenant(tenantB)
