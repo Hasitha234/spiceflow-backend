@@ -32,7 +32,7 @@ public class ReportController {
     private final ReportService reportService;
 
     @GetMapping("/sales-summary")
-    @PreAuthorize("hasAuthority('REPORTS_VIEW')")
+    @PreAuthorize("hasAuthority('REPORT_DAILY') or hasAuthority('REPORT_MONTHLY') or hasAuthority('REPORT_EXPORT')")
     @Operation(summary = "Get sales summary", description = "Returns a summary of sales, returns, and collections for a date range", operationId = "getSalesSummary")
     public CompletableFuture<ResponseEntity<SalesSummaryResponse>> getSalesSummary(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -44,7 +44,7 @@ public class ReportController {
     }
 
     @GetMapping("/shop-outstanding")
-    @PreAuthorize("hasAuthority('REPORTS_VIEW')")
+    @PreAuthorize("hasAuthority('REPORT_DAILY') or hasAuthority('REPORT_MONTHLY') or hasAuthority('REPORT_EXPORT')")
     @Operation(summary = "Get shop outstanding", description = "Returns a list of shops with their outstanding balances", operationId = "getShopOutstanding")
     public ResponseEntity<List<ShopOutstandingResponse>> getShopOutstanding(
             @AuthenticationPrincipal AuthenticatedUser currentUser) {
@@ -53,7 +53,7 @@ public class ReportController {
     }
 
     @GetMapping("/stock-status")
-    @PreAuthorize("hasAuthority('REPORTS_VIEW')")
+    @PreAuthorize("hasAuthority('REPORT_DAILY') or hasAuthority('REPORT_MONTHLY') or hasAuthority('REPORT_EXPORT')")
     @Operation(summary = "Get stock status", description = "Returns the current status of product stocks across warehouses", operationId = "getStockStatus")
     public ResponseEntity<List<StockStatusResponse>> getStockStatus(
             @AuthenticationPrincipal AuthenticatedUser currentUser) {
@@ -62,7 +62,7 @@ public class ReportController {
     }
     
     @GetMapping("/rep-performance")
-    @PreAuthorize("hasAuthority('REPORTS_VIEW')")
+    @PreAuthorize("hasAuthority('REPORT_DAILY') or hasAuthority('REPORT_MONTHLY') or hasAuthority('REPORT_EXPORT')")
     @Operation(summary = "Get rep performance", description = "Returns performance metrics for sales reps", operationId = "getRepPerformance")
     public ResponseEntity<List<RepPerformanceResponse>> getRepPerformance(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
