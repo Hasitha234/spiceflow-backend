@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,11 +74,11 @@ public class ProductService {
         }
     }
     
-    public Page<ProductResponse> getProducts(Long tenantId, String search, Pageable pageable) {
+    public Page<ProductResponse> getProducts(Long tenantId, @Nullable String search, Pageable pageable) {
         return getProducts(tenantId, search, null, null, pageable);
     }
 
-    public Page<ProductResponse> getProducts(Long tenantId, String search, Long categoryId, Long supplierId, Pageable pageable) {
+    public Page<ProductResponse> getProducts(Long tenantId, @Nullable String search, @Nullable Long categoryId, @Nullable Long supplierId, Pageable pageable) {
         log.debug("Fetching products for tenantId: {}, search: {}, categoryId: {}, supplierId: {}", tenantId, search, categoryId, supplierId);
         try {
             Page<Product> productPage;

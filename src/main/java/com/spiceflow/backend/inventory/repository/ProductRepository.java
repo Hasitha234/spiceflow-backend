@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -19,7 +20,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(p.sku) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Product> searchByTenantId(@Param("tenantId") Long tenantId, 
-                                   @Param("search") String search, 
+                                   @Nullable @Param("search") String search, 
                                    Pageable pageable);
 
     @Query("SELECT p FROM Product p WHERE p.tenant.id = :tenantId AND " +
@@ -29,9 +30,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
            "LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(p.sku) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Product> findByFilters(@Param("tenantId") Long tenantId,
-                                @Param("search") String search,
-                                @Param("categoryId") Long categoryId,
-                                @Param("supplierId") Long supplierId,
+                                @Nullable @Param("search") String search,
+                                @Nullable @Param("categoryId") Long categoryId,
+                                @Nullable @Param("supplierId") Long supplierId,
                                 Pageable pageable);
 }
 
