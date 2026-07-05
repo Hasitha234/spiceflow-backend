@@ -54,7 +54,7 @@ public class InventoryItemService {
                 });
                 
             Product product = productService.getProductEntity(request.productId(), tenantId);
-            Warehouse warehouse = warehouseService.getWarehouseEntity(request.warehouseId(), tenantId);
+            Warehouse warehouse = warehouseService.getWarehouseEntity(tenantId, request.warehouseId());
             
             InventoryItem item = InventoryItem.builder()
                 .product(product)
@@ -187,7 +187,7 @@ public class InventoryItemService {
             destItem.setQuantityAvailable(destItem.getQuantityAvailable() + request.quantity());
         } else {
             Product product = productService.getProductEntity(request.productId(), tenantId);
-            Warehouse destWarehouse = warehouseService.getWarehouseEntity(request.toWarehouseId(), tenantId);
+            Warehouse destWarehouse = warehouseService.getWarehouseEntity(tenantId, request.toWarehouseId());
             destItem = InventoryItem.builder()
                 .product(product)
                 .warehouse(destWarehouse)

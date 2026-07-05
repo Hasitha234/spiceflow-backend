@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,11 +74,18 @@ public class ProductService {
         }
     }
     
-    public Page<ProductResponse> getProducts(Long tenantId, String search, Pageable pageable) {
-        log.debug("Fetching products for tenantId: {}, search: {}", tenantId, search);
+    public Page<ProductResponse> getProducts(Long tenantId, @Nullable String search, Pageable pageable) {
+        return getProducts(tenantId, search, null, null, pageable);
+    }
+
+    public Page<ProductResponse> getProducts(Long tenantId, @Nullable String search, @Nullable Long categoryId, @Nullable Long supplierId, Pageable pageable) {
+        log.debug("Fetching products for tenantId: {}, search: {}, categoryId: {}, supplierId: {}", tenantId, search, categoryId, supplierId);
         try {
             Page<Product> productPage;
-            if (search != null && !search.trim().isEmpty()) {
+            if (categoryId != null || supplierId != null) {
+                String searchTerm = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+                productPage = productRepository.findByFilters(tenantId, searchTerm, categoryId, supplierId, pageable);
+            } else if (search != null && !search.trim().isEmpty()) {
                 productPage = productRepository.searchByTenantId(tenantId, search.trim(), pageable);
             } else {
                 productPage = productRepository.findByTenantId(tenantId, pageable);
@@ -88,6 +96,7 @@ public class ProductService {
             throw new BusinessRuleViolationException("Failed to fetch products");
         }
     }
+
     
     public ProductResponse getProduct(Long id, Long tenantId) {
         log.debug("Fetching product with ID: {} for tenantId: {}", id, tenantId);
