@@ -9,6 +9,8 @@ import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,8 @@ public class JwtUtil {
   private static final String CLAIM_TENANT_ID = "tenantId";
   private static final String CLAIM_USER_ID = "userId";
   private static final String CLAIM_ROLE = "role";
+  private static final String CLAIM_ROLES = "roles";
+  private static final String CLAIM_PERMISSIONS = "permissions";
 
   private final SecretKey secretKey;
   private final long accessTokenExpiryMs;
@@ -40,15 +44,33 @@ public class JwtUtil {
     this.refreshTokenExpiryMs = refreshTokenExpiryMs;
   }
 
-  /** Generates a signed access JWT for the given user. Embeds tenantId, userId and role. */
+  /** Generates a signed access JWT for the given user. Embeds tenantId, userId, roles and permissions. */
   public String generateAccessToken(User user) {
     long now = System.currentTimeMillis();
+    
+    List<String> roles = List.of();
+    List<String> permissions = List.of();
+    
+    if (user.getAssignedRole() != null) {
+      String roleName = user.getAssignedRole().getName().toUpperCase().replace(" ", "_");
+      String roleAuth = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+      roles = List.of(roleAuth);
+      
+      if (user.getAssignedRole().getPermissions() != null) {
+        permissions = user.getAssignedRole().getPermissions().stream()
+            .map(com.spiceflow.backend.auth.entity.Permission::getCode)
+            .collect(Collectors.toList());
+      }
+    }
+
     return Jwts.builder()
         .subject(user.getEmail())
         .claim(CLAIM_USER_TYPE, "TENANT_USER")
         .claim(CLAIM_TENANT_ID, user.getTenantId())
         .claim(CLAIM_USER_ID, user.getId())
         .claim(CLAIM_ROLE, user.getAssignedRole() != null ? user.getAssignedRole().getName() : null)
+        .claim(CLAIM_ROLES, roles)
+        .claim(CLAIM_PERMISSIONS, permissions)
         .issuedAt(new Date(now))
         .expiration(new Date(now + accessTokenExpiryMs))
         .signWith(secretKey)
@@ -57,17 +79,19 @@ public class JwtUtil {
 
 
   /** Generates a signed access JWT for a platform admin. Has no tenantId. */
-public String generateAdminToken(PlatformAdmin admin) {
-  long now = System.currentTimeMillis();
-  return Jwts.builder()
-      .subject(admin.getEmail())
-      .claim(CLAIM_USER_TYPE, "PLATFORM_ADMIN")
-      .claim(CLAIM_USER_ID, admin.getId())
-      .issuedAt(new Date(now))
-      .expiration(new Date(now + accessTokenExpiryMs))
-      .signWith(secretKey)
-      .compact();
-}
+  public String generateAdminToken(PlatformAdmin admin) {
+    long now = System.currentTimeMillis();
+    return Jwts.builder()
+        .subject(admin.getEmail())
+        .claim(CLAIM_USER_TYPE, "PLATFORM_ADMIN")
+        .claim(CLAIM_USER_ID, admin.getId())
+        .claim(CLAIM_ROLES, List.of("ROLE_SUPER_ADMIN"))
+        .claim(CLAIM_PERMISSIONS, List.of())
+        .issuedAt(new Date(now))
+        .expiration(new Date(now + accessTokenExpiryMs))
+        .signWith(secretKey)
+        .compact();
+  }
 
 
   /** Extracts the email (subject) from a JWT. Returns null if token is invalid. */
