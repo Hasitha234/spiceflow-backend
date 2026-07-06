@@ -127,7 +127,7 @@ public class RoleService {
             throw new BusinessRuleViolationException("Cannot delete role because it is currently assigned to active users.");
         }
 
-        role.setDeletedAt(OffsetDateTime.now());
+        role.setDeletedAt(OffsetDateTime.now(java.time.ZoneId.systemDefault()));
         roleRepository.save(role);
         
         log.info("User {} soft-deleted role: '{}' (ID: {})", currentUser.getEmail(), role.getName(), role.getId());

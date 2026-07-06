@@ -45,7 +45,7 @@ public class RepOrder implements WorkflowAggregate<RepOrder, RepOrderState> {
         this.orderNumber = "";
         this.tenantId = 0L;
         this.repId = 0L;
-        this.orderDate = LocalDate.now();
+        this.orderDate = LocalDate.now(java.time.ZoneId.systemDefault());
         this.routeArea = "";
         this.state = RepOrderState.DRAFT;
         this.totalGrossAmount = BigDecimal.ZERO;

@@ -98,7 +98,7 @@ public class RepOrderWorkflowEntity {
     public RepOrderWorkflowEntity() {
         this.tenantId = 0L;
         this.repId = 0L;
-        this.orderDate = LocalDate.now();
+        this.orderDate = LocalDate.now(java.time.ZoneId.systemDefault());
         this.status = RepOrderState.DRAFT;
         this.totalGrossAmount = BigDecimal.ZERO;
         this.totalReturnsValue = BigDecimal.ZERO;

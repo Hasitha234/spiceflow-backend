@@ -45,7 +45,7 @@ public class LoadingSheet implements WorkflowAggregate<LoadingSheet, LoadingShee
         this.repOrderNumber = "";
         this.driverId = 0L;
         this.driverName = "";
-        this.loadingDate = LocalDate.now();
+        this.loadingDate = LocalDate.now(java.time.ZoneId.systemDefault());
         this.state = LoadingSheetState.DRAFT;
         this.createdBy = "";
         this.correlationId = "";

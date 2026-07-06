@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /** Utility for generating and validating JWTs. Stateless — no DB calls. */
+@SuppressWarnings("JavaUtilDate")
 @Component
 public class JwtUtil {
 
@@ -52,7 +53,7 @@ public class JwtUtil {
     List<String> permissions = List.of();
     
     if (user.getAssignedRole() != null) {
-      String roleName = user.getAssignedRole().getName().toUpperCase().replace(" ", "_");
+      String roleName = user.getAssignedRole().getName().toUpperCase(java.util.Locale.ROOT).replace(" ", "_");
       String roleAuth = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
       roles = List.of(roleAuth);
       

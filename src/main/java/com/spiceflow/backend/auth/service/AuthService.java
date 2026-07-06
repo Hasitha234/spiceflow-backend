@@ -24,14 +24,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import com.spiceflow.backend.admin.entity.PlatformAdmin;
-import com.spiceflow.backend.admin.repository.PlatformAdminRepository;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.spiceflow.backend.security.service.LoginAttemptService;
 import java.util.Optional;
 
 
-import org.springframework.transaction.annotation.Transactional;
+
 
 /** Handles all authentication operations: login, refresh, logout, change password. */
 @Service
@@ -203,7 +203,7 @@ public LoginResponse login(LoginRequest request) {
   public void logout(String rawRefreshToken, @org.jspecify.annotations.Nullable String accessToken) {
     String tokenHash = sha256(rawRefreshToken);
     refreshTokenRepository.findByTokenHash(tokenHash).ifPresent(token -> {
-      token.setRevokedAt(OffsetDateTime.now());
+      token.setRevokedAt(OffsetDateTime.now(java.time.ZoneId.systemDefault()));
       refreshTokenRepository.save(token);
     });
 
@@ -233,7 +233,7 @@ public LoginResponse login(LoginRequest request) {
     userRepository.save(user);
 
     // Invalidate all sessions — user must log in again on all devices
-    refreshTokenRepository.revokeAllByUserId(user.getId(), java.time.OffsetDateTime.now());
+    refreshTokenRepository.revokeAllByUserId(user.getId(), java.time.OffsetDateTime.now(java.time.ZoneId.systemDefault()));
     log.info("Password changed for user {}. All sessions revoked.", user.getEmail());
   }
 
@@ -243,7 +243,7 @@ public LoginResponse login(LoginRequest request) {
     int attempts = user.getFailedLoginAttempts() + 1;
     user.setFailedLoginAttempts(attempts);
     if (attempts >= MAX_FAILED_ATTEMPTS) {
-      user.setLockedUntil(OffsetDateTime.now().plusMinutes(LOCKOUT_MINUTES));
+      user.setLockedUntil(OffsetDateTime.now(java.time.ZoneId.systemDefault()).plusMinutes(LOCKOUT_MINUTES));
       log.warn("Account locked for user {} after {} failed attempts",
           user.getEmail(), attempts);
     }
@@ -257,7 +257,7 @@ public LoginResponse login(LoginRequest request) {
     RefreshToken refreshToken = RefreshToken.builder()
         .user(user)
         .tokenHash(tokenHash)
-        .expiresAt(OffsetDateTime.now().plusSeconds(
+        .expiresAt(OffsetDateTime.now(java.time.ZoneId.systemDefault()).plusSeconds(
             jwtUtil.getRefreshTokenExpiryMs() / 1000))
         .build();
 
@@ -281,7 +281,7 @@ public LoginResponse login(LoginRequest request) {
     RefreshToken refreshToken = RefreshToken.builder()
         .platformAdminId(admin.getId())
         .tokenHash(tokenHash)
-        .expiresAt(OffsetDateTime.now().plusSeconds(
+        .expiresAt(OffsetDateTime.now(java.time.ZoneId.systemDefault()).plusSeconds(
             jwtUtil.getRefreshTokenExpiryMs() / 1000))
         .build();
     refreshTokenRepository.save(refreshToken);

@@ -59,6 +59,6 @@ public class RefreshToken {
     /** Checks if the token is still valid (not expired, not revoked, not soft-deleted) */
     public boolean isValid() {
         return revokedAt == null
-            && expiresAt.isAfter(OffsetDateTime.now());
+            && expiresAt.isAfter(OffsetDateTime.now(java.time.ZoneId.systemDefault()));
     }
 }

@@ -78,7 +78,7 @@ public class CashCollectionWorkflowService {
 
     @Transactional
     public CashCollectionResponse createCollection(Long tenantId, CreateCashCollectionRequest request, String username) {
-        String collectionNumber = "COL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String collectionNumber = "COL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT);
         CashCollection collection = CashCollection.create(
                 collectionNumber,
                 tenantId,

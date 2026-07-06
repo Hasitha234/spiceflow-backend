@@ -55,7 +55,7 @@ public class Delivery implements WorkflowAggregate<Delivery, DeliveryState> {
         this.deliveryNumber = "";
         this.tenantId = 0L;
         this.loadingSheetId = 0L;
-        this.deliveryDate = LocalDate.now();
+        this.deliveryDate = LocalDate.now(java.time.ZoneId.systemDefault());
         this.state = DeliveryState.IN_PROGRESS;
         this.totalSalesValue = BigDecimal.ZERO;
         this.totalReturnsValue = BigDecimal.ZERO;
