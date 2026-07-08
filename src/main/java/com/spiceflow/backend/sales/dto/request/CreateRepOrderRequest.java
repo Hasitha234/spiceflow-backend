@@ -12,6 +12,8 @@ public record CreateRepOrderRequest(
     
     @NotNull(message = "Rep ID is required")
     Long repId,
+    @NotNull(message = "Order number is required")
+    String orderNumber,
     
     @NotNull(message = "Order date is required")
     LocalDate orderDate,

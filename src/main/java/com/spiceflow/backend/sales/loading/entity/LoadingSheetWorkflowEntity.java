@@ -87,7 +87,7 @@ public class LoadingSheetWorkflowEntity {
         this.tenantId = 0L;
         this.repOrderId = 0L;
         this.driverId = 0L;
-        this.loadingDate = LocalDate.now();
+        this.loadingDate = LocalDate.now(java.time.ZoneId.systemDefault());
         this.status = LoadingSheetState.DRAFT;
         this.createdAt = Instant.EPOCH;
         this.updatedAt = Instant.EPOCH;

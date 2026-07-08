@@ -14,7 +14,6 @@ public record RepOrderItem(
         @Nullable String unitType,
         BigDecimal rate,
         @Nullable BigDecimal grossAmount,
-        @Nullable BigDecimal discountAmount,
         @Nullable BigDecimal netAmount,
         Boolean isFreeItem,
         Integer boxesNeeded
@@ -27,7 +26,7 @@ public record RepOrderItem(
         if (boxesNeeded == null || boxesNeeded < 0) boxesNeeded = 0;
     }
 
-    public RepOrderItem(Long productId, Integer quantity, @Nullable String unitType, BigDecimal rate, @Nullable BigDecimal discountAmount, Boolean isFreeItem, Integer boxesNeeded) {
+    public RepOrderItem(Long productId, Integer quantity, @Nullable String unitType, BigDecimal rate, Boolean isFreeItem, Integer boxesNeeded) {
         this(
                 null,
                 productId,
@@ -35,8 +34,7 @@ public record RepOrderItem(
                 unitType,
                 rate,
                 rate != null && quantity != null ? rate.multiply(new BigDecimal(quantity)) : BigDecimal.ZERO,
-                discountAmount != null ? discountAmount : BigDecimal.ZERO,
-                rate != null && quantity != null ? rate.multiply(new BigDecimal(quantity)).subtract(discountAmount != null ? discountAmount : BigDecimal.ZERO) : BigDecimal.ZERO,
+                rate != null && quantity != null ? rate.multiply(new BigDecimal(quantity)) : BigDecimal.ZERO,
                 isFreeItem,
                 boxesNeeded
         );

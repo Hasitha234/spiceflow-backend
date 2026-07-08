@@ -21,6 +21,8 @@ public interface RepOrderMapper {
     
     @Mapping(source = "shop.id", target = "shopId")
     @Mapping(source = "shop.name", target = "shopName")
+    @Mapping(source = "returnWarehouse.id", target = "returnWarehouseId")
+    @Mapping(source = "returnWarehouse.name", target = "returnWarehouseName")
     RepOrderShopResponse toShopResponse(RepOrderShop shop);
     
     @Mapping(source = "product.id", target = "productId")

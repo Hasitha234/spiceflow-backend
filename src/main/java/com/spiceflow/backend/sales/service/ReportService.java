@@ -2,6 +2,7 @@ package com.spiceflow.backend.sales.service;
 
 import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
+import com.spiceflow.backend.sales.dto.response.EndOfDaySummaryResponse;
 import com.spiceflow.backend.sales.dto.response.RepPerformanceResponse;
 import com.spiceflow.backend.sales.dto.response.SalesSummaryResponse;
 import com.spiceflow.backend.sales.dto.response.ShopOutstandingResponse;
@@ -161,5 +162,79 @@ public class ReportService {
             
         log.debug("Rep performance calculated for {} reps", performances.size());
         return performances;
+    }
+
+    public EndOfDaySummaryResponse getEndOfDaySummary(Long tenantId, LocalDate date) {
+        log.info("Generating end-of-day summary for tenant {} on {}", tenantId, date);
+
+        List<com.spiceflow.backend.sales.entity.Delivery> deliveries = deliveryRepository.findDeliveriesInDateRange(tenantId, date, date);
+
+        BigDecimal totalSales = BigDecimal.ZERO;
+        BigDecimal totalCash = BigDecimal.ZERO;
+        BigDecimal totalCheque = BigDecimal.ZERO;
+        BigDecimal totalLoan = BigDecimal.ZERO;
+        BigDecimal totalReturns = BigDecimal.ZERO;
+        BigDecimal totalDiscounts = BigDecimal.ZERO;
+        int shopsVisited = 0;
+
+        List<EndOfDaySummaryResponse.ChequeDetail> chequeDetails = new java.util.ArrayList<>();
+        List<EndOfDaySummaryResponse.DeliverySummary> deliverySummaries = new java.util.ArrayList<>();
+
+        for (var delivery : deliveries) {
+            totalSales = totalSales.add(delivery.getTotalSalesValue());
+            totalReturns = totalReturns.add(delivery.getTotalReturnsValue());
+            shopsVisited += delivery.getShops().size();
+
+            String driverName = "";
+            if (delivery.getLoadingSheet() != null && delivery.getLoadingSheet().getDriver() != null) {
+                driverName = delivery.getLoadingSheet().getDriver().getName();
+            }
+
+            for (var shop : delivery.getShops()) {
+                totalDiscounts = totalDiscounts.add(shop.getTotalDiscount());
+
+                if (shop.getPayments() != null) {
+                    for (var payment : shop.getPayments()) {
+                        if ("CASH".equals(payment.getPaymentMethod())) {
+                            totalCash = totalCash.add(payment.getAmount());
+                        } else if ("CHEQUE".equals(payment.getPaymentMethod())) {
+                            totalCheque = totalCheque.add(payment.getAmount());
+                            chequeDetails.add(EndOfDaySummaryResponse.ChequeDetail.builder()
+                                .chequeNo(payment.getChequeNo())
+                                .bankName(payment.getChequeBankName())
+                                .amount(payment.getAmount())
+                                .shopName(shop.getShop() != null ? shop.getShop().getName() : "")
+                                .chequeDate(payment.getChequeDate())
+                                .build());
+                        }
+                    }
+                }
+
+                totalLoan = totalLoan.add(shop.getCreditAmount());
+            }
+
+            deliverySummaries.add(EndOfDaySummaryResponse.DeliverySummary.builder()
+                .deliveryId(delivery.getId())
+                .driverName(driverName)
+                .status(delivery.getStatus())
+                .salesValue(delivery.getTotalSalesValue())
+                .collectedAmount(delivery.getTotalCollectedAmount())
+                .shopCount(delivery.getShops().size())
+                .build());
+        }
+
+        return EndOfDaySummaryResponse.builder()
+            .date(date)
+            .totalSalesValue(totalSales)
+            .totalCashCollected(totalCash)
+            .totalChequeAmount(totalCheque)
+            .totalLoanGiven(totalLoan)
+            .totalReturnsValue(totalReturns)
+            .totalDiscounts(totalDiscounts)
+            .deliveryCount(deliveries.size())
+            .shopsVisited(shopsVisited)
+            .chequeDetails(chequeDetails)
+            .deliveries(deliverySummaries)
+            .build();
     }
 }

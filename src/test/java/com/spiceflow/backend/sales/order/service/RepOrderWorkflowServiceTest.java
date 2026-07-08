@@ -80,7 +80,7 @@ class RepOrderWorkflowServiceTest {
     @Test
     void should_execute_submit_and_approve_commands() {
         RepOrderItem item = new RepOrderItem(
-                100L, 10, "PACK", new BigDecimal("150.00"), BigDecimal.ZERO, false, 1
+                100L, 10, "PACK", new BigDecimal("150.00"), false, 1
         );
         RepOrderShop shop = new RepOrderShop(50L, List.of(item), Collections.emptyList());
         RepOrder draftRo = new RepOrder(
@@ -105,7 +105,7 @@ class RepOrderWorkflowServiceTest {
     @Test
     void should_record_delivery_and_return_movements_when_delivered() {
         RepOrderItem item = new RepOrderItem(
-                100L, 10, "PACK", new BigDecimal("150.00"), BigDecimal.ZERO, false, 1
+                100L, 10, "PACK", new BigDecimal("150.00"), false, 1
         );
         ShopReturnItem returnItem = new ShopReturnItem(
                 200L, 2, "PACK", new BigDecimal("100.00"), "DAMAGED"

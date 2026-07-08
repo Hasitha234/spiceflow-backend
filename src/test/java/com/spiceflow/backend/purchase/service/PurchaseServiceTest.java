@@ -149,7 +149,7 @@ class PurchaseServiceTest {
         Warehouse mainStore = new Warehouse();
         mainStore.setId(1L);
         mainStore.setStoreType("MAIN");
-        when(warehouseRepository.findAllByTenantId(1L)).thenReturn(List.of(mainStore));
+        when(warehouseRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(mainStore));
 
         InventoryItem invItem = new InventoryItem();
         invItem.setId(1L);
@@ -161,10 +161,10 @@ class PurchaseServiceTest {
         when(purchaseRepository.save(any(Purchase.class))).thenReturn(purchase);
         when(purchaseMapper.toResponse(purchase)).thenReturn(purchaseResponse);
 
-        PurchaseResponse response = purchaseService.confirmPurchase(1L, 1L);
+        PurchaseResponse response = purchaseService.confirmPurchase(1L, 1L, 1L);
 
         assertNotNull(response);
-        assertEquals("STOCK_UPDATED", purchase.getStatus());
+        assertEquals("CONFIRMED", purchase.getStatus());
         verify(inventoryTransactionRepository, times(1)).save(any());
     }
 
@@ -173,14 +173,14 @@ class PurchaseServiceTest {
         purchase.setStatus("STOCK_UPDATED");
         when(purchaseRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(purchase));
 
-        assertThrows(BusinessRuleViolationException.class, () -> purchaseService.confirmPurchase(1L, 1L));
+        assertThrows(BusinessRuleViolationException.class, () -> purchaseService.confirmPurchase(1L, 1L, 1L));
     }
 
     @Test
     void confirmPurchase_NoMainStore() {
         when(purchaseRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(purchase));
-        when(warehouseRepository.findAllByTenantId(1L)).thenReturn(List.of());
+        when(warehouseRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.empty());
 
-        assertThrows(BusinessRuleViolationException.class, () -> purchaseService.confirmPurchase(1L, 1L));
+        assertThrows(BusinessRuleViolationException.class, () -> purchaseService.confirmPurchase(1L, 1L, 1L));
     }
 }

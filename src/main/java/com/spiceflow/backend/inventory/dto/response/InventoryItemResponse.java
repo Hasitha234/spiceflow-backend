@@ -3,6 +3,7 @@ import lombok.Builder;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.math.BigDecimal;
 
 @Builder
 public record InventoryItemResponse(
@@ -11,6 +12,11 @@ public record InventoryItemResponse(
     Long productId,
     String productName,
     String productSku,
+    String productCategoryName,
+    BigDecimal productBasePrice,
+    String unitOfMeasure,
+    Integer itemsPerSoldUnit,
+    Integer soldUnitsPerBox,
     Long warehouseId,
     String warehouseName,
     Integer quantityAvailable,
@@ -20,6 +26,5 @@ public record InventoryItemResponse(
     Long version,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt
-
 
 ) {}

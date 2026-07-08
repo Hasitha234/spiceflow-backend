@@ -78,7 +78,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 HttpStatus.TOO_MANY_REQUESTS, "Too many attempts. Please try again later.");
             problem.setTitle("Too Many Requests");
             problem.setInstance(java.net.URI.create(request.getRequestURI()));
-            problem.setProperty("timestamp", OffsetDateTime.now().toString());
+            problem.setProperty("timestamp", OffsetDateTime.now(java.time.ZoneId.systemDefault()).toString());
 
             response.getWriter().write(objectMapper.writeValueAsString(problem));
         }

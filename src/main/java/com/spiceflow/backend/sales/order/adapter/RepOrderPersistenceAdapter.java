@@ -65,7 +65,6 @@ public class RepOrderPersistenceAdapter {
                 itemEntity.setUnitType(item.unitType());
                 itemEntity.setRate(item.rate());
                 itemEntity.setGrossAmount(item.grossAmount() != null ? item.grossAmount() : BigDecimal.ZERO);
-                itemEntity.setDiscountAmount(item.discountAmount() != null ? item.discountAmount() : BigDecimal.ZERO);
                 itemEntity.setNetAmount(item.netAmount() != null ? item.netAmount() : BigDecimal.ZERO);
                 itemEntity.setIsFreeItem(item.isFreeItem());
                 itemEntity.setBoxesNeeded(item.boxesNeeded());
@@ -108,7 +107,6 @@ public class RepOrderPersistenceAdapter {
                     itemEntity.getUnitType(),
                     itemEntity.getRate(),
                     itemEntity.getGrossAmount(),
-                    itemEntity.getDiscountAmount(),
                     itemEntity.getNetAmount(),
                     itemEntity.getIsFreeItem(),
                     itemEntity.getBoxesNeeded()

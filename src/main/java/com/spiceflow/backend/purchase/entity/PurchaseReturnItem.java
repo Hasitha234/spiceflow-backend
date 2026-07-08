@@ -1,4 +1,4 @@
-package com.spiceflow.backend.sales.entity;
+package com.spiceflow.backend.purchase.entity;
 
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.inventory.entity.Product;
@@ -14,13 +14,13 @@ import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @org.hibernate.annotations.Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
-@Table(name = "rep_order_items")
+@Table(name = "purchase_return_items")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RepOrderItem {
+public class PurchaseReturnItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,15 +31,16 @@ public class RepOrderItem {
     private Tenant tenant;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "rep_order_shop_id", nullable = false)
-    private RepOrderShop repOrderShop;
+    @JoinColumn(name = "purchase_id", nullable = false)
+    private Purchase purchase;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
     @Column(nullable = false)
-    private Integer quantity;
+    @Builder.Default
+    private Integer quantity = 0;
 
     @Column(name = "unit_type", length = 10)
     private String unitType;
@@ -48,21 +49,9 @@ public class RepOrderItem {
     @Builder.Default
     private BigDecimal rate = BigDecimal.ZERO;
 
-    @Column(name = "gross_amount", nullable = false, precision = 15, scale = 2)
+    @Column(nullable = false, precision = 15, scale = 2)
     @Builder.Default
-    private BigDecimal grossAmount = BigDecimal.ZERO;
-
-    @Column(name = "net_amount", nullable = false, precision = 15, scale = 2)
-    @Builder.Default
-    private BigDecimal netAmount = BigDecimal.ZERO;
-
-    @Column(name = "is_free_item", nullable = false)
-    @Builder.Default
-    private Boolean isFreeItem = false;
-
-    @Column(name = "boxes_needed", nullable = false)
-    @Builder.Default
-    private Integer boxesNeeded = 0;
+    private BigDecimal amount = BigDecimal.ZERO;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

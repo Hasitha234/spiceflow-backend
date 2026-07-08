@@ -38,7 +38,12 @@ public record PurchaseResponse(
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,
     
-    List<PurchaseLineItemResponse> lineItems
+    List<PurchaseLineItemResponse> lineItems,
+    
+    Long returnWarehouseId,
+    String returnWarehouseName,
+    
+    List<PurchaseReturnItemResponse> returnItems
 
 
 

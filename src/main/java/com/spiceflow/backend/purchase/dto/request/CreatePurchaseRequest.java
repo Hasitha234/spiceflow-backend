@@ -51,7 +51,12 @@ public record CreatePurchaseRequest(
     
     @Valid
     @NotNull
-    List<PurchaseLineItemRequest> lineItems
+    List<PurchaseLineItemRequest> lineItems,
+
+    Long returnWarehouseId,
+    
+    @Valid
+    List<PurchaseReturnItemRequest> returnItems
 
 
 

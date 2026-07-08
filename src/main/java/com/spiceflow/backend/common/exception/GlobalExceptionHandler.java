@@ -28,7 +28,6 @@ public class GlobalExceptionHandler {
 
   private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
   
-  private static final String TRACE_ID_HEADER = "X-Trace-Id";
 
   private ProblemDetail buildProblemDetail(
       HttpStatus status, 
@@ -48,7 +47,7 @@ public class GlobalExceptionHandler {
     }
     
     problemDetail.setProperty("traceId", traceId);
-    problemDetail.setProperty("timestamp", OffsetDateTime.now().toString());
+    problemDetail.setProperty("timestamp", OffsetDateTime.now(java.time.ZoneId.systemDefault()).toString());
 
     if (errors != null && !errors.isEmpty()) {
       problemDetail.setProperty("errors", errors);

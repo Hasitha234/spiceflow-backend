@@ -50,7 +50,7 @@ class RepOrderWorkflowEngineTest {
     @Test
     void should_submit_rep_order_successfully_when_shops_and_items_valid() {
         RepOrderItem item = new RepOrderItem(
-                100L, 10, "PACK", new BigDecimal("150.00"), BigDecimal.ZERO, false, 1
+                100L, 10, "PACK", new BigDecimal("150.00"), false, 1
         );
         RepOrderShop shop = new RepOrderShop(
                 50L, List.of(item), Collections.emptyList()
@@ -90,7 +90,7 @@ class RepOrderWorkflowEngineTest {
     @Test
     void should_approve_load_and_deliver_rep_order_successfully() {
         RepOrderItem item = new RepOrderItem(
-                100L, 10, "PACK", new BigDecimal("150.00"), BigDecimal.ZERO, false, 1
+                100L, 10, "PACK", new BigDecimal("150.00"), false, 1
         );
         ShopReturnItem returnItem = new ShopReturnItem(
                 200L, 2, "PACK", new BigDecimal("100.00"), "EXPIRED"
@@ -120,7 +120,7 @@ class RepOrderWorkflowEngineTest {
     @Test
     void should_return_new_aggregate_instance_not_mutate_original() {
         RepOrderItem item = new RepOrderItem(
-                100L, 10, "PACK", new BigDecimal("150.00"), BigDecimal.ZERO, false, 1
+                100L, 10, "PACK", new BigDecimal("150.00"), false, 1
         );
         RepOrderShop shop = new RepOrderShop(50L, List.of(item), Collections.emptyList());
         repOrder = new RepOrder(repOrder, RepOrderState.DRAFT, List.of(shop));

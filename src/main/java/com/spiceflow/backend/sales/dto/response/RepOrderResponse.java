@@ -21,6 +21,8 @@ public record RepOrderResponse(
     BigDecimal netAmount,
     
     String loadingStatus,
+    String status,
+    String orderNumber,
     
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,

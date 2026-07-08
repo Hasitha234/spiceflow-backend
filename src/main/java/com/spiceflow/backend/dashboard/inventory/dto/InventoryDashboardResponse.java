@@ -9,5 +9,6 @@ public record InventoryDashboardResponse(
     long lowStockCount,
     long pendingTransfersCount,
     List<LowStockItemDto> lowStockItems,
-    List<RecentMovementDto> recentMovements
+    List<RecentMovementDto> recentMovements,
+    List<WarehouseStockDto> warehouseStocks
 ) {}

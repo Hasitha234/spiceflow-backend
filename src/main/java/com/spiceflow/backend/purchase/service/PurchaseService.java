@@ -16,9 +16,11 @@ import com.spiceflow.backend.inventory.service.ProductService;
 import com.spiceflow.backend.inventory.service.SupplierService;
 import com.spiceflow.backend.purchase.dto.request.CreatePurchaseRequest;
 import com.spiceflow.backend.purchase.dto.request.PurchaseLineItemRequest;
+import com.spiceflow.backend.purchase.dto.request.PurchaseReturnItemRequest;
 import com.spiceflow.backend.purchase.dto.response.PurchaseResponse;
 import com.spiceflow.backend.purchase.entity.Purchase;
 import com.spiceflow.backend.purchase.entity.PurchaseLineItem;
+import com.spiceflow.backend.purchase.entity.PurchaseReturnItem;
 import com.spiceflow.backend.purchase.mapper.PurchaseMapper;
 import com.spiceflow.backend.purchase.repository.PurchaseLineItemRepository;
 import com.spiceflow.backend.purchase.repository.PurchaseRepository;
@@ -62,6 +64,13 @@ public class PurchaseService {
         BigDecimal totalOrderValue = BigDecimal.ZERO;
         
         List<PurchaseLineItem> lineItems = new ArrayList<>();
+        List<PurchaseReturnItem> returnItems = new ArrayList<>();
+        
+        Warehouse returnWarehouse = null;
+        if (request.returnWarehouseId() != null) {
+            returnWarehouse = warehouseRepository.findByIdAndTenantId(request.returnWarehouseId(), tenantId)
+                .orElseThrow(() -> new BusinessRuleViolationException("Return warehouse not found"));
+        }
         
         Purchase purchase = Purchase.builder()
             .tenant(tenant)
@@ -82,6 +91,10 @@ public class PurchaseService {
             .notes(request.notes())
             .build();
             
+        if (returnWarehouse != null) {
+            purchase.setReturnWarehouse(returnWarehouse);
+        }
+
         for (PurchaseLineItemRequest itemReq : request.lineItems()) {
             Product product = productService.getProductEntity(itemReq.productId(), tenantId);
             if (product.getSupplier() != null && !product.getSupplier().getId().equals(request.supplierId())) {
@@ -107,13 +120,32 @@ public class PurchaseService {
             totalBoxes += itemReq.noOfBoxes();
             totalOrderValue = totalOrderValue.add(amount);
         }
-        
+        if (request.returnItems() != null) {
+            for (PurchaseReturnItemRequest retReq : request.returnItems()) {
+                Product product = productService.getProductEntity(retReq.productId(), tenantId);
+                
+                BigDecimal retAmount = retReq.rate().multiply(BigDecimal.valueOf(retReq.quantity()));
+                
+                PurchaseReturnItem retItem = PurchaseReturnItem.builder()
+                    .tenant(tenant)
+                    .purchase(purchase)
+                    .product(product)
+                    .quantity(retReq.quantity())
+                    .unitType(retReq.unitType())
+                    .rate(retReq.rate())
+                    .amount(retAmount)
+                    .build();
+                returnItems.add(retItem);
+            }
+        }
+
         purchase.setTotalBoxes(totalBoxes);
         purchase.setTotalOrderValue(totalOrderValue);
         purchase.setValueOfSupply(totalOrderValue.subtract(purchase.getDiscountAmount()).subtract(purchase.getReturnsDeductedAmount()));
         purchase.setNetAmount(purchase.getValueOfSupply().add(purchase.getVatAmount()));
         
         purchase.setLineItems(lineItems);
+        purchase.setReturnItems(returnItems);
         
         Purchase savedPurchase = purchaseRepository.save(purchase);
         
@@ -137,7 +169,7 @@ public class PurchaseService {
     }
     
     @Transactional(rollbackFor = Exception.class)
-    public PurchaseResponse confirmPurchase(Long id, Long tenantId) {
+    public PurchaseResponse confirmPurchase(Long id, Long warehouseId, Long tenantId) {
         Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Purchase not found"));
             
@@ -145,11 +177,9 @@ public class PurchaseService {
             throw new BusinessRuleViolationException("Purchase is already confirmed");
         }
         
-        // Find MAIN store
-        Warehouse mainStore = warehouseRepository.findAllByTenantId(tenantId).stream()
-            .filter(w -> "MAIN".equals(w.getStoreType()))
-            .findFirst()
-            .orElseThrow(() -> new BusinessRuleViolationException("MAIN store not found for tenant"));
+        // Find designated store
+        Warehouse mainStore = warehouseRepository.findByIdAndTenantId(warehouseId, tenantId)
+            .orElseThrow(() -> new BusinessRuleViolationException("Warehouse not found"));
             
         for (PurchaseLineItem lineItem : purchase.getLineItems()) {
             Optional<InventoryItem> invOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
@@ -181,9 +211,48 @@ public class PurchaseService {
                 
             inventoryTransactionRepository.save(tx);
         }
+
+        if (purchase.getReturnWarehouse() != null && purchase.getReturnItems() != null && !purchase.getReturnItems().isEmpty()) {
+            Warehouse retStore = purchase.getReturnWarehouse();
+            for (PurchaseReturnItem retItem : purchase.getReturnItems()) {
+                InventoryItem inventoryItem = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
+                    retItem.getProduct().getId(), retStore.getId(), tenantId)
+                    .orElseThrow(() -> new BusinessRuleViolationException("Insufficient stock for return in warehouse: " + retStore.getName()));
+                
+                if (inventoryItem.getQuantityAvailable() < retItem.getQuantity()) {
+                    throw new BusinessRuleViolationException("Insufficient stock for return. Product: " + retItem.getProduct().getName());
+                }
+                
+                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() - retItem.getQuantity());
+                inventoryItemRepository.save(inventoryItem);
+                
+                InventoryTransaction tx = InventoryTransaction.builder()
+                    .tenant(purchase.getTenant())
+                    .inventoryItem(inventoryItem)
+                    .transactionType("PURCHASE_RETURN_OUT")
+                    .quantity(retItem.getQuantity())
+                    .referenceId("PUR-RET-" + purchase.getInvoiceNo())
+                    .notes("Purchase Return ID: " + purchase.getId())
+                    .build();
+                    
+                inventoryTransactionRepository.save(tx);
+            }
+        }
         
-        purchase.setStatus("STOCK_UPDATED");
+        purchase.setStatus("CONFIRMED");
         return purchaseMapper.toResponse(purchaseRepository.save(purchase));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deletePurchase(Long id, Long tenantId) {
+        Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("Purchase not found"));
+            
+        if (!"DRAFT".equals(purchase.getStatus())) {
+            throw new BusinessRuleViolationException("Only DRAFT purchases can be deleted");
+        }
+        
+        purchaseRepository.delete(purchase);
     }
 }
 

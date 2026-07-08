@@ -69,7 +69,7 @@ public class User extends BaseEntity implements UserDetails {
             .stream()
             .map(p -> new SimpleGrantedAuthority(p.getCode()))
             .collect(Collectors.toList());
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + assignedRole.getName().toUpperCase().replace(" ", "_")));
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + assignedRole.getName().toUpperCase(java.util.Locale.ROOT).replace(" ", "_")));
         return authorities;
       }
       return List.of(); // Should never happen for valid users
@@ -107,7 +107,7 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return lockedUntil == null || lockedUntil.isBefore(OffsetDateTime.now());
+        return lockedUntil == null || lockedUntil.isBefore(OffsetDateTime.now(java.time.ZoneId.systemDefault()));
     }
 
     @Override

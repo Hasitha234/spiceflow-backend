@@ -208,7 +208,7 @@ public class AdminService {
         .filter(t -> t.getDeletedAt() == null)
         .orElseThrow(() -> new ResourceNotFoundException("Tenant not found with id: " + id));
 
-    tenant.setDeletedAt(OffsetDateTime.now());
+    tenant.setDeletedAt(OffsetDateTime.now(java.time.ZoneId.systemDefault()));
     tenantRepository.save(tenant);
     log.info("Platform Admin soft-deleted tenant id={}, name={}", tenant.getId(), tenant.getBusinessName());
   }

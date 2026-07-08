@@ -72,14 +72,14 @@ class RepOrderServiceTest {
 
     @Test
     void createRepOrder_Success() {
-        CreateRepOrderRequest request = CreateRepOrderRequest.builder().repId(1L).orderDate(java.time.LocalDate.now()).routeArea("Colombo").shops(java.util.List.of()).build();
+        CreateRepOrderRequest request = CreateRepOrderRequest.builder().repId(1L).orderNumber("RO-1001").orderDate(java.time.LocalDate.now()).routeArea("Colombo").shops(java.util.List.of()).build();
         
-        RepOrderItemRequest itemReq = RepOrderItemRequest.builder().productId(1L).quantity(10).unitType("BOX").rate(java.math.BigDecimal.TEN).discountAmount(java.math.BigDecimal.ZERO).isFreeItem(false).boxesNeeded(1).build();
+        RepOrderItemRequest itemReq = RepOrderItemRequest.builder().productId(1L).quantity(10).unitType("BOX").rate(java.math.BigDecimal.TEN).isFreeItem(false).boxesNeeded(1).build();
         
         ShopReturnRequest returnReq = ShopReturnRequest.builder().productId(1L).quantity(1).returnType("DAMAGED").creditValue(java.math.BigDecimal.TEN).unitType("BOX").build();
 
         RepOrderShopRequest shopReq = RepOrderShopRequest.builder().shopId(1L).items(List.of(itemReq)).returns(List.of()).build();
-        request = CreateRepOrderRequest.builder().repId(1L).orderDate(java.time.LocalDate.now()).routeArea("Colombo").shops(List.of(shopReq)).build();
+        request = CreateRepOrderRequest.builder().repId(1L).orderNumber("RO-1001").orderDate(java.time.LocalDate.now()).routeArea("Colombo").shops(List.of(shopReq)).build();
 
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));

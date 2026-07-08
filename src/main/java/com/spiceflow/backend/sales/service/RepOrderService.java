@@ -5,7 +5,9 @@ import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
 import com.spiceflow.backend.inventory.entity.Product;
+import com.spiceflow.backend.inventory.entity.Warehouse;
 import com.spiceflow.backend.inventory.service.ProductService;
+import com.spiceflow.backend.inventory.service.WarehouseService;
 import com.spiceflow.backend.sales.dto.request.CreateRepOrderRequest;
 import com.spiceflow.backend.sales.dto.request.RepOrderItemRequest;
 import com.spiceflow.backend.sales.dto.request.RepOrderShopRequest;
@@ -39,6 +41,7 @@ public class RepOrderService {
     private final TenantRepository tenantRepository;
     private final SalesMasterDataService salesMasterDataService;
     private final ProductService productService;
+    private final WarehouseService warehouseService;
     private final RepOrderMapper repOrderMapper;
 
     @Transactional(rollbackFor = Exception.class)
@@ -53,9 +56,11 @@ public class RepOrderService {
         RepOrder repOrder = RepOrder.builder()
             .tenant(tenant)
             .rep(rep)
+            .orderNumber(request.orderNumber())
             .orderDate(request.orderDate())
             .routeArea(request.routeArea())
             .loadingStatus("DRAFT")
+            .status("DRAFT")
             .build();
 
         BigDecimal totalGrossAmount = BigDecimal.ZERO;
@@ -66,12 +71,23 @@ public class RepOrderService {
         for (RepOrderShopRequest shopReq : request.shops()) {
             Shop shop = salesMasterDataService.getShopEntity(shopReq.shopId(), tenantId);
 
+            Warehouse returnWarehouse = null;
+            if (shopReq.returnWarehouseId() != null) {
+                returnWarehouse = warehouseService.getWarehouseEntity(tenantId, shopReq.returnWarehouseId());
+            }
+
             RepOrderShop orderShop = RepOrderShop.builder()
                 .tenant(tenant)
                 .repOrder(repOrder)
                 .shop(shop)
+                .discountAmount(shopReq.discountAmount() != null ? shopReq.discountAmount() : BigDecimal.ZERO)
+                .skuDiscountAmount(shopReq.skuDiscountAmount() != null ? shopReq.skuDiscountAmount() : BigDecimal.ZERO)
+                .returns(new ArrayList<>())
                 .build();
-
+            
+            if (returnWarehouse != null) {
+                orderShop.setReturnWarehouse(returnWarehouse);
+            }
             BigDecimal shopGross = BigDecimal.ZERO;
             BigDecimal shopReturns = BigDecimal.ZERO;
 
@@ -87,12 +103,11 @@ public class RepOrderService {
                     .unitType(itemReq.unitType())
                     .rate(itemReq.rate())
                     .grossAmount(itemReq.rate().multiply(BigDecimal.valueOf(itemReq.quantity())))
-                    .discountAmount(itemReq.discountAmount() != null ? itemReq.discountAmount() : BigDecimal.ZERO)
                     .isFreeItem(itemReq.isFreeItem() != null ? itemReq.isFreeItem() : false)
                     .boxesNeeded(itemReq.boxesNeeded())
                     .build();
                 
-                item.setNetAmount(item.getGrossAmount().subtract(item.getDiscountAmount()));
+                item.setNetAmount(item.getGrossAmount());
                 
                 shopGross = shopGross.add(item.getNetAmount());
                 items.add(item);
@@ -121,7 +136,7 @@ public class RepOrderService {
 
             orderShop.setGrossOrderAmount(shopGross);
             orderShop.setReturnsValue(shopReturns);
-            orderShop.setNetAmount(shopGross.subtract(shopReturns));
+            orderShop.setNetAmount(shopGross.subtract(shopReturns).subtract(orderShop.getDiscountAmount()).subtract(orderShop.getSkuDiscountAmount()));
             
             orderShop.setItems(items);
             orderShop.setReturns(returns);
@@ -130,11 +145,13 @@ public class RepOrderService {
             
             totalGrossAmount = totalGrossAmount.add(shopGross);
             totalReturnsValue = totalReturnsValue.add(shopReturns);
+            repOrder.setNetAmount(repOrder.getNetAmount() != null 
+                ? repOrder.getNetAmount().add(orderShop.getNetAmount()) 
+                : orderShop.getNetAmount());
         }
 
         repOrder.setTotalGrossAmount(totalGrossAmount);
         repOrder.setTotalReturnsValue(totalReturnsValue);
-        repOrder.setNetAmount(totalGrossAmount.subtract(totalReturnsValue));
         repOrder.setShops(shops);
 
         RepOrder savedOrder = repOrderRepository.save(repOrder);
