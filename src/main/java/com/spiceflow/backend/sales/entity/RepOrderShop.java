@@ -1,6 +1,7 @@
 package com.spiceflow.backend.sales.entity;
 
 import com.spiceflow.backend.auth.entity.Tenant;
+import com.spiceflow.backend.inventory.entity.Warehouse;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -47,9 +48,21 @@ public class RepOrderShop {
     @Builder.Default
     private BigDecimal returnsValue = BigDecimal.ZERO;
 
+    @Column(name = "discount_amount", nullable = false, precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Column(name = "sku_discount_amount", nullable = false, precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal skuDiscountAmount = BigDecimal.ZERO;
+
     @Column(name = "net_amount", nullable = false, precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal netAmount = BigDecimal.ZERO;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "return_warehouse_id")
+    private Warehouse returnWarehouse;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

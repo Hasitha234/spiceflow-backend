@@ -14,8 +14,13 @@ public record RepOrderShopResponse(
     String shopName,
     
     BigDecimal grossOrderAmount,
+    BigDecimal discountAmount,
+    BigDecimal skuDiscountAmount,
     BigDecimal returnsValue,
     BigDecimal netAmount,
+    
+    Long returnWarehouseId,
+    String returnWarehouseName,
     
     OffsetDateTime createdAt,
     

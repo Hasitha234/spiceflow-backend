@@ -71,6 +71,16 @@ public class ReportController {
         log.info("User {} requesting rep performance report", currentUser.getId());
         return ResponseEntity.ok(reportService.getRepPerformance(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), startDate, endDate));
     }
+
+    @GetMapping("/end-of-day-summary")
+    @PreAuthorize("hasAuthority('REPORT_DAILY') or hasAuthority('REPORT_MONTHLY') or hasAuthority('REPORT_EXPORT')")
+    @Operation(summary = "Get end-of-day summary", description = "Returns a comprehensive summary of all cash, cheques, and loans collected for a specific date", operationId = "getEndOfDaySummary")
+    public ResponseEntity<com.spiceflow.backend.sales.dto.response.EndOfDaySummaryResponse> getEndOfDaySummary(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        log.info("User {} requesting end-of-day summary for {}", currentUser.getId(), date);
+        return ResponseEntity.ok(reportService.getEndOfDaySummary(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), date));
+    }
 }
 
 

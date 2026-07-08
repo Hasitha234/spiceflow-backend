@@ -68,6 +68,7 @@ class InventoryDashboardControllerTest {
                 3L,
                 1L,
                 List.of(),
+                List.of(),
                 List.of()
         );
 

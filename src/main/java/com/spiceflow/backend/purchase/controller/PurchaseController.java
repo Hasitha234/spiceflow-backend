@@ -64,13 +64,24 @@ public class PurchaseController {
 
     @PostMapping("/{id}/confirm")
     @PreAuthorize("hasAuthority('PURCHASE_UPDATE')")
-    @Operation(summary = "Confirm purchase", description = "Confirms a draft purchase and updates inventory in the MAIN store", operationId = "confirmPurchase")
+    @Operation(summary = "Confirm purchase", description = "Confirms a draft purchase and updates inventory in the selected warehouse", operationId = "confirmPurchase")
     public ResponseEntity<PurchaseResponse> confirmPurchase(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
-            @PathVariable Long id) {
-        log.info("User {} confirming purchase {}", currentUser.getId(), id);
-        PurchaseResponse response = purchaseService.confirmPurchase(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
+            @PathVariable Long id,
+            @RequestParam Long warehouseId) {
+        log.info("User {} confirming purchase {} to warehouse {}", currentUser.getId(), id, warehouseId);
+        PurchaseResponse response = purchaseService.confirmPurchase(id, warehouseId, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
+    }
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('PURCHASE_DELETE')")
+    @Operation(summary = "Delete purchase", description = "Deletes a draft purchase", operationId = "deletePurchase")
+    public ResponseEntity<Void> deletePurchase(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        log.info("User {} deleting purchase {}", currentUser.getId(), id);
+        purchaseService.deletePurchase(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
+        return ResponseEntity.noContent().build();
     }
 }
 

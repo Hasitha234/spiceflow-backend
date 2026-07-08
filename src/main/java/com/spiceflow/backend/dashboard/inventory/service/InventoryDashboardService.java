@@ -28,6 +28,7 @@ public class InventoryDashboardService {
         InventoryDashboardRepository.SummaryMetrics metrics = repository.getSummaryMetrics(tenantId);
         List<LowStockItemDto> lowStockItems = repository.getLowStockItems(tenantId, limit);
         List<RecentMovementDto> recentMovements = repository.getRecentMovements(tenantId, limit);
+        List<com.spiceflow.backend.dashboard.inventory.dto.WarehouseStockDto> warehouseStocks = repository.getWarehouseStocks(tenantId);
 
         return new InventoryDashboardResponse(
             metrics.totalStockValue(),
@@ -35,7 +36,8 @@ public class InventoryDashboardService {
             metrics.lowStockCount(),
             metrics.pendingTransfersCount(),
             lowStockItems,
-            recentMovements
+            recentMovements,
+            warehouseStocks
         );
     }
 }

@@ -17,7 +17,6 @@ public record RepOrderItemResponse(
     BigDecimal rate,
     
     BigDecimal grossAmount,
-    BigDecimal discountAmount,
     BigDecimal netAmount,
     
     Boolean isFreeItem,

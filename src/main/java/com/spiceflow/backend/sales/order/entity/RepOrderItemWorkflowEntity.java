@@ -43,9 +43,6 @@ public class RepOrderItemWorkflowEntity {
     @Column(name = "gross_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal grossAmount;
 
-    @Column(name = "discount_amount", nullable = false, precision = 15, scale = 2)
-    private BigDecimal discountAmount;
-
     @Column(name = "net_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal netAmount;
 
@@ -64,7 +61,6 @@ public class RepOrderItemWorkflowEntity {
         this.quantity = 0;
         this.rate = BigDecimal.ZERO;
         this.grossAmount = BigDecimal.ZERO;
-        this.discountAmount = BigDecimal.ZERO;
         this.netAmount = BigDecimal.ZERO;
         this.isFreeItem = false;
         this.boxesNeeded = 0;
@@ -94,9 +90,6 @@ public class RepOrderItemWorkflowEntity {
 
     public BigDecimal getGrossAmount() { return grossAmount; }
     public void setGrossAmount(BigDecimal grossAmount) { this.grossAmount = grossAmount; }
-
-    public BigDecimal getDiscountAmount() { return discountAmount; }
-    public void setDiscountAmount(BigDecimal discountAmount) { this.discountAmount = discountAmount; }
 
     public BigDecimal getNetAmount() { return netAmount; }
     public void setNetAmount(BigDecimal netAmount) { this.netAmount = netAmount; }

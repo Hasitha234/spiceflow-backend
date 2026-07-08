@@ -29,9 +29,9 @@ class RepOrderPersistenceAdapterTest {
     void should_convert_domain_to_entity_and_back_without_loss() {
         RepOrder ro = RepOrder.create("RO-2026-0001", 10L, 5L, LocalDate.now(), "South Route", "admin@spiceflow.com");
         RepOrderItem item1 = new RepOrderItem(1L, 101L, 10, "BOX", new BigDecimal("100.00"), new BigDecimal("1000.00"),
-                BigDecimal.ZERO, new BigDecimal("1000.00"), false, 1);
+                new BigDecimal("1000.00"), false, 1);
         RepOrderItem item2 = new RepOrderItem(2L, 102L, 5, "PACK", new BigDecimal("50.00"), new BigDecimal("250.00"),
-                BigDecimal.ZERO, new BigDecimal("250.00"), false, 1);
+                new BigDecimal("250.00"), false, 1);
         ShopReturnItem return1 = new ShopReturnItem(1L, 201L, 2, "BOX", new BigDecimal("100.00"), "EXPIRED", "PENDING");
 
         RepOrderShop shop = new RepOrderShop(1L, 501L, new BigDecimal("1250.00"), new BigDecimal("100.00"),
@@ -75,7 +75,7 @@ class RepOrderPersistenceAdapterTest {
     void should_preserve_immutability_during_mapping() {
         RepOrder ro = RepOrder.create("RO-2026-0002", 10L, 5L, LocalDate.now(), "West Route", "admin");
         RepOrderItem item = new RepOrderItem(1L, 301L, 1, "BOX", new BigDecimal("50.00"), new BigDecimal("50.00"),
-                BigDecimal.ZERO, new BigDecimal("50.00"), false, 1);
+                new BigDecimal("50.00"), false, 1);
         RepOrderShop shop = new RepOrderShop(1L, 502L, new BigDecimal("50.00"), BigDecimal.ZERO,
                 new BigDecimal("50.00"), List.of(item), List.of());
         ro = new RepOrder(ro, RepOrderState.DRAFT, List.of(shop));

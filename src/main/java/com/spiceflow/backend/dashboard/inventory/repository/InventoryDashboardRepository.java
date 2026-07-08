@@ -37,7 +37,8 @@ public class InventoryDashboardRepository {
                 (SELECT COALESCE(SUM(i.quantity_available * COALESCE(p.base_price, 0)), 0.00)
                  FROM inventory_items i
                  JOIN products p ON i.product_id = p.id
-                 WHERE i.tenant_id = :tenantId AND i.deleted_at IS NULL AND p.deleted_at IS NULL) AS total_val,
+                 JOIN warehouses w ON i.warehouse_id = w.id
+                 WHERE i.tenant_id = :tenantId AND i.deleted_at IS NULL AND p.deleted_at IS NULL AND w.deleted_at IS NULL) AS total_val,
                 (SELECT COUNT(*)
                  FROM products
                  WHERE tenant_id = :tenantId AND deleted_at IS NULL) AS total_items,
@@ -46,9 +47,10 @@ public class InventoryDashboardRepository {
                      SELECT p.id
                      FROM products p
                      LEFT JOIN inventory_items i ON p.id = i.product_id AND i.deleted_at IS NULL
+                     LEFT JOIN warehouses w ON i.warehouse_id = w.id
                      WHERE p.tenant_id = :tenantId AND p.deleted_at IS NULL
                      GROUP BY p.id
-                     HAVING COALESCE(SUM(i.quantity_available), 0) < 10
+                     HAVING COALESCE(SUM(CASE WHEN w.deleted_at IS NULL THEN i.quantity_available ELSE 0 END), 0) < 10
                  ) sub) AS low_stock,
                 (SELECT COUNT(*)
                  FROM warehouse_transfers
@@ -71,14 +73,15 @@ public class InventoryDashboardRepository {
                 p.id AS product_id,
                 p.sku,
                 p.name,
-                COALESCE(SUM(i.quantity_available), 0) AS total_qty,
+                COALESCE(SUM(CASE WHEN w.deleted_at IS NULL THEN i.quantity_available ELSE 0 END), 0) AS total_qty,
                 COALESCE(p.unit_of_measure, 'PCS') AS uom,
                 COALESCE(p.base_price, 0.00) AS base_price
             FROM products p
             LEFT JOIN inventory_items i ON p.id = i.product_id AND i.deleted_at IS NULL
+            LEFT JOIN warehouses w ON i.warehouse_id = w.id
             WHERE p.tenant_id = :tenantId AND p.deleted_at IS NULL
             GROUP BY p.id, p.sku, p.name, p.unit_of_measure, p.base_price
-            HAVING COALESCE(SUM(i.quantity_available), 0) < 10
+            HAVING COALESCE(SUM(CASE WHEN w.deleted_at IS NULL THEN i.quantity_available ELSE 0 END), 0) < 10
             ORDER BY total_qty ASC
             LIMIT :limit
             """;
@@ -93,6 +96,33 @@ public class InventoryDashboardRepository {
             rs.getInt("total_qty"),
             rs.getString("uom") != null ? rs.getString("uom") : "PCS",
             rs.getBigDecimal("base_price") != null ? rs.getBigDecimal("base_price") : BigDecimal.ZERO
+        ));
+        return results != null ? results : Collections.emptyList();
+    }
+
+    public List<com.spiceflow.backend.dashboard.inventory.dto.WarehouseStockDto> getWarehouseStocks(Long tenantId) {
+        String sql = """
+            SELECT
+                w.id AS warehouse_id,
+                w.name AS warehouse_name,
+                w.location AS location,
+                COALESCE(SUM(i.quantity_available * COALESCE(p.base_price, 0)), 0.00) AS total_value,
+                COUNT(DISTINCT CASE WHEN i.quantity_available > 0 THEN p.id ELSE NULL END) AS item_count
+            FROM warehouses w
+            LEFT JOIN inventory_items i ON w.id = i.warehouse_id AND i.deleted_at IS NULL
+            LEFT JOIN products p ON i.product_id = p.id AND p.deleted_at IS NULL
+            WHERE w.tenant_id = :tenantId AND w.deleted_at IS NULL
+            GROUP BY w.id, w.name, w.location
+            ORDER BY w.name
+            """;
+        MapSqlParameterSource params = new MapSqlParameterSource("tenantId", tenantId);
+
+        List<com.spiceflow.backend.dashboard.inventory.dto.WarehouseStockDto> results = jdbcTemplate.query(sql, params, (rs, rowNum) -> new com.spiceflow.backend.dashboard.inventory.dto.WarehouseStockDto(
+            rs.getLong("warehouse_id"),
+            rs.getString("warehouse_name") != null ? rs.getString("warehouse_name") : "",
+            rs.getString("location") != null ? rs.getString("location") : "",
+            rs.getBigDecimal("total_value") != null ? rs.getBigDecimal("total_value") : BigDecimal.ZERO,
+            rs.getLong("item_count")
         ));
         return results != null ? results : Collections.emptyList();
     }

@@ -3,6 +3,7 @@ package com.spiceflow.backend.purchase.entity;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.common.entity.BaseEntity;
 import com.spiceflow.backend.inventory.entity.Supplier;
+import com.spiceflow.backend.inventory.entity.Warehouse;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -99,7 +100,15 @@ public class Purchase extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "return_warehouse_id")
+    private Warehouse returnWarehouse;
+
     @OneToMany(mappedBy = "purchase", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
     @Builder.Default
     private List<PurchaseLineItem> lineItems = new ArrayList<>();
+
+    @OneToMany(mappedBy = "purchase", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
+    @Builder.Default
+    private List<PurchaseReturnItem> returnItems = new ArrayList<>();
 }
