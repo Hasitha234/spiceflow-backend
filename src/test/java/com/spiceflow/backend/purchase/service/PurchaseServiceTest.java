@@ -149,7 +149,7 @@ class PurchaseServiceTest {
         Warehouse mainStore = new Warehouse();
         mainStore.setId(1L);
         mainStore.setStoreType("MAIN");
-        when(warehouseRepository.findAllByTenantId(1L)).thenReturn(List.of(mainStore));
+        when(warehouseRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(mainStore));
 
         InventoryItem invItem = new InventoryItem();
         invItem.setId(1L);
@@ -164,7 +164,7 @@ class PurchaseServiceTest {
         PurchaseResponse response = purchaseService.confirmPurchase(1L, 1L, 1L);
 
         assertNotNull(response);
-        assertEquals("STOCK_UPDATED", purchase.getStatus());
+        assertEquals("CONFIRMED", purchase.getStatus());
         verify(inventoryTransactionRepository, times(1)).save(any());
     }
 
