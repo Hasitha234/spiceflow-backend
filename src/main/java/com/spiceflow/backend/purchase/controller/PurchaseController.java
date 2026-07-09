@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,13 +41,25 @@ public class PurchaseController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('PURCHASE_UPDATE')")
+    @Operation(summary = "Update a DRAFT purchase", description = "Updates an existing purchase record in DRAFT status", operationId = "updatePurchase")
+    public ResponseEntity<PurchaseResponse> updatePurchase(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @Valid @RequestBody CreatePurchaseRequest request) {
+        log.info("User {} updating purchase {}", currentUser.getId(), id);
+        PurchaseResponse response = purchaseService.updatePurchase(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping
     @PreAuthorize("hasAuthority('PURCHASE_VIEW')")
     @Operation(summary = "List all purchases", description = "Returns a paginated list of purchases", operationId = "getPurchases")
     public ResponseEntity<Page<PurchaseResponse>> getPurchases(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String invoiceNo,
-            Pageable pageable) {
+            @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("User {} listing purchases", currentUser.getId());
         Page<PurchaseResponse> response = purchaseService.getPurchases(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), invoiceNo, pageable);
         return ResponseEntity.ok(response);

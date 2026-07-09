@@ -82,7 +82,8 @@ class PurchaseServiceTest {
         PurchaseLineItem item = new PurchaseLineItem();
         item.setProduct(product);
         item.setSoldQuantity(10);
-        purchase.setLineItems(List.of(item));
+        purchase.setLineItems(new java.util.ArrayList<>(List.of(item)));
+        purchase.setReturnItems(new java.util.ArrayList<>());
 
         purchaseResponse = PurchaseResponse.builder().id(1L).build();
     }
@@ -140,6 +141,36 @@ class PurchaseServiceTest {
         PurchaseResponse response = purchaseService.getPurchase(1L, 1L);
 
         assertNotNull(response);
+    }
+
+    @Test
+    void updatePurchase_Success() {
+        PurchaseLineItemRequest lineItem = PurchaseLineItemRequest.builder()
+                .productId(1L).soldQuantity(10).rate(java.math.BigDecimal.TEN).noOfBoxes(1).build();
+        CreatePurchaseRequest request = CreatePurchaseRequest.builder()
+                .invoiceNo("INV-123-NEW").supplierId(1L).lineItems(java.util.List.of(lineItem))
+                .returnItems(java.util.List.of())
+                .build();
+        
+        when(purchaseRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(purchase));
+        when(supplierService.getSupplierEntity(1L, 1L)).thenReturn(supplier);
+        when(productService.getProductEntity(1L, 1L)).thenReturn(product);
+        when(purchaseRepository.save(any(Purchase.class))).thenReturn(purchase);
+        when(purchaseMapper.toResponse(purchase)).thenReturn(purchaseResponse);
+
+        PurchaseResponse response = purchaseService.updatePurchase(1L, 1L, request);
+
+        assertNotNull(response);
+        verify(purchaseRepository).save(any(Purchase.class));
+    }
+
+    @Test
+    void updatePurchase_NotDraft() {
+        purchase.setStatus("CONFIRMED");
+        when(purchaseRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(purchase));
+        CreatePurchaseRequest request = CreatePurchaseRequest.builder().build();
+
+        assertThrows(BusinessRuleViolationException.class, () -> purchaseService.updatePurchase(1L, 1L, request));
     }
 
     @Test
