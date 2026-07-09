@@ -101,7 +101,9 @@ public class PurchaseService {
                 throw new BusinessRuleViolationException("Product '" + product.getName() + "' (SKU: " + product.getSku() + ") does not belong to the selected supplier.");
             }
             
-            BigDecimal amount = itemReq.rate().multiply(BigDecimal.valueOf(itemReq.soldQuantity()));
+            BigDecimal amount = itemReq.amount() != null 
+                ? itemReq.amount() 
+                : itemReq.rate().multiply(BigDecimal.valueOf(itemReq.soldQuantity()));
 
             
             PurchaseLineItem lineItem = PurchaseLineItem.builder()
@@ -124,7 +126,9 @@ public class PurchaseService {
             for (PurchaseReturnItemRequest retReq : request.returnItems()) {
                 Product product = productService.getProductEntity(retReq.productId(), tenantId);
                 
-                BigDecimal retAmount = retReq.rate().multiply(BigDecimal.valueOf(retReq.quantity()));
+                BigDecimal retAmount = retReq.amount() != null 
+                    ? retReq.amount() 
+                    : retReq.rate().multiply(BigDecimal.valueOf(retReq.quantity()));
                 
                 PurchaseReturnItem retItem = PurchaseReturnItem.builder()
                     .tenant(tenant)
@@ -149,6 +153,102 @@ public class PurchaseService {
         
         Purchase savedPurchase = purchaseRepository.save(purchase);
         
+        return purchaseMapper.toResponse(savedPurchase);
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public PurchaseResponse updatePurchase(Long id, Long tenantId, CreatePurchaseRequest request) {
+        Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("Purchase not found"));
+            
+        if (!"DRAFT".equals(purchase.getStatus())) {
+            throw new BusinessRuleViolationException("Only DRAFT purchases can be edited");
+        }
+        
+        Supplier supplier = supplierService.getSupplierEntity(tenantId, request.supplierId());
+        
+        Warehouse returnWarehouse = null;
+        if (request.returnWarehouseId() != null) {
+            returnWarehouse = warehouseRepository.findByIdAndTenantId(request.returnWarehouseId(), tenantId)
+                .orElseThrow(() -> new BusinessRuleViolationException("Return warehouse not found"));
+        }
+        
+        purchase.setSupplier(supplier);
+        purchase.setInvoiceNo(request.invoiceNo());
+        purchase.setInvoiceDate(request.invoiceDate());
+        purchase.setOrderNo(request.orderNo());
+        purchase.setLcNo(request.lcNo());
+        purchase.setGrossWeightKg(request.grossWeightKg());
+        purchase.setDiscountAmount(request.discountAmount() != null ? request.discountAmount() : BigDecimal.ZERO);
+        purchase.setReturnsDeductedAmount(request.returnsDeductedAmount() != null ? request.returnsDeductedAmount() : BigDecimal.ZERO);
+        purchase.setVatAmount(request.vatAmount() != null ? request.vatAmount() : BigDecimal.ZERO);
+        purchase.setPaymentMethod(request.paymentMethod());
+        purchase.setChequeNo(request.chequeNo());
+        purchase.setChequeBankName(request.chequeBankName());
+        purchase.setChequeAmount(request.chequeAmount());
+        purchase.setNotes(request.notes());
+        purchase.setReturnWarehouse(returnWarehouse);
+        
+        purchase.getLineItems().clear();
+        purchase.getReturnItems().clear();
+        
+        int totalBoxes = 0;
+        BigDecimal totalOrderValue = BigDecimal.ZERO;
+        
+        for (PurchaseLineItemRequest itemReq : request.lineItems()) {
+            Product product = productService.getProductEntity(itemReq.productId(), tenantId);
+            if (product.getSupplier() != null && !product.getSupplier().getId().equals(request.supplierId())) {
+                throw new BusinessRuleViolationException("Product '" + product.getName() + "' (SKU: " + product.getSku() + ") does not belong to the selected supplier.");
+            }
+            
+            BigDecimal amount = itemReq.amount() != null 
+                ? itemReq.amount() 
+                : itemReq.rate().multiply(BigDecimal.valueOf(itemReq.soldQuantity()));
+            
+            PurchaseLineItem lineItem = PurchaseLineItem.builder()
+                .tenant(purchase.getTenant())
+                .purchase(purchase)
+                .product(product)
+                .noOfBoxes(itemReq.noOfBoxes())
+                .soldQuantity(itemReq.soldQuantity())
+                .unitType(itemReq.unitType())
+                .rate(itemReq.rate())
+                .amount(amount)
+                .build();
+                
+            purchase.getLineItems().add(lineItem);
+            
+            totalBoxes += itemReq.noOfBoxes();
+            totalOrderValue = totalOrderValue.add(amount);
+        }
+        
+        if (request.returnItems() != null) {
+            for (PurchaseReturnItemRequest retReq : request.returnItems()) {
+                Product product = productService.getProductEntity(retReq.productId(), tenantId);
+                
+                BigDecimal retAmount = retReq.amount() != null 
+                    ? retReq.amount() 
+                    : retReq.rate().multiply(BigDecimal.valueOf(retReq.quantity()));
+                
+                PurchaseReturnItem retItem = PurchaseReturnItem.builder()
+                    .tenant(purchase.getTenant())
+                    .purchase(purchase)
+                    .product(product)
+                    .quantity(retReq.quantity())
+                    .unitType(retReq.unitType())
+                    .rate(retReq.rate())
+                    .amount(retAmount)
+                    .build();
+                purchase.getReturnItems().add(retItem);
+            }
+        }
+        
+        purchase.setTotalBoxes(totalBoxes);
+        purchase.setTotalOrderValue(totalOrderValue);
+        purchase.setValueOfSupply(totalOrderValue.subtract(purchase.getDiscountAmount()).subtract(purchase.getReturnsDeductedAmount()));
+        purchase.setNetAmount(purchase.getValueOfSupply().add(purchase.getVatAmount()));
+        
+        Purchase savedPurchase = purchaseRepository.save(purchase);
         return purchaseMapper.toResponse(savedPurchase);
     }
     

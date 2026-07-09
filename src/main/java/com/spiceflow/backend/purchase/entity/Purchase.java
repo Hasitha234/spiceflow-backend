@@ -102,6 +102,7 @@ public class Purchase extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "return_warehouse_id")
+    @org.jspecify.annotations.Nullable
     private Warehouse returnWarehouse;
 
     @OneToMany(mappedBy = "purchase", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)

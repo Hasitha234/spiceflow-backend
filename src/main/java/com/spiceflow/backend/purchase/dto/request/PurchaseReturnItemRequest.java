@@ -20,5 +20,8 @@ public record PurchaseReturnItemRequest(
     
     @NotNull
     @PositiveOrZero
-    BigDecimal rate
+    BigDecimal rate,
+    
+    @PositiveOrZero
+    BigDecimal amount
 ) {}

@@ -24,7 +24,10 @@ public record PurchaseLineItemRequest(
     
     @NotNull
     @PositiveOrZero
-    BigDecimal rate
+    BigDecimal rate,
+    
+    @PositiveOrZero
+    BigDecimal amount
 
 
 
