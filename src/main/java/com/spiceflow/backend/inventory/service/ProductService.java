@@ -44,7 +44,7 @@ public class ProductService {
                 });
                 
             ProductCategory category = null;
-            if (request.categoryId() != null) {
+            if (request.categoryId() != null && request.categoryId() > 0) {
                 category = productCategoryService.getCategoryEntity(request.categoryId(), tenantId);
             }
             Supplier supplier = supplierService.getSupplierEntity(tenantId, request.supplierId());
@@ -120,7 +120,7 @@ public class ProductService {
             }
             
             ProductCategory category = null;
-            if (request.categoryId() != null) {
+            if (request.categoryId() != null && request.categoryId() > 0) {
                 category = productCategoryService.getCategoryEntity(request.categoryId(), tenantId);
             }
             Supplier supplier = supplierService.getSupplierEntity(tenantId, request.supplierId());

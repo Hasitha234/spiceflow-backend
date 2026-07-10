@@ -49,7 +49,7 @@ public class FinanceDashboardRepository {
             """;
         MapSqlParameterSource params = new MapSqlParameterSource()
             .addValue("tenantId", tenantId)
-            .addValue("startOfMonth", startOfMonth);
+            .addValue("startOfMonth", java.sql.Timestamp.from(startOfMonth));
 
         SummaryMetrics metrics = jdbcTemplate.queryForObject(sql, params, (rs, rowNum) -> new SummaryMetrics(
             rs.getBigDecimal("total_rec") != null ? rs.getBigDecimal("total_rec") : BigDecimal.ZERO,
