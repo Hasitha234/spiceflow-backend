@@ -39,7 +39,7 @@ public class PurchasingDashboardRepository {
                 COALESCE(SUM(CASE WHEN status IN ('SUBMITTED', 'APPROVED', 'ORDERED', 'PARTIALLY_RECEIVED') THEN 1 ELSE 0 END), 0) AS total_open_orders,
                 COALESCE(SUM(CASE WHEN status IN ('SUBMITTED', 'APPROVED', 'ORDERED', 'PARTIALLY_RECEIVED') THEN total_amount ELSE 0.00 END), 0.00) AS total_open_val,
                 COALESCE(SUM(CASE WHEN status IN ('RECEIVED', 'CLOSED') AND order_date >= :startOfMonth THEN total_amount ELSE 0.00 END), 0.00) AS total_received_val,
-                COALESCE(AVG(CASE WHEN status IN ('RECEIVED', 'CLOSED') THEN DATEDIFF('DAY', COALESCE(submitted_at, order_date), COALESCE(received_at, updated_at)) ELSE NULL END), 0.0) AS avg_lead_time
+                COALESCE(AVG(CASE WHEN status IN ('RECEIVED', 'CLOSED') THEN (CAST(COALESCE(received_at, updated_at) AS DATE) - CAST(COALESCE(submitted_at, order_date) AS DATE)) ELSE NULL END), 0.0) AS avg_lead_time
             FROM purchase_orders
             WHERE tenant_id = :tenantId
             """;
@@ -59,14 +59,14 @@ public class PurchasingDashboardRepository {
     public List<AgingBucketDto> getAgingBuckets(Long tenantId) {
         String sql = """
             SELECT
-                COALESCE(SUM(CASE WHEN DATEDIFF('DAY', order_date, CURRENT_TIMESTAMP) <= 30 THEN 1 ELSE 0 END), 0) as count_0_30,
-                COALESCE(SUM(CASE WHEN DATEDIFF('DAY', order_date, CURRENT_TIMESTAMP) <= 30 THEN total_amount ELSE 0.00 END), 0.00) as val_0_30,
-                COALESCE(SUM(CASE WHEN DATEDIFF('DAY', order_date, CURRENT_TIMESTAMP) BETWEEN 31 AND 60 THEN 1 ELSE 0 END), 0) as count_31_60,
-                COALESCE(SUM(CASE WHEN DATEDIFF('DAY', order_date, CURRENT_TIMESTAMP) BETWEEN 31 AND 60 THEN total_amount ELSE 0.00 END), 0.00) as val_31_60,
-                COALESCE(SUM(CASE WHEN DATEDIFF('DAY', order_date, CURRENT_TIMESTAMP) BETWEEN 61 AND 90 THEN 1 ELSE 0 END), 0) as count_61_90,
-                COALESCE(SUM(CASE WHEN DATEDIFF('DAY', order_date, CURRENT_TIMESTAMP) BETWEEN 61 AND 90 THEN total_amount ELSE 0.00 END), 0.00) as val_61_90,
-                COALESCE(SUM(CASE WHEN DATEDIFF('DAY', order_date, CURRENT_TIMESTAMP) > 90 THEN 1 ELSE 0 END), 0) as count_90_plus,
-                COALESCE(SUM(CASE WHEN DATEDIFF('DAY', order_date, CURRENT_TIMESTAMP) > 90 THEN total_amount ELSE 0.00 END), 0.00) as val_90_plus
+                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(order_date AS DATE)) <= 30 THEN 1 ELSE 0 END), 0) as count_0_30,
+                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(order_date AS DATE)) <= 30 THEN total_amount ELSE 0.00 END), 0.00) as val_0_30,
+                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(order_date AS DATE)) BETWEEN 31 AND 60 THEN 1 ELSE 0 END), 0) as count_31_60,
+                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(order_date AS DATE)) BETWEEN 31 AND 60 THEN total_amount ELSE 0.00 END), 0.00) as val_31_60,
+                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(order_date AS DATE)) BETWEEN 61 AND 90 THEN 1 ELSE 0 END), 0) as count_61_90,
+                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(order_date AS DATE)) BETWEEN 61 AND 90 THEN total_amount ELSE 0.00 END), 0.00) as val_61_90,
+                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(order_date AS DATE)) > 90 THEN 1 ELSE 0 END), 0) as count_90_plus,
+                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(order_date AS DATE)) > 90 THEN total_amount ELSE 0.00 END), 0.00) as val_90_plus
             FROM purchase_orders
             WHERE tenant_id = :tenantId
               AND status IN ('SUBMITTED', 'APPROVED', 'ORDERED', 'PARTIALLY_RECEIVED')
@@ -98,7 +98,7 @@ public class PurchasingDashboardRepository {
                 s.name as supplier_name,
                 COUNT(po.id) as total_orders,
                 COALESCE(SUM(CASE WHEN po.status IN ('RECEIVED', 'CLOSED') THEN 1 ELSE 0 END), 0) as completed_orders,
-                COALESCE(AVG(CASE WHEN po.status IN ('RECEIVED', 'CLOSED') THEN DATEDIFF('DAY', COALESCE(po.submitted_at, po.order_date), COALESCE(po.received_at, po.updated_at)) ELSE NULL END), 0.0) as avg_lead_time
+                COALESCE(AVG(CASE WHEN po.status IN ('RECEIVED', 'CLOSED') THEN (CAST(COALESCE(po.received_at, po.updated_at) AS DATE) - CAST(COALESCE(po.submitted_at, po.order_date) AS DATE)) ELSE NULL END), 0.0) as avg_lead_time
             FROM suppliers s
             JOIN purchase_orders po ON po.supplier_id = s.id
             WHERE po.tenant_id = :tenantId
@@ -126,7 +126,7 @@ public class PurchasingDashboardRepository {
                 po.order_date as order_date,
                 po.total_amount as total_amount,
                 po.status as status,
-                DATEDIFF('DAY', po.order_date, CURRENT_TIMESTAMP) as age_in_days
+                (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(po.order_date AS DATE)) as age_in_days
             FROM purchase_orders po
             JOIN suppliers s ON s.id = po.supplier_id
             WHERE po.tenant_id = :tenantId
