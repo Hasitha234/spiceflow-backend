@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Repository
@@ -16,4 +17,6 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
     Page<Purchase> findByTenantId(Long tenantId, Pageable pageable);
     
     Page<Purchase> findByTenantIdAndInvoiceNoContainingIgnoreCase(Long tenantId, String invoiceNo, Pageable pageable);
+    
+    Page<Purchase> findByTenantIdAndInvoiceDate(Long tenantId, LocalDate invoiceDate, Pageable pageable);
 }
