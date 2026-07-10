@@ -35,7 +35,7 @@ public class SalesDashboardRepository {
             SELECT
                 (SELECT COALESCE(SUM(net_amount), 0.00)
                  FROM rep_orders
-                 WHERE tenant_id = :tenantId AND deleted_at IS NULL AND status IN ('SUBMITTED', 'APPROVED', 'LOADED', 'DELIVERED') AND order_date = CURRENT_DATE) AS today_sales,
+                 WHERE tenant_id = :tenantId AND deleted_at IS NULL AND status IN ('SUBMITTED', 'APPROVED', 'LOADED', 'DELIVERED') AND CAST(order_date AS DATE) = CURRENT_DATE) AS today_sales,
                 (SELECT COALESCE(SUM(net_amount), 0.00)
                  FROM rep_orders
                  WHERE tenant_id = :tenantId AND deleted_at IS NULL AND status IN ('SUBMITTED', 'APPROVED', 'LOADED', 'DELIVERED') AND created_at >= :startOfMonth) AS month_sales,
