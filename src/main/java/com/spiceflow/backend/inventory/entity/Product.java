@@ -63,6 +63,7 @@ public class Product extends BaseEntity {
     @Column(name = "rate_per_sold_unit", precision = 15, scale = 2)
     private BigDecimal ratePerSoldUnit;
 
+    @org.springframework.lang.Nullable
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private ProductCategory category;

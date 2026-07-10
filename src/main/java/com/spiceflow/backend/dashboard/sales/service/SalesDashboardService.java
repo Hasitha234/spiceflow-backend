@@ -39,10 +39,10 @@ public class SalesDashboardService {
         List<TopDebtorShopDto> topDebtorShops = repository.getTopDebtorShops(tenantId, limit);
 
         return new SalesDashboardResponse(
-            metrics.todaySalesValue(),
-            metrics.monthSalesValue(),
-            metrics.monthCollectionsValue(),
-            metrics.totalOutstandingLoans(),
+            metrics.todaySalesValue() != null ? metrics.todaySalesValue() : java.math.BigDecimal.ZERO,
+            metrics.monthSalesValue() != null ? metrics.monthSalesValue() : java.math.BigDecimal.ZERO,
+            metrics.monthCollectionsValue() != null ? metrics.monthCollectionsValue() : java.math.BigDecimal.ZERO,
+            metrics.totalOutstandingLoans() != null ? metrics.totalOutstandingLoans() : java.math.BigDecimal.ZERO,
             recentOrders,
             topDebtorShops
         );

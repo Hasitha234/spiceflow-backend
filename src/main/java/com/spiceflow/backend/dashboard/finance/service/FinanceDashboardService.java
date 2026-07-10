@@ -39,10 +39,11 @@ public class FinanceDashboardService {
         List<RecentFinancialTransactionDto> recentTransactions = repository.getRecentTransactions(tenantId, limit);
 
         return new FinanceDashboardResponse(
-            metrics.totalReceivables(),
-            metrics.totalPayables(),
-            metrics.monthCollections().subtract(metrics.monthPoSpent()),
-            metrics.monthCollections(),
+            metrics.totalReceivables() != null ? metrics.totalReceivables() : java.math.BigDecimal.ZERO,
+            metrics.totalPayables() != null ? metrics.totalPayables() : java.math.BigDecimal.ZERO,
+            (metrics.monthCollections() != null ? metrics.monthCollections() : java.math.BigDecimal.ZERO)
+                .subtract(metrics.monthPoSpent() != null ? metrics.monthPoSpent() : java.math.BigDecimal.ZERO),
+            metrics.monthCollections() != null ? metrics.monthCollections() : java.math.BigDecimal.ZERO,
             agingBuckets,
             recentTransactions
         );

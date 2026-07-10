@@ -41,8 +41,8 @@ public class PurchasingDashboardService {
 
         return new PurchasingDashboardResponse(
             metrics.totalOpenOrders(),
-            metrics.totalOpenOrderValue(),
-            metrics.totalReceivedMonthValue(),
+            metrics.totalOpenOrderValue() != null ? metrics.totalOpenOrderValue() : java.math.BigDecimal.ZERO,
+            metrics.totalReceivedMonthValue() != null ? metrics.totalReceivedMonthValue() : java.math.BigDecimal.ZERO,
             metrics.averageSupplierLeadTimeDays(),
             agingBuckets,
             supplierLeadTimes,
