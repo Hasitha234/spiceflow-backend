@@ -306,7 +306,7 @@
         <version>3.4.0</version>
         <configuration>
           <configLocation>google_checks.xml</configLocation>
-          <failOnError>true</failOnError>
+          <failsOnError>true</failsOnError>
           <consoleOutput>true</consoleOutput>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
@@ -329,7 +329,7 @@
           <effort>Max</effort>
           <threshold>High</threshold>
           <!-- only fail on High severity bugs. Medium/Low are warnings only.-->
-          <failOnError>true</failOnError>
+          <failsOnError>true</failsOnError>
         </configuration>
         <executions>
           <execution>

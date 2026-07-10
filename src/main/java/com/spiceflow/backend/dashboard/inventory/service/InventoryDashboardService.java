@@ -31,10 +31,10 @@ public class InventoryDashboardService {
         List<com.spiceflow.backend.dashboard.inventory.dto.WarehouseStockDto> warehouseStocks = repository.getWarehouseStocks(tenantId);
 
         return new InventoryDashboardResponse(
-            metrics != null && metrics.totalStockValue() != null ? metrics.totalStockValue() : java.math.BigDecimal.ZERO,
-            metrics != null ? metrics.totalItemsCount() : 0L,
-            metrics != null ? metrics.lowStockCount() : 0L,
-            metrics != null ? metrics.pendingTransfersCount() : 0L,
+            metrics.totalStockValue() != null ? metrics.totalStockValue() : java.math.BigDecimal.ZERO,
+            metrics.totalItemsCount(),
+            metrics.lowStockCount(),
+            metrics.pendingTransfersCount(),
             lowStockItems,
             recentMovements,
             warehouseStocks

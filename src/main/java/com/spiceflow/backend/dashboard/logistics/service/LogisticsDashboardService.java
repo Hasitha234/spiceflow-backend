@@ -30,10 +30,10 @@ public class LogisticsDashboardService {
         List<InProgressDeliveryDto> inProgressDeliveries = repository.getInProgressDeliveries(tenantId, limit);
 
         return new LogisticsDashboardResponse(
-            metrics != null ? metrics.activeLoadingSheetsCount() : 0L,
-            metrics != null ? metrics.inProgressDeliveriesCount() : 0L,
-            metrics != null ? metrics.completedDeliveriesToday() : 0L,
-            metrics != null ? metrics.totalReturnItemsToday() : 0L,
+            metrics.activeLoadingSheetsCount(),
+            metrics.inProgressDeliveriesCount(),
+            metrics.completedDeliveriesToday(),
+            metrics.totalReturnItemsToday(),
             activeLoadingSheets,
             inProgressDeliveries
         );

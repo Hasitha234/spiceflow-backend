@@ -40,10 +40,10 @@ public class PurchasingDashboardService {
         List<OpenPurchaseOrderProjection> recentOpenOrders = repository.getRecentOpenOrders(tenantId, limit);
 
         return new PurchasingDashboardResponse(
-            metrics != null ? metrics.totalOpenOrders() : 0L,
-            metrics != null && metrics.totalOpenOrderValue() != null ? metrics.totalOpenOrderValue() : java.math.BigDecimal.ZERO,
-            metrics != null && metrics.totalReceivedMonthValue() != null ? metrics.totalReceivedMonthValue() : java.math.BigDecimal.ZERO,
-            metrics != null ? metrics.averageSupplierLeadTimeDays() : 0.0,
+            metrics.totalOpenOrders(),
+            metrics.totalOpenOrderValue() != null ? metrics.totalOpenOrderValue() : java.math.BigDecimal.ZERO,
+            metrics.totalReceivedMonthValue() != null ? metrics.totalReceivedMonthValue() : java.math.BigDecimal.ZERO,
+            metrics.averageSupplierLeadTimeDays(),
             agingBuckets,
             supplierLeadTimes,
             recentOpenOrders
