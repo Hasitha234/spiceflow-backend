@@ -32,9 +32,9 @@ public class InventoryDashboardService {
 
         return new InventoryDashboardResponse(
             metrics != null && metrics.totalStockValue() != null ? metrics.totalStockValue() : java.math.BigDecimal.ZERO,
-            metrics != null && metrics.totalItemsCount() != null ? metrics.totalItemsCount() : 0L,
-            metrics != null && metrics.lowStockCount() != null ? metrics.lowStockCount() : 0L,
-            metrics != null && metrics.pendingTransfersCount() != null ? metrics.pendingTransfersCount() : 0L,
+            metrics != null ? metrics.totalItemsCount() : 0L,
+            metrics != null ? metrics.lowStockCount() : 0L,
+            metrics != null ? metrics.pendingTransfersCount() : 0L,
             lowStockItems,
             recentMovements,
             warehouseStocks
