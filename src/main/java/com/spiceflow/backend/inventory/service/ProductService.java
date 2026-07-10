@@ -43,7 +43,10 @@ public class ProductService {
                     throw new BusinessRuleViolationException("Product with SKU already exists: " + request.sku());
                 });
                 
-            ProductCategory category = productCategoryService.getCategoryEntity(request.categoryId(), tenantId);
+            ProductCategory category = null;
+            if (request.categoryId() != null) {
+                category = productCategoryService.getCategoryEntity(request.categoryId(), tenantId);
+            }
             Supplier supplier = supplierService.getSupplierEntity(tenantId, request.supplierId());
             
             Product product = Product.builder()
@@ -116,7 +119,10 @@ public class ProductService {
                     });
             }
             
-            ProductCategory category = productCategoryService.getCategoryEntity(request.categoryId(), tenantId);
+            ProductCategory category = null;
+            if (request.categoryId() != null) {
+                category = productCategoryService.getCategoryEntity(request.categoryId(), tenantId);
+            }
             Supplier supplier = supplierService.getSupplierEntity(tenantId, request.supplierId());
             
             product.setSku(request.sku());

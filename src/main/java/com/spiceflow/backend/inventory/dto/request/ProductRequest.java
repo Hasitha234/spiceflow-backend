@@ -25,7 +25,6 @@ public record ProductRequest(
     @NotBlank(message = "Unit of measure is required")
     String unitOfMeasure,
     
-    @NotNull(message = "Category ID is required")
     Long categoryId,
     
     @NotNull(message = "Supplier ID is required")
