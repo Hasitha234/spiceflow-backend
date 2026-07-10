@@ -25,6 +25,7 @@ import com.spiceflow.backend.purchase.mapper.PurchaseMapper;
 import com.spiceflow.backend.purchase.repository.PurchaseLineItemRepository;
 import com.spiceflow.backend.purchase.repository.PurchaseRepository;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -252,9 +253,11 @@ public class PurchaseService {
         return purchaseMapper.toResponse(savedPurchase);
     }
     
-    public Page<PurchaseResponse> getPurchases(Long tenantId, String invoiceNo, Pageable pageable) {
+    public Page<PurchaseResponse> getPurchases(Long tenantId, String invoiceNo, LocalDate date, Pageable pageable) {
         Page<Purchase> purchases;
-        if (invoiceNo != null && !invoiceNo.isBlank()) {
+        if (date != null) {
+            purchases = purchaseRepository.findByTenantIdAndInvoiceDate(tenantId, date, pageable);
+        } else if (invoiceNo != null && !invoiceNo.isBlank()) {
             purchases = purchaseRepository.findByTenantIdAndInvoiceNoContainingIgnoreCase(tenantId, invoiceNo, pageable);
         } else {
             purchases = purchaseRepository.findByTenantId(tenantId, pageable);

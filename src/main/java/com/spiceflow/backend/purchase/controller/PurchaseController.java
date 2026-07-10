@@ -19,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
 
 @Slf4j
 @RestController
@@ -59,9 +61,10 @@ public class PurchaseController {
     public ResponseEntity<Page<PurchaseResponse>> getPurchases(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String invoiceNo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("User {} listing purchases", currentUser.getId());
-        Page<PurchaseResponse> response = purchaseService.getPurchases(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), invoiceNo, pageable);
+        Page<PurchaseResponse> response = purchaseService.getPurchases(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), invoiceNo, date, pageable);
         return ResponseEntity.ok(response);
     }
 
