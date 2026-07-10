@@ -48,7 +48,7 @@ public class SalesDashboardRepository {
             """;
         MapSqlParameterSource params = new MapSqlParameterSource()
             .addValue("tenantId", tenantId)
-            .addValue("startOfMonth", startOfMonth);
+            .addValue("startOfMonth", java.sql.Timestamp.from(startOfMonth));
 
         SummaryMetrics metrics = jdbcTemplate.queryForObject(sql, params, (rs, rowNum) -> new SummaryMetrics(
             rs.getBigDecimal("today_sales") != null ? rs.getBigDecimal("today_sales") : BigDecimal.ZERO,
