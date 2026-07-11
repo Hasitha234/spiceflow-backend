@@ -1,6 +1,8 @@
 package com.spiceflow.backend.sales.controller;
 
 import org.springframework.validation.annotation.Validated;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
 import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.sales.dto.request.CreateDeliveryRequest;
 import com.spiceflow.backend.sales.dto.request.RecordShopDeliveryRequest;
@@ -70,9 +72,10 @@ public class DeliveryController {
     @Operation(summary = "List deliveries", description = "Returns a paginated list of deliveries", operationId = "getDeliveries")
     public ResponseEntity<Page<DeliveryResponse>> getDeliveries(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             Pageable pageable) {
-        log.info("User {} listing deliveries", currentUser.getId());
-        Page<DeliveryResponse> response = deliveryService.getDeliveries(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), pageable);
+        log.info("User {} listing deliveries for date {}", currentUser.getId(), date);
+        Page<DeliveryResponse> response = deliveryService.getDeliveries(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), date, pageable);
         return ResponseEntity.ok(response);
     }
 

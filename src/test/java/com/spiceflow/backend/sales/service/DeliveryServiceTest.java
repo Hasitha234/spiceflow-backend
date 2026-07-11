@@ -51,6 +51,9 @@ class DeliveryServiceTest {
     @Mock private TenantRepository tenantRepository;
     @Mock private ProductService productService;
     @Mock private DeliveryMapper deliveryMapper;
+    @Mock private com.spiceflow.backend.inventory.repository.WarehouseRepository warehouseRepository;
+    @Mock private com.spiceflow.backend.inventory.repository.InventoryItemRepository inventoryItemRepository;
+    @Mock private com.spiceflow.backend.inventory.repository.InventoryTransactionRepository inventoryTransactionRepository;
 
     @InjectMocks private DeliveryService deliveryService;
 
@@ -164,7 +167,18 @@ class DeliveryServiceTest {
         when(deliveryRepository.findByTenantId(eq(1L), any(PageRequest.class))).thenReturn(page);
         when(deliveryMapper.toResponse(delivery)).thenReturn(deliveryResponse);
 
-        Page<DeliveryResponse> result = deliveryService.getDeliveries(1L, PageRequest.of(0, 10));
+        Page<DeliveryResponse> result = deliveryService.getDeliveries(1L, null, PageRequest.of(0, 10));
+
+        assertEquals(1, result.getContent().size());
+    }
+
+    @Test
+    void getDeliveries_WithDate_Success() {
+        Page<Delivery> page = new PageImpl<>(List.of(delivery));
+        when(deliveryRepository.findByTenantIdAndDeliveryDate(eq(1L), eq(LocalDate.of(2026, 7, 11)), any(PageRequest.class))).thenReturn(page);
+        when(deliveryMapper.toResponse(delivery)).thenReturn(deliveryResponse);
+
+        Page<DeliveryResponse> result = deliveryService.getDeliveries(1L, LocalDate.of(2026, 7, 11), PageRequest.of(0, 10));
 
         assertEquals(1, result.getContent().size());
     }
