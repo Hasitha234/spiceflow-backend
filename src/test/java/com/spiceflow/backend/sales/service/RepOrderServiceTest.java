@@ -101,7 +101,7 @@ class RepOrderServiceTest {
         when(repOrderRepository.findByTenantId(eq(1L), any(PageRequest.class))).thenReturn(page);
         when(repOrderMapper.toResponse(repOrder)).thenReturn(response);
 
-        Page<RepOrderResponse> result = repOrderService.getRepOrders(1L, null, PageRequest.of(0, 10));
+        Page<RepOrderResponse> result = repOrderService.getRepOrders(1L, null, null, PageRequest.of(0, 10));
 
         assertEquals(1, result.getContent().size());
     }
@@ -112,7 +112,7 @@ class RepOrderServiceTest {
         when(repOrderRepository.findByTenantIdAndRepId(eq(1L), eq(1L), any(PageRequest.class))).thenReturn(page);
         when(repOrderMapper.toResponse(repOrder)).thenReturn(response);
 
-        Page<RepOrderResponse> result = repOrderService.getRepOrders(1L, 1L, PageRequest.of(0, 10));
+        Page<RepOrderResponse> result = repOrderService.getRepOrders(1L, 1L, null, PageRequest.of(0, 10));
 
         assertEquals(1, result.getContent().size());
     }
