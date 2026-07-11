@@ -158,9 +158,13 @@ public class RepOrderService {
         return repOrderMapper.toResponse(savedOrder);
     }
     
-    public Page<RepOrderResponse> getRepOrders(Long tenantId, Long repId, Pageable pageable) {
+    public Page<RepOrderResponse> getRepOrders(Long tenantId, Long repId, java.time.LocalDate date, Pageable pageable) {
         Page<RepOrder> repOrders;
-        if (repId != null) {
+        if (repId != null && date != null) {
+            repOrders = repOrderRepository.findByTenantIdAndRepIdAndOrderDate(tenantId, repId, date, pageable);
+        } else if (date != null) {
+            repOrders = repOrderRepository.findByTenantIdAndOrderDate(tenantId, date, pageable);
+        } else if (repId != null) {
             repOrders = repOrderRepository.findByTenantIdAndRepId(tenantId, repId, pageable);
         } else {
             repOrders = repOrderRepository.findByTenantId(tenantId, pageable);

@@ -1,6 +1,8 @@
 package com.spiceflow.backend.sales.controller;
 
 import org.springframework.validation.annotation.Validated;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
 import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.sales.dto.request.CreateRepOrderRequest;
 import com.spiceflow.backend.sales.dto.response.RepOrderResponse;
@@ -45,9 +47,10 @@ public class RepOrderController {
     public ResponseEntity<Page<RepOrderResponse>> getRepOrders(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) Long repId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             Pageable pageable) {
         log.info("User {} listing rep orders", currentUser.getId());
-        Page<RepOrderResponse> response = repOrderService.getRepOrders(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), repId, pageable);
+        Page<RepOrderResponse> response = repOrderService.getRepOrders(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), repId, date, pageable);
         return ResponseEntity.ok(response);
     }
 
