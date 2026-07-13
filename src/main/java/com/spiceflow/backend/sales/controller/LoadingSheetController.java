@@ -50,6 +50,17 @@ public class LoadingSheetController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAuthority('LOADING_CREATE')")
+    @Operation(summary = "Cancel a loading sheet", description = "Cancels a DRAFT loading sheet and returns rep order to DRAFT", operationId = "cancelLoadingSheet")
+    public ResponseEntity<LoadingSheetResponse> cancelLoadingSheet(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        log.info("User {} cancelling loading sheet {}", currentUser.getId(), id);
+        LoadingSheetResponse response = loadingSheetService.cancelLoadingSheet(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping
     @PreAuthorize("hasAuthority('LOADING_VIEW')")
     @Operation(summary = "List loading sheets", description = "Returns a paginated list of loading sheets", operationId = "getLoadingSheets")

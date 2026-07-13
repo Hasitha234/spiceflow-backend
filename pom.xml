@@ -368,6 +368,7 @@
                 <exclude>**/controller/**</exclude>
                 <exclude>**/config/**</exclude>
                 <exclude>**/exception/**</exclude>
+                <exclude>**/bootstrap/**</exclude>
               </excludes>
             </configuration>
           </execution>
@@ -385,6 +386,7 @@
                 <exclude>**/controller/**</exclude>
                 <exclude>**/config/**</exclude>
                 <exclude>**/exception/**</exclude>
+                <exclude>**/bootstrap/**</exclude>
               </excludes>
               <rules>
                 <rule>

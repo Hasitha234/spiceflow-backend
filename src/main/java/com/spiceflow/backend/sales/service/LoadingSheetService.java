@@ -185,4 +185,27 @@ public class LoadingSheetService {
         log.debug("Successfully confirmed loading sheet {} and transferred stock to {}", savedSheet.getId(), vehicleStoreName);
         return loadingSheetMapper.toResponse(savedSheet);
     }
+
+    @Transactional(rollbackFor = Exception.class)
+    public LoadingSheetResponse cancelLoadingSheet(Long id, Long tenantId) {
+        log.info("Cancelling loading sheet: {}", id);
+        LoadingSheet sheet = loadingSheetRepository.findByIdAndTenantId(id, tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("LoadingSheet not found"));
+            
+        if (!"DRAFT".equals(sheet.getStatus())) {
+            throw new BusinessRuleViolationException("Only DRAFT loading sheets can be cancelled");
+        }
+        
+        sheet.setStatus("CANCELLED");
+        
+        RepOrder repOrder = sheet.getRepOrder();
+        if (repOrder != null) {
+            repOrder.setLoadingStatus("DRAFT");
+            repOrderRepository.save(repOrder);
+        }
+        
+        LoadingSheet savedSheet = loadingSheetRepository.save(sheet);
+        log.debug("Successfully cancelled loading sheet {}", savedSheet.getId());
+        return loadingSheetMapper.toResponse(savedSheet);
+    }
 }

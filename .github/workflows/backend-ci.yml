@@ -33,8 +33,8 @@ jobs:
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
+          mkdir -p ../spiceflow-frontend target
           ./mvnw spring-boot:start springdoc-openapi:generate spring-boot:stop -Popenapi -DskipTests -Dspring-boot.run.profiles=test -Dspring.profiles.active=test
-          mkdir -p target
           cp ../spiceflow-frontend/openapi.yaml target/openapi.yaml 2>/dev/null || cp openapi.yaml target/openapi.yaml 2>/dev/null || true
 
       - name: Upload JaCoCo Coverage Report

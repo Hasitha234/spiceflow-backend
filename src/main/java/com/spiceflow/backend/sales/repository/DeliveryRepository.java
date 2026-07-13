@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
     Optional<Delivery> findByIdAndTenantId(Long id, Long tenantId);
     Page<Delivery> findByTenantId(Long tenantId, Pageable pageable);
+    Page<Delivery> findByTenantIdAndDeliveryDate(Long tenantId, java.time.LocalDate deliveryDate, Pageable pageable);
     
     @org.springframework.data.jpa.repository.Query("SELECT d FROM Delivery d WHERE d.tenant.id = :tenantId AND d.deliveryDate >= :startDate AND d.deliveryDate <= :endDate")
     java.util.List<Delivery> findDeliveriesInDateRange(

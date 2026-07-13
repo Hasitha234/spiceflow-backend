@@ -5,6 +5,12 @@ import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
 import com.spiceflow.backend.inventory.entity.Product;
+import com.spiceflow.backend.inventory.entity.InventoryItem;
+import com.spiceflow.backend.inventory.entity.InventoryTransaction;
+import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
+import com.spiceflow.backend.inventory.repository.InventoryTransactionRepository;
+import com.spiceflow.backend.inventory.repository.WarehouseRepository;
 import com.spiceflow.backend.inventory.service.ProductService;
 import com.spiceflow.backend.sales.dto.request.CreateDeliveryRequest;
 import com.spiceflow.backend.sales.dto.request.DeliveryPaymentRequest;
@@ -28,6 +34,7 @@ import com.spiceflow.backend.sales.repository.ShopRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -48,6 +55,9 @@ public class DeliveryService {
     private final TenantRepository tenantRepository;
     private final ProductService productService;
     private final DeliveryMapper deliveryMapper;
+    private final WarehouseRepository warehouseRepository;
+    private final InventoryItemRepository inventoryItemRepository;
+    private final InventoryTransactionRepository inventoryTransactionRepository;
     
     @Transactional(rollbackFor = Exception.class)
     public DeliveryResponse createDelivery(Long tenantId, CreateDeliveryRequest request) {
@@ -224,9 +234,74 @@ public class DeliveryService {
         delivery.setTotalCollectedAmount(totalCollectedAmount);
         delivery.setStatus("COMPLETED");
         
-        // Here we could update inventory based on returns collected, but maybe that's done via a separate process or we can do it here.
-        // For SaaS we keep it simple for now as we just track the financial value, and stock is managed via Loading and unloading/returns
-        // A complete module would take returns and place them in 'CLOSED_SHOP_RETURNS' or 'EXPIRED_RETURNS' store
+        // Deduct delivered items from vehicle store and add returned items to MAIN store
+        String driverName = (delivery.getLoadingSheet() != null && delivery.getLoadingSheet().getDriver() != null) 
+            ? delivery.getLoadingSheet().getDriver().getName() : "Unknown";
+        String vehicleStoreName = "Vehicle - " + driverName;
+        Optional<Warehouse> vehicleStoreOpt = warehouseRepository.findAllByTenantId(tenantId).stream()
+            .filter(w -> "CUSTOM".equals(w.getStoreType()) && w.getName().equals(vehicleStoreName))
+            .findFirst();
+        Optional<Warehouse> mainStoreOpt = warehouseRepository.findAllByTenantId(tenantId).stream()
+            .filter(w -> "MAIN".equals(w.getStoreType()))
+            .findFirst();
+
+        for (DeliveryShop shop : delivery.getShops()) {
+            if (vehicleStoreOpt.isPresent()) {
+                for (DeliveryShopItem item : shop.getItems()) {
+                    if (item.getQuantityDelivered() != null && item.getQuantityDelivered() > 0) {
+                        inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
+                                item.getProduct().getId(), vehicleStoreOpt.get().getId(), tenantId)
+                            .ifPresent(invItem -> {
+                                int newQty = Math.max(0, invItem.getQuantityAvailable() - item.getQuantityDelivered());
+                                int deducted = invItem.getQuantityAvailable() - newQty;
+                                invItem.setQuantityAvailable(newQty);
+                                inventoryItemRepository.save(invItem);
+
+                                InventoryTransaction outTx = InventoryTransaction.builder()
+                                    .inventoryItem(invItem)
+                                    .transactionType("DELIVERY_SALE")
+                                    .quantity(-deducted)
+                                    .referenceId("DEL-" + deliveryId)
+                                    .notes("Delivery sale at " + shop.getShop().getName())
+                                    .tenant(invItem.getTenant())
+                                    .build();
+                                inventoryTransactionRepository.save(outTx);
+                            });
+                    }
+                }
+            }
+
+            if (mainStoreOpt.isPresent()) {
+                for (DeliveryShopReturn returnItem : shop.getReturns()) {
+                    if (returnItem.getQuantityReturned() != null && returnItem.getQuantityReturned() > 0) {
+                        InventoryItem invItem = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
+                                returnItem.getProduct().getId(), mainStoreOpt.get().getId(), tenantId)
+                            .orElseGet(() -> {
+                                InventoryItem newItem = InventoryItem.builder()
+                                    .product(returnItem.getProduct())
+                                    .warehouse(mainStoreOpt.get())
+                                    .quantityAvailable(0)
+                                    .tenant(returnItem.getTenant())
+                                    .build();
+                                return inventoryItemRepository.save(newItem);
+                            });
+
+                        invItem.setQuantityAvailable(invItem.getQuantityAvailable() + returnItem.getQuantityReturned());
+                        inventoryItemRepository.save(invItem);
+
+                        InventoryTransaction inTx = InventoryTransaction.builder()
+                            .inventoryItem(invItem)
+                            .transactionType("DELIVERY_RETURN")
+                            .quantity(returnItem.getQuantityReturned())
+                            .referenceId("DEL-" + deliveryId)
+                            .notes("Return from shop " + shop.getShop().getName())
+                            .tenant(invItem.getTenant())
+                            .build();
+                        inventoryTransactionRepository.save(inTx);
+                    }
+                }
+            }
+        }
         
         Delivery savedDelivery = deliveryRepository.save(delivery);
         log.debug("Successfully completed delivery {}. Total Sales: {}, Total Collected: {}", 
@@ -235,7 +310,11 @@ public class DeliveryService {
         return deliveryMapper.toResponse(savedDelivery);
     }
     
-    public Page<DeliveryResponse> getDeliveries(Long tenantId, Pageable pageable) {
+    public Page<DeliveryResponse> getDeliveries(Long tenantId, java.time.LocalDate date, Pageable pageable) {
+        if (date != null) {
+            return deliveryRepository.findByTenantIdAndDeliveryDate(tenantId, date, pageable)
+                .map(deliveryMapper::toResponse);
+        }
         return deliveryRepository.findByTenantId(tenantId, pageable)
             .map(deliveryMapper::toResponse);
     }
