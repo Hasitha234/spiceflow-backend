@@ -95,7 +95,7 @@ class ProductServiceTest {
     @Test
     void getProducts_WithSearch() {
         Page<Product> page = new PageImpl<>(List.of(product));
-        when(productRepository.searchByTenantId(eq(1L), eq("SKU-123"), any(PageRequest.class))).thenReturn(page);
+        when(productRepository.findByFilters(eq(1L), eq("SKU-123"), isNull(), isNull(), any(PageRequest.class))).thenReturn(page);
         when(productMapper.toResponse(product)).thenReturn(response);
 
         Page<ProductResponse> result = productService.getProducts(1L, "SKU-123", PageRequest.of(0, 10));
@@ -106,10 +106,21 @@ class ProductServiceTest {
     @Test
     void getProducts_WithoutSearch() {
         Page<Product> page = new PageImpl<>(List.of(product));
-        when(productRepository.findByTenantId(eq(1L), any(PageRequest.class))).thenReturn(page);
+        when(productRepository.findByFilters(eq(1L), isNull(), isNull(), isNull(), any(PageRequest.class))).thenReturn(page);
         when(productMapper.toResponse(product)).thenReturn(response);
 
         Page<ProductResponse> result = productService.getProducts(1L, "", PageRequest.of(0, 10));
+
+        assertEquals(1, result.getContent().size());
+    }
+
+    @Test
+    void getProducts_WithFilters() {
+        Page<Product> page = new PageImpl<>(List.of(product));
+        when(productRepository.findByFilters(eq(1L), eq("SKU-123"), eq(2L), eq(3L), any(PageRequest.class))).thenReturn(page);
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        Page<ProductResponse> result = productService.getProducts(1L, "SKU-123", 2L, 3L, PageRequest.of(0, 10));
 
         assertEquals(1, result.getContent().size());
     }
