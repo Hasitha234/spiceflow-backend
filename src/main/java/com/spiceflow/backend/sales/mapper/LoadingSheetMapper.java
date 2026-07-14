@@ -18,8 +18,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Mapper(config = CentralMapperConfig.class)
 public abstract class LoadingSheetMapper {
 
-    @Autowired
     protected DeliveryRepository deliveryRepository;
+
+    @Autowired
+    public void setDeliveryRepository(DeliveryRepository deliveryRepository) {
+        this.deliveryRepository = deliveryRepository;
+    }
 
     @Mapping(source = "repOrder.id", target = "repOrderId")
     @Mapping(source = "repOrder.rep.id", target = "repId")
