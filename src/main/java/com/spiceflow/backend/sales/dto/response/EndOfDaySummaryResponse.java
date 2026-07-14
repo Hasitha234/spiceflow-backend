@@ -1,6 +1,7 @@
 package com.spiceflow.backend.sales.dto.response;
 
 import lombok.Builder;
+import org.jspecify.annotations.Nullable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -17,7 +18,8 @@ public record EndOfDaySummaryResponse(
     int deliveryCount,
     int shopsVisited,
     List<ChequeDetail> chequeDetails,
-    List<DeliverySummary> deliveries
+    List<DeliverySummary> deliveries,
+    List<CancelledOrderSummary> cancelledOrders
 ) {
     @Builder
     public record ChequeDetail(
@@ -36,5 +38,14 @@ public record EndOfDaySummaryResponse(
         BigDecimal salesValue,
         BigDecimal collectedAmount,
         int shopCount
+    ) {}
+
+    @Builder
+    public record CancelledOrderSummary(
+        Long loadingSheetId,
+        @Nullable Long repOrderId,
+        String driverName,
+        String repName,
+        String reason
     ) {}
 }

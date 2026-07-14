@@ -17,6 +17,9 @@ public record LoadingSheetResponse(
     
     Long driverId,
     String driverName,
+    String driverVehicleNo,
+    Boolean hasActiveDelivery,
+    Long activeDeliveryId,
     
     LocalDate loadingDate,
     String status,

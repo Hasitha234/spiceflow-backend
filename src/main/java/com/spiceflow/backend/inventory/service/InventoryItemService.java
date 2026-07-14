@@ -15,6 +15,10 @@ import com.spiceflow.backend.inventory.repository.InventoryTransactionRepository
 import com.spiceflow.backend.inventory.mapper.InventoryItemMapper;
 import com.spiceflow.backend.inventory.dto.request.InventoryTransferRequest;
 import com.spiceflow.backend.inventory.dto.request.InventoryMarkDamagedRequest;
+import com.spiceflow.backend.inventory.ledger.InventoryMovementType;
+import com.spiceflow.backend.inventory.ledger.service.InventoryLedgerService;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +39,7 @@ public class InventoryItemService {
     private final ProductService productService;
     private final WarehouseService warehouseService;
     private final InventoryItemMapper inventoryItemMapper;
+    private final InventoryLedgerService inventoryLedgerService;
 
     @Transactional(rollbackFor = Exception.class)
     public InventoryItemResponse createInventoryItem(Long tenantId, InventoryItemRequest request) {
@@ -67,6 +72,30 @@ public class InventoryItemService {
                 .build();
                 
             InventoryItem savedItem = inventoryItemRepository.save(item);
+            inventoryLedgerService.recordMovement(
+                tenantId,
+                request.warehouseId(),
+                request.productId(),
+                InventoryMovementType.INITIAL_STOCK,
+                BigDecimal.valueOf(savedItem.getQuantityAvailable() != null ? savedItem.getQuantityAvailable() : 0),
+                product.getBasePrice() != null ? product.getBasePrice() : BigDecimal.ZERO,
+                "INITIAL-STOCK-" + savedItem.getId(),
+                request.batchNumber() != null ? request.batchNumber() : "",
+                request.expirationDate(),
+                Instant.now(),
+                "system"
+            );
+
+            InventoryTransaction tx = InventoryTransaction.builder()
+                .inventoryItem(savedItem)
+                .transactionType("INITIAL_STOCK")
+                .quantity(savedItem.getQuantityAvailable() != null ? savedItem.getQuantityAvailable() : 0)
+                .referenceId("INITIAL-STOCK-" + savedItem.getId())
+                .notes("Initial stock added directly to warehouse")
+                .tenant(tenant)
+                .build();
+            inventoryTransactionRepository.save(tx);
+
             log.info("Successfully created inventory item with ID: {} for tenantId: {}", savedItem.getId(), tenantId);
             return inventoryItemMapper.toResponse(savedItem);
         } catch (BusinessRuleViolationException | ResourceNotFoundException e) {
@@ -109,12 +138,44 @@ public class InventoryItemService {
         try {
             InventoryItem item = getInventoryItemEntity(id, tenantId);
             
-            item.setQuantityAvailable(request.quantityAvailable() != null ? request.quantityAvailable() : item.getQuantityAvailable());
+            int oldAvailable = item.getQuantityAvailable() != null ? item.getQuantityAvailable() : 0;
+            int newAvailable = request.quantityAvailable() != null ? request.quantityAvailable() : oldAvailable;
+            int diff = newAvailable - oldAvailable;
+            
+            item.setQuantityAvailable(newAvailable);
             item.setQuantityReserved(request.quantityReserved() != null ? request.quantityReserved() : item.getQuantityReserved());
             item.setBatchNumber(request.batchNumber());
             item.setExpirationDate(request.expirationDate());
             
             InventoryItem updatedItem = inventoryItemRepository.save(item);
+            
+            if (diff != 0) {
+                InventoryMovementType movementType = diff > 0 ? InventoryMovementType.ADJUSTMENT_IN : InventoryMovementType.ADJUSTMENT_OUT;
+                inventoryLedgerService.recordMovement(
+                    tenantId,
+                    item.getWarehouse().getId(),
+                    item.getProduct().getId(),
+                    movementType,
+                    BigDecimal.valueOf(Math.abs(diff)),
+                    item.getProduct().getBasePrice() != null ? item.getProduct().getBasePrice() : BigDecimal.ZERO,
+                    "ADJ-" + updatedItem.getId() + "-" + Instant.now().toEpochMilli(),
+                    request.batchNumber() != null ? request.batchNumber() : "",
+                    request.expirationDate(),
+                    Instant.now(),
+                    "system"
+                );
+
+                InventoryTransaction tx = InventoryTransaction.builder()
+                    .inventoryItem(updatedItem)
+                    .transactionType(diff > 0 ? "ADJUSTMENT_IN" : "ADJUSTMENT_OUT")
+                    .quantity(diff)
+                    .referenceId("ADJ-" + updatedItem.getId() + "-" + Instant.now().toEpochMilli())
+                    .notes("Stock adjustment via manual edit")
+                    .tenant(item.getTenant())
+                    .build();
+                inventoryTransactionRepository.save(tx);
+            }
+            
             log.info("Successfully updated inventory item with ID: {} for tenantId: {}", id, tenantId);
             return inventoryItemMapper.toResponse(updatedItem);
         } catch (ResourceNotFoundException e) {

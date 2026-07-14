@@ -18,7 +18,9 @@ import com.spiceflow.backend.sales.mapper.LoadingSheetMapper;
 import com.spiceflow.backend.sales.repository.LoadingSheetRepository;
 import com.spiceflow.backend.sales.repository.RepOrderRepository;
 import com.spiceflow.backend.inventory.dto.request.InventoryTransferRequest;
+import com.spiceflow.backend.inventory.entity.InventoryItem;
 import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
 import com.spiceflow.backend.inventory.repository.WarehouseRepository;
 import com.spiceflow.backend.inventory.service.InventoryItemService;
 import java.util.ArrayList;
@@ -27,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -45,6 +48,7 @@ public class LoadingSheetService {
     private final LoadingSheetMapper loadingSheetMapper;
     private final WarehouseRepository warehouseRepository;
     private final InventoryItemService inventoryItemService;
+    private final InventoryItemRepository inventoryItemRepository;
 
     @Transactional(rollbackFor = Exception.class)
     public LoadingSheetResponse createLoadingSheet(Long tenantId, CreateLoadingSheetRequest request) {
@@ -118,6 +122,20 @@ public class LoadingSheetService {
     }
     
     public Page<LoadingSheetResponse> getLoadingSheets(Long tenantId, Pageable pageable) {
+        return getLoadingSheets(tenantId, null, null, pageable);
+    }
+
+    public Page<LoadingSheetResponse> getLoadingSheets(Long tenantId, @Nullable Long driverId, @Nullable String status, Pageable pageable) {
+        if (driverId != null && status != null) {
+            return loadingSheetRepository.findByTenantIdAndDriverIdAndStatus(tenantId, driverId, status, pageable)
+                .map(loadingSheetMapper::toResponse);
+        } else if (driverId != null) {
+            return loadingSheetRepository.findByTenantIdAndDriverId(tenantId, driverId, pageable)
+                .map(loadingSheetMapper::toResponse);
+        } else if (status != null) {
+            return loadingSheetRepository.findByTenantIdAndStatus(tenantId, status, pageable)
+                .map(loadingSheetMapper::toResponse);
+        }
         return loadingSheetRepository.findByTenantId(tenantId, pageable)
             .map(loadingSheetMapper::toResponse);
     }
@@ -188,12 +206,52 @@ public class LoadingSheetService {
 
     @Transactional(rollbackFor = Exception.class)
     public LoadingSheetResponse cancelLoadingSheet(Long id, Long tenantId) {
-        log.info("Cancelling loading sheet: {}", id);
+        return cancelLoadingSheet(id, tenantId, null);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public LoadingSheetResponse cancelLoadingSheet(Long id, Long tenantId, @Nullable Long returnWarehouseId) {
+        log.info("Cancelling loading sheet: {} with returnWarehouseId: {}", id, returnWarehouseId);
         LoadingSheet sheet = loadingSheetRepository.findByIdAndTenantId(id, tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("LoadingSheet not found"));
             
-        if (!"DRAFT".equals(sheet.getStatus())) {
-            throw new BusinessRuleViolationException("Only DRAFT loading sheets can be cancelled");
+        if (!"DRAFT".equals(sheet.getStatus()) && !"CONFIRMED".equals(sheet.getStatus())) {
+            throw new BusinessRuleViolationException("Only DRAFT or CONFIRMED loading sheets can be cancelled");
+        }
+        
+        if ("CONFIRMED".equals(sheet.getStatus()) || returnWarehouseId != null) {
+            String vehicleStoreName = "Vehicle - " + sheet.getDriver().getName();
+            Warehouse vehicleStore = warehouseRepository.findAllByTenantId(tenantId).stream()
+                .filter(w -> "CUSTOM".equals(w.getStoreType()) && w.getName().equals(vehicleStoreName))
+                .findFirst()
+                .orElse(null);
+                
+            if (vehicleStore != null) {
+                Warehouse returnStore;
+                if (returnWarehouseId != null) {
+                    returnStore = warehouseRepository.findByIdAndTenantId(returnWarehouseId, tenantId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Return warehouse not found"));
+                } else {
+                    returnStore = warehouseRepository.findAllByTenantId(tenantId).stream()
+                        .filter(w -> "MAIN".equals(w.getStoreType()))
+                        .findFirst()
+                        .orElseThrow(() -> new BusinessRuleViolationException("MAIN store not found for tenant"));
+                }
+                
+                List<InventoryItem> vehicleItems = inventoryItemRepository.findByWarehouseIdAndTenantId(vehicleStore.getId(), tenantId, Pageable.unpaged()).getContent();
+                for (InventoryItem invItem : vehicleItems) {
+                    if (invItem.getQuantityAvailable() != null && invItem.getQuantityAvailable() > 0) {
+                        InventoryTransferRequest transferRequest = new InventoryTransferRequest(
+                                vehicleStore.getId(),
+                                returnStore.getId(),
+                                invItem.getProduct().getId(),
+                                invItem.getQuantityAvailable(),
+                                "Cancelled Loading Sheet " + sheet.getId()
+                        );
+                        inventoryItemService.transferInventory(tenantId, transferRequest);
+                    }
+                }
+            }
         }
         
         sheet.setStatus("CANCELLED");

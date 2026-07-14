@@ -14,6 +14,9 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
     Page<Delivery> findByTenantId(Long tenantId, Pageable pageable);
     Page<Delivery> findByTenantIdAndDeliveryDate(Long tenantId, java.time.LocalDate deliveryDate, Pageable pageable);
     
+    Optional<Delivery> findByLoadingSheetIdAndTenantId(Long loadingSheetId, Long tenantId);
+    Optional<Delivery> findFirstByLoadingSheetIdAndTenantIdOrderByIdDesc(Long loadingSheetId, Long tenantId);
+    
     @org.springframework.data.jpa.repository.Query("SELECT d FROM Delivery d WHERE d.tenant.id = :tenantId AND d.deliveryDate >= :startDate AND d.deliveryDate <= :endDate")
     java.util.List<Delivery> findDeliveriesInDateRange(
         @org.springframework.data.repository.query.Param("tenantId") Long tenantId,

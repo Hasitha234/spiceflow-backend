@@ -26,9 +26,10 @@ public class ClearBusinessData {
         List<String[]> targets = new ArrayList<>();
         if (System.getenv("DB_URL") != null && !System.getenv("DB_URL").trim().isEmpty()) {
             targets.add(new String[]{System.getenv("DB_URL"), System.getenv("DB_USERNAME"), System.getenv("DB_PASSWORD")});
+        } else {
+            targets.add(new String[]{"jdbc:h2:file:./data/spiceflow_dev;DB_CLOSE_DELAY=-1;MODE=PostgreSQL", "sa", "password"});
+            targets.add(new String[]{"jdbc:postgresql://localhost:5432/spiceflow", "spiceflow_user", "spiceflow_pass"});
         }
-        targets.add(new String[]{"jdbc:h2:file:./data/spiceflow_dev;DB_CLOSE_DELAY=-1;MODE=PostgreSQL", "sa", "password"});
-        targets.add(new String[]{"jdbc:postgresql://localhost:5432/spiceflow", "spiceflow_user", "spiceflow_pass"});
 
         for (String[] target : targets) {
             String url = target[0];
