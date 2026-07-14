@@ -63,14 +63,14 @@ public class FinanceDashboardRepository {
     public List<ReceivableAgingBucketDto> getReceivablesAgingBuckets(Long tenantId) {
         String sql = """
             SELECT
-                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(COALESCE(updated_at, created_at) AS DATE)) <= 30 THEN 1 ELSE 0 END), 0) AS count_0_30,
-                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(COALESCE(updated_at, created_at) AS DATE)) <= 30 THEN outstanding_loan ELSE 0.00 END), 0.00) AS val_0_30,
-                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(COALESCE(updated_at, created_at) AS DATE)) BETWEEN 31 AND 60 THEN 1 ELSE 0 END), 0) AS count_31_60,
-                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(COALESCE(updated_at, created_at) AS DATE)) BETWEEN 31 AND 60 THEN outstanding_loan ELSE 0.00 END), 0.00) AS val_31_60,
-                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(COALESCE(updated_at, created_at) AS DATE)) BETWEEN 61 AND 90 THEN 1 ELSE 0 END), 0) AS count_61_90,
-                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(COALESCE(updated_at, created_at) AS DATE)) BETWEEN 61 AND 90 THEN outstanding_loan ELSE 0.00 END), 0.00) AS val_61_90,
-                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(COALESCE(updated_at, created_at) AS DATE)) > 90 THEN 1 ELSE 0 END), 0) AS count_90_plus,
-                COALESCE(SUM(CASE WHEN (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(COALESCE(updated_at, created_at) AS DATE)) > 90 THEN outstanding_loan ELSE 0.00 END), 0.00) AS val_90_plus
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) >= CURRENT_TIMESTAMP - INTERVAL '30' DAY THEN 1 ELSE 0 END), 0) AS count_0_30,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) >= CURRENT_TIMESTAMP - INTERVAL '30' DAY THEN outstanding_loan ELSE 0.00 END), 0.00) AS val_0_30,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) < CURRENT_TIMESTAMP - INTERVAL '30' DAY AND COALESCE(updated_at, created_at) >= CURRENT_TIMESTAMP - INTERVAL '60' DAY THEN 1 ELSE 0 END), 0) AS count_31_60,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) < CURRENT_TIMESTAMP - INTERVAL '30' DAY AND COALESCE(updated_at, created_at) >= CURRENT_TIMESTAMP - INTERVAL '60' DAY THEN outstanding_loan ELSE 0.00 END), 0.00) AS val_31_60,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) < CURRENT_TIMESTAMP - INTERVAL '60' DAY AND COALESCE(updated_at, created_at) >= CURRENT_TIMESTAMP - INTERVAL '90' DAY THEN 1 ELSE 0 END), 0) AS count_61_90,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) < CURRENT_TIMESTAMP - INTERVAL '60' DAY AND COALESCE(updated_at, created_at) >= CURRENT_TIMESTAMP - INTERVAL '90' DAY THEN outstanding_loan ELSE 0.00 END), 0.00) AS val_61_90,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) < CURRENT_TIMESTAMP - INTERVAL '90' DAY THEN 1 ELSE 0 END), 0) AS count_90_plus,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) < CURRENT_TIMESTAMP - INTERVAL '90' DAY THEN outstanding_loan ELSE 0.00 END), 0.00) AS val_90_plus
             FROM shops
             WHERE tenant_id = :tenantId AND deleted_at IS NULL AND outstanding_loan > 0
             """;

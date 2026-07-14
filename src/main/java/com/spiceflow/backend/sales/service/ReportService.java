@@ -8,6 +8,7 @@ import com.spiceflow.backend.sales.dto.response.SalesSummaryResponse;
 import com.spiceflow.backend.sales.dto.response.ShopOutstandingResponse;
 import com.spiceflow.backend.sales.dto.response.StockStatusResponse;
 import com.spiceflow.backend.sales.repository.DeliveryRepository;
+import com.spiceflow.backend.sales.repository.LoadingSheetRepository;
 import com.spiceflow.backend.sales.repository.ShopRepository;
 import com.spiceflow.backend.sales.repository.RepRepository;
 import java.math.BigDecimal;
@@ -30,6 +31,7 @@ public class ReportService {
     private final DeliveryRepository deliveryRepository;
     private final ShopRepository shopRepository;
     private final InventoryItemRepository inventoryItemRepository;
+    private final LoadingSheetRepository loadingSheetRepository;
 
     @Async
     public CompletableFuture<SalesSummaryResponse> getSalesSummary(Long tenantId, LocalDate startDate, LocalDate endDate) {
@@ -223,6 +225,17 @@ public class ReportService {
                 .build());
         }
 
+        List<EndOfDaySummaryResponse.CancelledOrderSummary> cancelledSummaries = loadingSheetRepository
+            .findByTenantIdAndLoadingDateAndStatus(tenantId, date, "CANCELLED").stream()
+            .map(ls -> EndOfDaySummaryResponse.CancelledOrderSummary.builder()
+                .loadingSheetId(ls.getId())
+                .repOrderId(ls.getRepOrder() != null ? ls.getRepOrder().getId() : null)
+                .driverName(ls.getDriver() != null ? ls.getDriver().getName() : "")
+                .repName(ls.getRepOrder() != null && ls.getRepOrder().getRep() != null ? ls.getRepOrder().getRep().getName() : "")
+                .reason("Cancelled on " + date)
+                .build())
+            .collect(Collectors.toList());
+
         return EndOfDaySummaryResponse.builder()
             .date(date)
             .totalSalesValue(totalSales)
@@ -235,6 +248,7 @@ public class ReportService {
             .shopsVisited(shopsVisited)
             .chequeDetails(chequeDetails)
             .deliveries(deliverySummaries)
+            .cancelledOrders(cancelledSummaries)
             .build();
     }
 }

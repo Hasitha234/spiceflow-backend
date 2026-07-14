@@ -107,7 +107,7 @@ public class GlobalExceptionHandler {
       HttpMessageNotReadableException ex, HttpServletRequest request) {
     log.warn("Malformed JSON received at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-        .body(buildProblemDetail(HttpStatus.BAD_REQUEST, "Malformed JSON", "Malformed JSON payload. Ensure your request body is valid.", request, Collections.emptyList()));
+        .body(buildProblemDetail(HttpStatus.BAD_REQUEST, "Malformed JSON", "Malformed JSON payload: " + safe(ex.getMessage()), request, Collections.emptyList()));
   }
 
   @ExceptionHandler(AccessDeniedException.class)
@@ -135,7 +135,7 @@ public class GlobalExceptionHandler {
     }
     log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .body(buildProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "An unexpected error occurred", request, Collections.emptyList()));
+        .body(buildProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "An unexpected error occurred: " + safe(ex.getMessage()), request, Collections.emptyList()));
   }
 
   private static String safe(@Nullable String s) {

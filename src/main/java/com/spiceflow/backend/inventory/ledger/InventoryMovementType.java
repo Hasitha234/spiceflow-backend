@@ -10,5 +10,6 @@ public enum InventoryMovementType {
     TRANSFER_OUT,
     ADJUSTMENT_IN,
     ADJUSTMENT_OUT,
-    DAMAGED
+    DAMAGED,
+    INITIAL_STOCK
 }

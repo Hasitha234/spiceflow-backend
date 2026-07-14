@@ -52,23 +52,26 @@ public class LoadingSheetController {
 
     @PostMapping("/{id}/cancel")
     @PreAuthorize("hasAuthority('LOADING_CREATE')")
-    @Operation(summary = "Cancel a loading sheet", description = "Cancels a DRAFT loading sheet and returns rep order to DRAFT", operationId = "cancelLoadingSheet")
+    @Operation(summary = "Cancel a loading sheet", description = "Cancels a loading sheet and returns rep order to DRAFT / transfers stock to specified warehouse", operationId = "cancelLoadingSheet")
     public ResponseEntity<LoadingSheetResponse> cancelLoadingSheet(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
-            @PathVariable Long id) {
-        log.info("User {} cancelling loading sheet {}", currentUser.getId(), id);
-        LoadingSheetResponse response = loadingSheetService.cancelLoadingSheet(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
+            @PathVariable Long id,
+            @RequestParam(required = false) Long returnWarehouseId) {
+        log.info("User {} cancelling loading sheet {} with returnWarehouseId {}", currentUser.getId(), id, returnWarehouseId);
+        LoadingSheetResponse response = loadingSheetService.cancelLoadingSheet(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), returnWarehouseId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
     @PreAuthorize("hasAuthority('LOADING_VIEW')")
-    @Operation(summary = "List loading sheets", description = "Returns a paginated list of loading sheets", operationId = "getLoadingSheets")
+    @Operation(summary = "List loading sheets", description = "Returns a paginated list of loading sheets with optional driver and status filtering", operationId = "getLoadingSheets")
     public ResponseEntity<Page<LoadingSheetResponse>> getLoadingSheets(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @RequestParam(required = false) Long driverId,
+            @RequestParam(required = false) String status,
             Pageable pageable) {
-        log.info("User {} listing loading sheets", currentUser.getId());
-        Page<LoadingSheetResponse> response = loadingSheetService.getLoadingSheets(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), pageable);
+        log.info("User {} listing loading sheets (driverId={}, status={})", currentUser.getId(), driverId, status);
+        Page<LoadingSheetResponse> response = loadingSheetService.getLoadingSheets(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), driverId, status, pageable);
         return ResponseEntity.ok(response);
     }
 

@@ -29,7 +29,7 @@ import java.util.HashSet;
  */
 @Slf4j
 @Component
-@Profile({"local", "prod"})
+@Profile({"local", "prod", "default"})
 @RequiredArgsConstructor
 public class DatabaseSeeder implements CommandLineRunner {
 

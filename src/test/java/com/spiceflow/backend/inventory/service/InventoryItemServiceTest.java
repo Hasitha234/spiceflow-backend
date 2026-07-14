@@ -16,6 +16,7 @@ import com.spiceflow.backend.inventory.entity.InventoryItem;
 import com.spiceflow.backend.inventory.entity.InventoryTransaction;
 import com.spiceflow.backend.inventory.entity.Product;
 import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.ledger.service.InventoryLedgerService;
 import com.spiceflow.backend.inventory.mapper.InventoryItemMapper;
 import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
 import com.spiceflow.backend.inventory.repository.InventoryTransactionRepository;
@@ -40,6 +41,7 @@ class InventoryItemServiceTest {
     @Mock private ProductService productService;
     @Mock private WarehouseService warehouseService;
     @Mock private InventoryItemMapper inventoryItemMapper;
+    @Mock private InventoryLedgerService inventoryLedgerService;
 
     @InjectMocks private InventoryItemService inventoryItemService;
 

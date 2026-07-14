@@ -270,7 +270,7 @@
               <fork>true</fork>
               <compilerArgs>
                 <arg>-XDcompilePolicy=simple</arg>
-                <arg>-Xplugin:ErrorProne -Xep:NullAway:ERROR -XepOpt:NullAway:AnnotatedPackages=com.spiceflow.backend -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:ExcludedClassAnnotations=javax.annotation.processing.Generated -XepOpt:NullAway:UnannotatedSubPackages=com.spiceflow.backend.inventory.mapper,com.spiceflow.backend.auth.mapper,com.spiceflow.backend.sales.mapper,com.spiceflow.backend.purchase.mapper,com.spiceflow.backend.common.mapper</arg>
+                <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/target/generated-sources/.* -Xep:NullAway:ERROR -XepOpt:NullAway:AnnotatedPackages=com.spiceflow.backend -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:ExcludedClassAnnotations=javax.annotation.processing.Generated -XepOpt:NullAway:UnannotatedSubPackages=com.spiceflow.backend.inventory.mapper,com.spiceflow.backend.auth.mapper,com.spiceflow.backend.sales.mapper,com.spiceflow.backend.purchase.mapper,com.spiceflow.backend.common.mapper</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
