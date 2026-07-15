@@ -11,6 +11,12 @@ import com.spiceflow.backend.sales.repository.DeliveryRepository;
 import com.spiceflow.backend.sales.repository.LoadingSheetRepository;
 import com.spiceflow.backend.sales.repository.ShopRepository;
 import com.spiceflow.backend.sales.repository.RepRepository;
+import com.spiceflow.backend.sales.repository.RepOrderRepository;
+import com.spiceflow.backend.purchase.repository.PurchaseRepository;
+import com.spiceflow.backend.finance.repository.ExpenseRepository;
+import com.spiceflow.backend.finance.entity.Expense;
+import com.spiceflow.backend.sales.dto.response.MonthSummaryResponse;
+import java.time.YearMonth;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -32,6 +38,9 @@ public class ReportService {
     private final ShopRepository shopRepository;
     private final InventoryItemRepository inventoryItemRepository;
     private final LoadingSheetRepository loadingSheetRepository;
+    private final RepOrderRepository repOrderRepository;
+    private final PurchaseRepository purchaseRepository;
+    private final ExpenseRepository expenseRepository;
 
     @Async
     public CompletableFuture<SalesSummaryResponse> getSalesSummary(Long tenantId, LocalDate startDate, LocalDate endDate) {
@@ -250,5 +259,58 @@ public class ReportService {
             .deliveries(deliverySummaries)
             .cancelledOrders(cancelledSummaries)
             .build();
+    }
+
+    public MonthSummaryResponse getMonthSummary(Long tenantId, YearMonth yearMonth) {
+        LocalDate startDate = yearMonth.atDay(1);
+        LocalDate endDate = yearMonth.atEndOfMonth();
+
+        List<com.spiceflow.backend.sales.entity.Delivery> deliveries = deliveryRepository.findDeliveriesInDateRange(tenantId, startDate, endDate);
+        List<com.spiceflow.backend.sales.entity.RepOrder> repOrders = repOrderRepository.findByTenantIdAndOrderDateBetween(tenantId, startDate, endDate);
+        List<com.spiceflow.backend.purchase.entity.Purchase> purchases = purchaseRepository.findByTenantIdAndInvoiceDateBetween(tenantId, startDate, endDate);
+        List<Expense> expenses = expenseRepository.findByTenantIdAndDateBetween(tenantId, startDate, endDate);
+
+        BigDecimal totalDeliverySales = deliveries.stream()
+                .map(d -> d.getTotalSalesValue() != null ? d.getTotalSalesValue() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalRepOrderSales = repOrders.stream()
+                .map(r -> r.getNetAmount() != null ? r.getNetAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalSales = totalDeliverySales.add(totalRepOrderSales);
+
+        BigDecimal totalPurchases = purchases.stream()
+                .map(p -> p.getNetAmount() != null ? p.getNetAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalExpenses = expenses.stream()
+                .map(e -> e.getAmount() != null ? e.getAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal netProfit = totalSales.subtract(totalPurchases).subtract(totalExpenses);
+
+        List<MonthSummaryResponse.ExpenseBreakdown> expenseBreakdown = expenses.stream()
+                .collect(Collectors.groupingBy(Expense::getCategory,
+                        Collectors.mapping(e -> e.getAmount() != null ? e.getAmount() : BigDecimal.ZERO,
+                                Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))))
+                .entrySet().stream()
+                .map(e -> MonthSummaryResponse.ExpenseBreakdown.builder()
+                        .category(e.getKey())
+                        .amount(e.getValue())
+                        .build())
+                .collect(Collectors.toList());
+
+        return MonthSummaryResponse.builder()
+                .yearMonth(yearMonth)
+                .totalSalesValue(totalSales)
+                .totalPurchasesValue(totalPurchases)
+                .totalExpensesValue(totalExpenses)
+                .netProfit(netProfit)
+                .deliveryCount(deliveries.size())
+                .repOrderCount(repOrders.size())
+                .purchaseOrderCount(purchases.size())
+                .expenseBreakdown(expenseBreakdown)
+                .build();
     }
 }
