@@ -19,4 +19,6 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
     Page<Purchase> findByTenantIdAndInvoiceNoContainingIgnoreCase(Long tenantId, String invoiceNo, Pageable pageable);
     
     Page<Purchase> findByTenantIdAndInvoiceDate(Long tenantId, LocalDate invoiceDate, Pageable pageable);
+    
+    java.util.List<Purchase> findByTenantIdAndInvoiceDateBetween(Long tenantId, LocalDate startDate, LocalDate endDate);
 }

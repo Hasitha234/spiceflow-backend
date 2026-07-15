@@ -81,6 +81,16 @@ public class ReportController {
         log.info("User {} requesting end-of-day summary for {}", currentUser.getId(), date);
         return ResponseEntity.ok(reportService.getEndOfDaySummary(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), date));
     }
+
+    @GetMapping("/month-summary")
+    @PreAuthorize("hasAuthority('REPORT_MONTHLY')")
+    @Operation(summary = "Get month summary", description = "Returns a comprehensive summary of sales, purchases, and expenses for a specific month", operationId = "getMonthSummary")
+    public ResponseEntity<com.spiceflow.backend.sales.dto.response.MonthSummaryResponse> getMonthSummary(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @RequestParam java.time.YearMonth yearMonth) {
+        log.info("User {} requesting month summary for {}", currentUser.getId(), yearMonth);
+        return ResponseEntity.ok(reportService.getMonthSummary(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), yearMonth));
+    }
 }
 
 
