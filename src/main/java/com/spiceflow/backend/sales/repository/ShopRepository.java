@@ -19,4 +19,6 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
 
     @Query("SELECT s.assignedRep.id, COUNT(s) FROM Shop s WHERE s.tenant.id = :tenantId AND s.assignedRep IS NOT NULL GROUP BY s.assignedRep.id")
     List<Object[]> countShopsByAssignedRepId(@Param("tenantId") Long tenantId);
+
+    Optional<Shop> findByQrCodeTokenAndTenantId(String qrCodeToken, Long tenantId);
 }

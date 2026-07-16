@@ -21,6 +21,7 @@ import com.spiceflow.backend.admin.repository.BusinessTypeRepository;
 import org.springframework.transaction.annotation.Transactional;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.spiceflow.backend.auth.entity.Role;
@@ -322,7 +323,7 @@ public class AdminService {
       User user = userRepository.findById(id)
           .filter(u -> u.getDeletedAt() == null)
           .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-      user.setDeletedAt(OffsetDateTime.now());
+      user.setDeletedAt(OffsetDateTime.now(ZoneId.systemDefault()));
       userRepository.save(user);
   }
 

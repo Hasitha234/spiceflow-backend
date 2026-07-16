@@ -1,0 +1,1 @@
+ALTER TABLE shops ADD COLUMN qr_code_token VARCHAR(36) UNIQUE;

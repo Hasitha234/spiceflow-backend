@@ -13,6 +13,8 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "shops")
 @Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
@@ -72,4 +74,14 @@ public class Shop extends BaseEntity {
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;
+
+    @Column(name = "qr_code_token", length = 36, unique = true)
+    private String qrCodeToken;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.qrCodeToken == null) {
+            this.qrCodeToken = UUID.randomUUID().toString();
+        }
+    }
 }

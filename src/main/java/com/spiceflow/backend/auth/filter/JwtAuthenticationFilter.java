@@ -86,13 +86,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                           
                           // verify they own it from claims (or database if claims aren't sufficient)
                           Object assignedClaim = jwtUtil.parseClaims(token).get("assignedTenants");
-                          if (assignedClaim instanceof java.util.List) {
-                              java.util.List<?> assigned = (java.util.List<?>) assignedClaim;
+                          if (assignedClaim instanceof java.util.List<?> assigned) {
                               boolean hasTenant = assigned.stream().anyMatch(item -> {
-                                  if (item instanceof java.util.Map) {
-                                      Object idObj = ((java.util.Map<?, ?>) item).get("id");
-                                      if (idObj instanceof Number) {
-                                          return ((Number) idObj).longValue() == requestedTenantId.longValue();
+                                  if (item instanceof java.util.Map<?, ?> tenantMap) {
+                                      Object idObj = tenantMap.get("id");
+                                      if (idObj instanceof Number numberObj) {
+                                          return numberObj.longValue() == requestedTenantId.longValue();
                                       }
                                   }
                                   return false;
@@ -112,13 +111,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
               // Extract status from JWT claims to check if the tenant is active
               String activeTenantStatus = null;
               Object assignedClaim = jwtUtil.parseClaims(token).get("assignedTenants");
-              if (assignedClaim instanceof java.util.List) {
-                  java.util.List<?> assigned = (java.util.List<?>) assignedClaim;
+              if (assignedClaim instanceof java.util.List<?> assigned) {
                   for (Object item : assigned) {
-                      if (item instanceof java.util.Map) {
-                          java.util.Map<?, ?> tenantMap = (java.util.Map<?, ?>) item;
+                      if (item instanceof java.util.Map<?, ?> tenantMap) {
                           Object idObj = tenantMap.get("id");
-                          if (idObj instanceof Number && activeTenantId != null && ((Number) idObj).longValue() == activeTenantId.longValue()) {
+                          if (idObj instanceof Number numberObj && activeTenantId != null && numberObj.longValue() == activeTenantId.longValue()) {
                               activeTenantStatus = (String) tenantMap.get("status");
                               break;
                           }
