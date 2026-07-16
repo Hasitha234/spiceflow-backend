@@ -55,6 +55,26 @@ class QrVerificationServiceTest {
     }
 
     @Test
+    @DisplayName("resolveShopByToken returns valid response when shop exists")
+    void resolveShopByToken_success() {
+        when(shopRepository.findByQrCodeTokenAndTenantId("some-token", 1L)).thenReturn(Optional.of(shop));
+        ShopQrResponse response = qrVerificationService.resolveShopByToken("some-token", 1L);
+        assertThat(response.shopId()).isEqualTo(10L);
+        assertThat(response.shopName()).isEqualTo("Test Shop");
+        assertThat(response.tenantId()).isEqualTo(1L);
+        assertThat(response.qrPayload()).isEqualTo("some-token");
+    }
+
+    @Test
+    @DisplayName("resolveShopByToken throws exception when shop not found")
+    void resolveShopByToken_notFound() {
+        when(shopRepository.findByQrCodeTokenAndTenantId("some-token", 1L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> qrVerificationService.resolveShopByToken("some-token", 1L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Shop not found with provided QR token");
+    }
+
+    @Test
     @DisplayName("getShopQrData returns valid response when shop exists")
     void getShopQrData_success() {
         when(shopRepository.findByIdAndTenantId(10L, 1L)).thenReturn(Optional.of(shop));
@@ -133,5 +153,41 @@ class QrVerificationServiceTest {
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).visitId()).isEqualTo(100L);
         assertThat(responses.get(0).shopId()).isEqualTo(10L);
+    }
+
+    @Test
+    @DisplayName("getLoadingSheetsForShopToday returns valid response when there is a delivery")
+    void getLoadingSheetsForShopToday_success() {
+        // mock the method manually since it has localdate
+        com.spiceflow.backend.inventory.entity.Product product = new com.spiceflow.backend.inventory.entity.Product();
+        product.setId(200L);
+        product.setName("Test Product");
+        
+        com.spiceflow.backend.sales.entity.RepOrderItem item = new com.spiceflow.backend.sales.entity.RepOrderItem();
+        item.setProduct(product);
+        item.setQuantity(10);
+        
+        com.spiceflow.backend.sales.entity.RepOrderShop repOrderShop = new com.spiceflow.backend.sales.entity.RepOrderShop();
+        repOrderShop.setShop(shop);
+        repOrderShop.setItems(List.of(item));
+
+        com.spiceflow.backend.sales.entity.RepOrder repOrder = new com.spiceflow.backend.sales.entity.RepOrder();
+        repOrder.setShops(List.of(repOrderShop));
+
+        com.spiceflow.backend.sales.entity.LoadingSheet loadingSheet = new com.spiceflow.backend.sales.entity.LoadingSheet();
+        loadingSheet.setId(5L);
+        loadingSheet.setRepOrder(repOrder);
+
+        com.spiceflow.backend.sales.entity.Delivery delivery = new com.spiceflow.backend.sales.entity.Delivery();
+        delivery.setId(1L);
+        delivery.setLoadingSheet(loadingSheet);
+        
+        when(deliveryRepository.findDeliveriesInDateRange(any(Long.class), any(java.time.LocalDate.class), any(java.time.LocalDate.class)))
+            .thenReturn(List.of(delivery));
+            
+        List<LoadingSheetForShopResponse> response = qrVerificationService.getLoadingSheetsForShopToday(10L, 1L);
+        
+        assertThat(response).hasSize(1);
+        assertThat(response.get(0).loadingSheetId()).isEqualTo(5L);
     }
 }
