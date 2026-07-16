@@ -73,6 +73,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
           });
         } else {
+          boolean[] shouldBlock = new boolean[]{false};
           userRepository.findByEmailAndDeletedAtIsNull(email).ifPresent(user -> {
             if (user.isEnabled() && user.isAccountNonLocked()) {
               Long activeTenantId = user.getTenantId();
@@ -107,6 +108,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                       activeTenantId = null; // Forces them to be "tenant-less" until they pick one
                   }
               }
+              
+              // Extract status from JWT claims to check if the tenant is active
+              String activeTenantStatus = null;
+              Object assignedClaim = jwtUtil.parseClaims(token).get("assignedTenants");
+              if (assignedClaim instanceof java.util.List) {
+                  java.util.List<?> assigned = (java.util.List<?>) assignedClaim;
+                  for (Object item : assigned) {
+                      if (item instanceof java.util.Map) {
+                          java.util.Map<?, ?> tenantMap = (java.util.Map<?, ?>) item;
+                          Object idObj = tenantMap.get("id");
+                          if (idObj instanceof Number && activeTenantId != null && ((Number) idObj).longValue() == activeTenantId.longValue()) {
+                              activeTenantStatus = (String) tenantMap.get("status");
+                              break;
+                          }
+                      }
+                  }
+              }
+              
+              if ("EXPIRED".equals(activeTenantStatus) || "DISABLED".equals(activeTenantStatus)) {
+                  shouldBlock[0] = true;
+                  return;
+              }
 
               com.spiceflow.backend.auth.dto.AuthenticatedUser authUser = com.spiceflow.backend.auth.dto.AuthenticatedUser.builder()
                   .id(user.getId())
@@ -133,6 +156,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                   email, activeTenantId);
             }
           });
+          
+          if (shouldBlock[0]) {
+              response.sendError(HttpServletResponse.SC_FORBIDDEN, "Tenant is expired or disabled");
+              return;
+          }
         }
       }
     }
