@@ -142,6 +142,7 @@ class TenantIsolationIntegrationTest {
         User userB = userRepository.save(User.builder()
                 .tenant(tenantB)
                 .email("user@tenantb.com")
+                .userType("DATA_ENTRY_OPERATOR")
                 .passwordHash(passwordEncoder.encode("password"))
                 .assignedRole(role)
                 .build());

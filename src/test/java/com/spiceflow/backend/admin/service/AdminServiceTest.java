@@ -44,6 +44,7 @@ class AdminServiceTest {
     @Mock private RoleRepository roleRepository;
     @Mock private BusinessTypeRepository businessTypeRepository;
     @Mock private WarehouseRepository warehouseRepository;
+    @Mock private com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository;
 
     @InjectMocks private AdminService adminService;
 

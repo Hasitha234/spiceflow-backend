@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RestController;
 import com.spiceflow.backend.admin.dto.request.UpdateTenantRequest;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +23,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 
 
 @RestController
@@ -83,6 +83,77 @@ public class AdminController {
     return ResponseEntity.noContent().build();
   }
 
+  @PatchMapping("/{id}/status")
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
+  @Operation(summary = "Update Tenant Status", description = "Toggle tenant between ACTIVE and SUSPENDED")
+  public ResponseEntity<TenantResponse> updateTenantStatus(
+      @PathVariable Long id,
+      @Valid @RequestBody com.spiceflow.backend.admin.dto.request.UpdateTenantStatusRequest request) {
+    return ResponseEntity.ok(adminService.updateTenantStatus(id, request));
+  }
+
+  // --- USER MANAGEMENT ENDPOINTS ---
+
+  @PostMapping("/users")
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
+  @Operation(summary = "Create User", description = "Create a new user (Business Owner, Data Entry, or Driver)")
+  public ResponseEntity<com.spiceflow.backend.admin.dto.response.UserResponse> createUser(
+      @Valid @RequestBody com.spiceflow.backend.admin.dto.request.CreateUserRequest request) {
+    return ResponseEntity.status(HttpStatus.CREATED).body(adminService.createUser(request));
+  }
+
+  @GetMapping("/users")
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
+  @Operation(summary = "List Users", description = "List all users across all tenants")
+  public ResponseEntity<PageResponse<com.spiceflow.backend.admin.dto.response.UserResponse>> getAllUsers(
+      @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+    return ResponseEntity.ok(adminService.getAllUsers(pageable));
+  }
+
+  @GetMapping("/users/{id}")
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
+  @Operation(summary = "Get User by ID")
+  public ResponseEntity<com.spiceflow.backend.admin.dto.response.UserResponse> getUserById(@PathVariable Long id) {
+    return ResponseEntity.ok(adminService.getUserById(id));
+  }
+
+  @PutMapping("/users/{id}")
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
+  @Operation(summary = "Update User")
+  public ResponseEntity<com.spiceflow.backend.admin.dto.response.UserResponse> updateUser(
+      @PathVariable Long id,
+      @Valid @RequestBody com.spiceflow.backend.admin.dto.request.UpdateUserRequest request) {
+    return ResponseEntity.ok(adminService.updateUser(id, request));
+  }
+
+  @DeleteMapping("/users/{id}")
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
+  @Operation(summary = "Soft-Delete User")
+  public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    adminService.deleteUser(id);
+    return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/users/{userId}/tenants")
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
+  @Operation(summary = "Assign Tenant to Business Owner")
+  public ResponseEntity<Void> assignTenant(
+      @PathVariable Long userId,
+      @RequestBody java.util.Map<String, Long> payload) {
+    Long tenantId = java.util.Objects.requireNonNull(payload.get("tenantId"), "tenantId is required");
+    adminService.assignTenantToOwner(userId, tenantId);
+    return ResponseEntity.ok().build();
+  }
+
+  @DeleteMapping("/users/{userId}/tenants/{tenantId}")
+  @PreAuthorize("hasRole('SUPER_ADMIN')")
+  @Operation(summary = "Remove Tenant from Business Owner")
+  public ResponseEntity<Void> removeTenant(
+      @PathVariable Long userId,
+      @PathVariable Long tenantId) {
+    adminService.removeTenantFromOwner(userId, tenantId);
+    return ResponseEntity.ok().build();
+  }
 }
 
 

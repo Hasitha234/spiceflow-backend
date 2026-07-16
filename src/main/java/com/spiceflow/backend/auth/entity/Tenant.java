@@ -63,4 +63,8 @@ public class Tenant extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "business_type_id", nullable = false)
     private BusinessType businessType;
+
+    public boolean isSuspended() {
+        return "SUSPENDED".equals(status);
+    }
 }

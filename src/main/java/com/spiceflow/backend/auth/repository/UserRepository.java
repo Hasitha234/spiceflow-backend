@@ -15,5 +15,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmailAndDeletedAtIsNull(String email);
     boolean existsByEmail(String email);
     boolean existsByAssignedRoleIdAndDeletedAtIsNull(Long roleId);
-    
+    org.springframework.data.domain.Page<User> findAllByDeletedAtIsNull(org.springframework.data.domain.Pageable pageable);
 }

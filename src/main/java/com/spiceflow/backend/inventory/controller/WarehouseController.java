@@ -38,7 +38,7 @@ public class WarehouseController {
 
     @GetMapping
     @Operation(summary = "List all warehouses (with pagination and search)", description = "Returns warehouses for the authenticated tenant", operationId = "getAllWarehouses")
-    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'WAREHOUSE_STAFF')")
+    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'WAREHOUSE_STAFF', 'DATA_ENTRY')")
     public ResponseEntity<Page<WarehouseResponse>> getAllWarehouses(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String search,
@@ -48,7 +48,7 @@ public class WarehouseController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a warehouse by ID", operationId = "getWarehouse")
-    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'WAREHOUSE_STAFF')")
+    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'WAREHOUSE_STAFF', 'DATA_ENTRY')")
     public ResponseEntity<WarehouseResponse> getWarehouse(
             @PathVariable Long id,
             @AuthenticationPrincipal AuthenticatedUser currentUser) {

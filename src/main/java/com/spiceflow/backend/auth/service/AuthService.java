@@ -49,6 +49,7 @@ public class AuthService {
   private final PlatformAdminRepository platformAdminRepository;
   private final LoginAttemptService loginAttemptService;
   private final TokenBlacklistService tokenBlacklistService;
+  private final com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository;
 
 
   public AuthService(
@@ -58,7 +59,8 @@ public class AuthService {
     PasswordEncoder passwordEncoder,
     PlatformAdminRepository platformAdminRepository,
     LoginAttemptService loginAttemptService,
-    TokenBlacklistService tokenBlacklistService) {
+    TokenBlacklistService tokenBlacklistService,
+    com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository) {
   this.userRepository = userRepository;
   this.refreshTokenRepository = refreshTokenRepository;
   this.jwtUtil = jwtUtil;
@@ -66,6 +68,7 @@ public class AuthService {
   this.platformAdminRepository = platformAdminRepository;
   this.loginAttemptService = loginAttemptService;
   this.tokenBlacklistService = tokenBlacklistService;
+  this.businessOwnerTenantRepository = businessOwnerTenantRepository;
 }
 
 
@@ -108,10 +111,6 @@ public LoginResponse login(LoginRequest request) {
   User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
       .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
-  if (!"ACTIVE".equals(user.getTenant().getStatus())) {
-    throw new org.springframework.security.access.AccessDeniedException("Tenant account is not active");
-  }
-
   if (loginAttemptService.isBlocked(user.getEmail())) {
     throw new InvalidCredentialsException("Account is temporarily locked due to too many failed attempts.");
   }
@@ -133,7 +132,17 @@ public LoginResponse login(LoginRequest request) {
   user.setLockedUntil(null);
   userRepository.save(user);
 
-  String accessToken = jwtUtil.generateAccessToken(user);
+  java.util.List<Object> assignedTenants = java.util.List.of();
+  if ("TENANT_OWNER".equals(user.getUserType())) {
+      // Find assigned tenants
+      assignedTenants = businessOwnerTenantRepository
+              .findByUserId(user.getId())
+              .stream()
+              .map(bt -> new com.spiceflow.backend.admin.dto.response.TenantAssignedResponse(bt.getTenant().getId(), bt.getTenant().getBusinessName(), bt.getTenant().getStatus()))
+              .collect(java.util.stream.Collectors.toList());
+  }
+
+  String accessToken = jwtUtil.generateAccessToken(user, assignedTenants);
   String rawRefreshToken = generateAndSaveRefreshToken(user);
   log.info("User {} logged in successfully for tenant {}", user.getEmail(), user.getTenantId());
 
@@ -184,7 +193,15 @@ public LoginResponse login(LoginRequest request) {
 
     // Fallback to regular Tenant User
     User user = storedToken.getUser();
-    String newAccessToken = jwtUtil.generateAccessToken(user);
+    java.util.List<Object> assignedTenants = java.util.List.of();
+    if ("TENANT_OWNER".equals(user.getUserType())) {
+        assignedTenants = businessOwnerTenantRepository
+                .findByUserId(user.getId())
+                .stream()
+                .map(bt -> new com.spiceflow.backend.admin.dto.response.TenantAssignedResponse(bt.getTenant().getId(), bt.getTenant().getBusinessName(), bt.getTenant().getStatus()))
+                .collect(java.util.stream.Collectors.toList());
+    }
+    String newAccessToken = jwtUtil.generateAccessToken(user, assignedTenants);
 
     return new LoginResponse(
         newAccessToken,

@@ -41,6 +41,7 @@ class AuthServiceTest {
     @Mock private PlatformAdminRepository platformAdminRepository;
     @Mock private LoginAttemptService loginAttemptService;
     @Mock private TokenBlacklistService tokenBlacklistService;
+    @Mock private com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository;
 
     @InjectMocks private AuthService authService;
 
@@ -116,7 +117,7 @@ class AuthServiceTest {
         when(userRepository.findByEmailAndDeletedAtIsNull(request.email())).thenReturn(Optional.of(user));
         when(loginAttemptService.isBlocked(user.getEmail())).thenReturn(false);
         when(passwordEncoder.matches(request.password(), user.getPasswordHash())).thenReturn(true);
-        when(jwtUtil.generateAccessToken(user)).thenReturn("access_token");
+        when(jwtUtil.generateAccessToken(eq(user), anyList())).thenReturn("access_token");
         when(jwtUtil.getAccessTokenExpiryMs()).thenReturn(3600000L);
         when(jwtUtil.getRefreshTokenExpiryMs()).thenReturn(86400000L);
 
@@ -128,15 +129,6 @@ class AuthServiceTest {
         assertFalse(response.passwordChangeRequired());
         verify(loginAttemptService).loginSucceeded(user.getEmail());
         verify(userRepository).save(user);
-    }
-
-    @Test
-    void login_User_InactiveTenant_ThrowsAccessDenied() {
-        LoginRequest request = LoginRequest.builder().email("admin@test.com").password("password").build();
-        tenant.setStatus("SUSPENDED");
-        when(platformAdminRepository.findByEmailAndDeletedAtIsNull(request.email())).thenReturn(Optional.empty());
-        when(userRepository.findByEmailAndDeletedAtIsNull(request.email())).thenReturn(Optional.of(user));
-        assertThrows(AccessDeniedException.class, () -> authService.login(request));
     }
 
     @Test
@@ -154,7 +146,7 @@ class AuthServiceTest {
     void refresh_User_Success() {
         TokenRefreshRequest request = TokenRefreshRequest.builder().refreshToken("raw_refresh_token").build();
         when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(refreshToken));
-        when(jwtUtil.generateAccessToken(user)).thenReturn("new_access_token");
+        when(jwtUtil.generateAccessToken(eq(user), anyList())).thenReturn("new_access_token");
         when(jwtUtil.getAccessTokenExpiryMs()).thenReturn(3600000L);
 
         LoginResponse response = authService.refresh(request);

@@ -46,7 +46,7 @@ public class JwtUtil {
   }
 
   /** Generates a signed access JWT for the given user. Embeds tenantId, userId, roles and permissions. */
-  public String generateAccessToken(User user) {
+  public String generateAccessToken(User user, java.util.List<Object> assignedTenants) {
     long now = System.currentTimeMillis();
     
     List<String> roles = List.of();
@@ -66,8 +66,10 @@ public class JwtUtil {
 
     return Jwts.builder()
         .subject(user.getEmail())
-        .claim(CLAIM_USER_TYPE, "TENANT_USER")
+        .claim(CLAIM_USER_TYPE, user.getUserType())
         .claim(CLAIM_TENANT_ID, user.getTenantId())
+        .claim("tenantStatus", user.getTenant() != null ? user.getTenant().getStatus() : null)
+        .claim("assignedTenants", assignedTenants != null ? assignedTenants : List.of())
         .claim(CLAIM_USER_ID, user.getId())
         .claim(CLAIM_ROLE, user.getAssignedRole() != null ? user.getAssignedRole().getName() : null)
         .claim(CLAIM_ROLES, roles)
@@ -76,6 +78,11 @@ public class JwtUtil {
         .expiration(new Date(now + accessTokenExpiryMs))
         .signWith(secretKey)
         .compact();
+  }
+
+  /** Backwards compatibility signature for tests/other callers */
+  public String generateAccessToken(User user) {
+      return generateAccessToken(user, List.of());
   }
 
 
@@ -159,7 +166,7 @@ public @org.jspecify.annotations.Nullable String extractUserType(String token) {
     return accessTokenExpiryMs;
   }
 
-  private Claims parseClaims(String token) {
+  public Claims parseClaims(String token) {
     return Jwts.parser()
         .verifyWith(secretKey)
         .build()

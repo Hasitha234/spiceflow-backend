@@ -22,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.spiceflow.backend.auth.util.JwtUtil;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -49,6 +51,9 @@ class SubscriptionLockoutIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders
@@ -73,7 +78,7 @@ class SubscriptionLockoutIntegrationTest {
         tenantRepository.save(expiredTenant);
 
         Role role = Role.builder()
-                .name("Admin")
+                .name("OWNER")
                 .description("Admin")
                 .tenant(expiredTenant)
                 .isSystemRole(true)
@@ -82,6 +87,7 @@ class SubscriptionLockoutIntegrationTest {
 
         User expiredUser = User.builder()
                 .email("user@expired.com")
+                .userType("DATA_ENTRY_OPERATOR")
                 .passwordHash(passwordEncoder.encode("Password123!"))
                 .tenant(expiredTenant)
                 .assignedRole(role)
@@ -99,7 +105,7 @@ class SubscriptionLockoutIntegrationTest {
         tenantRepository.save(activeTenant);
 
         Role activeRole = Role.builder()
-                .name("Admin")
+                .name("OWNER")
                 .description("Admin")
                 .tenant(activeTenant)
                 .isSystemRole(true)
@@ -108,36 +114,51 @@ class SubscriptionLockoutIntegrationTest {
 
         User activeUser = User.builder()
                 .email("user@active.com")
+                .userType("DATA_ENTRY_OPERATOR")
                 .passwordHash(passwordEncoder.encode("Password123!"))
                 .tenant(activeTenant)
                 .assignedRole(activeRole)
                 .build();
         userRepository.save(activeUser);
 
-        // 3. Attempt Login for EXPIRED tenant -> should fail with 403 (Access Denied mapped in GlobalExceptionHandler)
-        String expiredLoginJson = """
-                {
-                  "email": "user@expired.com",
-                  "password": "Password123!"
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(expiredLoginJson))
+        // 3. Generate token and attempt to access protected endpoint for EXPIRED tenant -> should fail with 403
+        java.util.Map<String, Object> expiredTenantMap = new java.util.HashMap<>();
+        expiredTenantMap.put("id", expiredTenant.getId());
+        expiredTenantMap.put("status", "EXPIRED");
+        String expiredToken = jwtUtil.generateAccessToken(expiredUser, java.util.List.of(expiredTenantMap));
+        
+        mockMvc.perform(get("/api/v1/roles")
+                        .header("Authorization", "Bearer " + expiredToken)
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
 
-        // 4. Attempt Login for ACTIVE tenant -> should succeed with 200
-        String activeLoginJson = """
-                {
-                  "email": "user@active.com",
-                  "password": "Password123!"
-                }
-                """;
+        // 4. Generate token and attempt to access protected endpoint for ACTIVE tenant -> should succeed with 200
+        java.util.Map<String, Object> activeTenantMap = new java.util.HashMap<>();
+        activeTenantMap.put("id", activeTenant.getId());
+        activeTenantMap.put("status", "ACTIVE");
+        String activeToken = jwtUtil.generateAccessToken(activeUser, java.util.List.of(activeTenantMap));
 
-        mockMvc.perform(post("/api/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(activeLoginJson))
+        mockMvc.perform(get("/api/v1/roles")
+                        .header("Authorization", "Bearer " + activeToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+                
+        // 5. Test DISABLED tenant
+        java.util.Map<String, Object> disabledTenantMap = new java.util.HashMap<>();
+        disabledTenantMap.put("id", activeTenant.getId());
+        disabledTenantMap.put("status", "DISABLED");
+        String disabledToken = jwtUtil.generateAccessToken(activeUser, java.util.List.of(disabledTenantMap));
+
+        mockMvc.perform(get("/api/v1/roles")
+                        .header("Authorization", "Bearer " + disabledToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+                
+        // 6. Test missing assignedTenants claim (should just pass through and not be blocked by lockout, relies on other auth checks)
+        String noTenantToken = jwtUtil.generateAccessToken(activeUser, null);
+        mockMvc.perform(get("/api/v1/roles")
+                        .header("Authorization", "Bearer " + noTenantToken)
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
 }

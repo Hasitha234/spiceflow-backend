@@ -44,11 +44,13 @@ public class AdminService {
     private final RoleRepository roleRepository;
     private final BusinessTypeRepository businessTypeRepository;
     private final WarehouseRepository warehouseRepository;
+    private final com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository;
 
     public AdminService(TenantRepository tenantRepository, UserRepository userRepository,
         PasswordEncoder passwordEncoder, PermissionRepository permissionRepository,
         RoleRepository roleRepository, BusinessTypeRepository businessTypeRepository,
-        WarehouseRepository warehouseRepository) {
+        WarehouseRepository warehouseRepository,
+        com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -56,6 +58,7 @@ public class AdminService {
         this.roleRepository = roleRepository;
         this.businessTypeRepository = businessTypeRepository;
         this.warehouseRepository = warehouseRepository;
+        this.businessOwnerTenantRepository = businessOwnerTenantRepository;
     }
 
 
@@ -95,14 +98,22 @@ public class AdminService {
         
         ownerRole = roleRepository.save(ownerRole);
 
-        // 4. Create the Tenant Owner User with the Owner role assigned
+        // 4. Create the Tenant Owner User with the multi-agency multi-tenant structure
         User owner = User.builder()
-            .tenant(tenant)
+            // Do NOT link directly via tenant_id
             .email(request.ownerEmail())
             .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.ownerPassword()), "Password hash cannot be null"))
+            .userType("TENANT_OWNER")
             .assignedRole(ownerRole)
             .build();
-        userRepository.save(owner);
+        owner = userRepository.save(owner);
+        
+        // Map the new user to the tenant via the join table
+        com.spiceflow.backend.auth.entity.BusinessOwnerTenant bot = com.spiceflow.backend.auth.entity.BusinessOwnerTenant.builder()
+            .user(owner)
+            .tenant(tenant)
+            .build();
+        businessOwnerTenantRepository.save(bot);
 
         // 4.5. Seed default System Stores
         List<Warehouse> defaultStores = List.of(
@@ -211,5 +222,169 @@ public class AdminService {
     tenant.setDeletedAt(OffsetDateTime.now(java.time.ZoneId.systemDefault()));
     tenantRepository.save(tenant);
     log.info("Platform Admin soft-deleted tenant id={}, name={}", tenant.getId(), tenant.getBusinessName());
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public TenantResponse updateTenantStatus(Long id, com.spiceflow.backend.admin.dto.request.UpdateTenantStatusRequest request) {
+    Tenant tenant = tenantRepository.findById(id)
+        .filter(t -> t.getDeletedAt() == null)
+        .orElseThrow(() -> new ResourceNotFoundException("Tenant not found with id: " + id));
+
+    tenant.setStatus(request.status());
+    tenantRepository.save(tenant);
+
+    return new TenantResponse(
+        tenant.getId(),
+        tenant.getBusinessName(),
+        tenant.getBusinessType().getId(),
+        tenant.getBusinessType().getName(),
+        tenant.getEmail(),
+        tenant.getStatus(),
+        tenant.getPlan(),
+        tenant.getCreatedAt()
+    );
+  }
+
+  // --- USER MANAGEMENT ---
+
+  @Transactional(rollbackFor = Exception.class)
+  public com.spiceflow.backend.admin.dto.response.UserResponse createUser(com.spiceflow.backend.admin.dto.request.CreateUserRequest request) {
+      if (userRepository.findByEmailAndDeletedAtIsNull(request.email()).isPresent()) {
+          throw new ResourceConflictException("Email is already registered");
+      }
+
+      User user = User.builder()
+          .email(request.email())
+          .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.password()), "Password hash cannot be null"))
+          .userType(request.userType())
+          .build();
+
+      if ("TENANT_OWNER".equals(request.userType())) {
+          // No single tenantId, will have join records
+          userRepository.save(user);
+          if (request.tenantIds() != null) {
+              for (Long tId : request.tenantIds()) {
+                  assignTenantToOwner(user.getId(), tId);
+              }
+          }
+      } else {
+          // DATA_ENTRY or DRIVER need a specific tenant
+          if (request.tenantId() == null) {
+              throw new IllegalArgumentException("Tenant ID is required for user type: " + request.userType());
+          }
+          Tenant tenant = tenantRepository.findById(request.tenantId())
+              .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+          
+          user.setTenant(tenant);
+          user.setAssignedRole(getOrCreateSystemRole(tenant, request.userType()));
+          userRepository.save(user);
+      }
+
+      return mapToUserResponse(user);
+  }
+
+  public PageResponse<com.spiceflow.backend.admin.dto.response.UserResponse> getAllUsers(Pageable pageable) {
+      Page<User> users = userRepository.findAllByDeletedAtIsNull(pageable);
+      return PageResponse.of(users.map(this::mapToUserResponse));
+  }
+
+  public com.spiceflow.backend.admin.dto.response.UserResponse getUserById(Long id) {
+      User user = userRepository.findById(id)
+          .filter(u -> u.getDeletedAt() == null)
+          .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+      return mapToUserResponse(user);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public com.spiceflow.backend.admin.dto.response.UserResponse updateUser(Long id, com.spiceflow.backend.admin.dto.request.UpdateUserRequest request) {
+      User user = userRepository.findById(id)
+          .filter(u -> u.getDeletedAt() == null)
+          .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+      
+      // Update basic details if present...
+      // E.g., re-assigning tenants, changing userType. Simplified for now.
+      
+      if ("TENANT_OWNER".equals(request.userType()) && request.tenantIds() != null) {
+          // simple replacement strategy: delete all, add new
+          List<com.spiceflow.backend.auth.entity.BusinessOwnerTenant> existing = businessOwnerTenantRepository.findByUserId(id);
+          businessOwnerTenantRepository.deleteAll(existing);
+          
+          for (Long tId : request.tenantIds()) {
+              assignTenantToOwner(id, tId);
+          }
+      }
+      
+      return mapToUserResponse(userRepository.save(user));
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public void deleteUser(Long id) {
+      User user = userRepository.findById(id)
+          .filter(u -> u.getDeletedAt() == null)
+          .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+      user.setDeletedAt(OffsetDateTime.now());
+      userRepository.save(user);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public void assignTenantToOwner(Long userId, Long tenantId) {
+      User user = userRepository.findById(userId).orElseThrow();
+      Tenant tenant = tenantRepository.findById(tenantId).orElseThrow();
+      com.spiceflow.backend.auth.entity.BusinessOwnerTenant bot = com.spiceflow.backend.auth.entity.BusinessOwnerTenant.builder()
+          .user(user)
+          .tenant(tenant)
+          .build();
+      businessOwnerTenantRepository.save(bot);
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public void removeTenantFromOwner(Long userId, Long tenantId) {
+      businessOwnerTenantRepository.deleteByUserIdAndTenantId(userId, tenantId);
+  }
+
+  private Role getOrCreateSystemRole(Tenant tenant, String userType) {
+      String roleName = "DATA_ENTRY".equals(userType) ? "Data Entry" : "Driver";
+      return roleRepository.findByTenantId(tenant.getId()).stream()
+          .filter(r -> roleName.equals(r.getName()))
+          .findFirst()
+          .orElseGet(() -> {
+              java.util.Set<String> permCodes = "DATA_ENTRY".equals(userType)
+                  ? java.util.Set.of("INVENTORY_VIEW", "INVENTORY_TRANSFER", "PURCHASE_VIEW", "PURCHASE_CREATE", "PURCHASE_UPDATE", "ORDER_VIEW", "ORDER_CREATE", "ORDER_UPDATE", "LOADING_VIEW", "LOADING_CREATE", "LOADING_CONFIRM", "DELIVERY_VIEW", "DELIVERY_CREATE", "DELIVERY_UPDATE", "SETTINGS_PRODUCTS", "SETTINGS_SHOPS", "SETTINGS_REPS", "SETTINGS_DRIVERS", "SETTINGS_SUPPLIERS", "STORE_VIEW")
+                  : java.util.Set.of("LOADING_VIEW", "DELIVERY_VIEW", "DELIVERY_CREATE", "DELIVERY_UPDATE");
+                  
+              List<com.spiceflow.backend.auth.entity.Permission> perms = permissionRepository.findAll().stream()
+                  .filter(p -> permCodes.contains(p.getCode()))
+                  .collect(Collectors.toList());
+              
+              Role role = Role.builder()
+                  .tenant(tenant)
+                  .name(roleName)
+                  .description("Auto-created system role for " + roleName)
+                  .isSystemRole(true)
+                  .permissions(new HashSet<>(perms))
+                  .build();
+              return roleRepository.save(role);
+          });
+  }
+
+  private com.spiceflow.backend.admin.dto.response.UserResponse mapToUserResponse(User user) {
+      List<com.spiceflow.backend.admin.dto.response.TenantAssignedResponse> assigned = List.of();
+      if ("TENANT_OWNER".equals(user.getUserType())) {
+          assigned = businessOwnerTenantRepository.findByUserId(user.getId()).stream()
+              .map(bt -> new com.spiceflow.backend.admin.dto.response.TenantAssignedResponse(
+                  bt.getTenant().getId(), bt.getTenant().getBusinessName(), bt.getTenant().getStatus()))
+              .collect(Collectors.toList());
+      }
+      
+      return new com.spiceflow.backend.admin.dto.response.UserResponse(
+          user.getId(),
+          user.getEmail(),
+          user.getUserType(),
+          user.getTenantId() != null ? user.getTenantId() : -1L,
+          user.getTenant() != null ? user.getTenant().getBusinessName() : "",
+          user.getAssignedRole() != null ? user.getAssignedRole().getName() : "",
+          assigned,
+          user.getCreatedAt()
+      );
   }
 }
