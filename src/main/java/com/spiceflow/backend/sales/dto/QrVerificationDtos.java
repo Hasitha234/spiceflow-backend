@@ -19,7 +19,7 @@ public class QrVerificationDtos {
     @Builder
     public record ShopVisitResponse(
         Long visitId, Long shopId, String shopName,
-        OffsetDateTime visitedAt, boolean verified,
+        OffsetDateTime visitedAt, OffsetDateTime qrScannedAt, boolean verified,
         Double latitude, Double longitude,
         List<RepOrderShopInfo> orderDetails
     ) {}
@@ -28,5 +28,14 @@ public class QrVerificationDtos {
     public record RepOrderShopInfo(String shopName, List<RepOrderItemInfo> items) {}
 
     @Builder
-    public record RepOrderItemInfo(String productName, int quantity, java.math.BigDecimal rate, String unitType) {}
+    public record RepOrderItemInfo(Long productId, String productName, int quantity, java.math.BigDecimal rate, String unitType) {}
+
+    @Builder
+    public record LoadingSheetForShopResponse(
+        Long loadingSheetId,
+        String sheetNumber,
+        String driverName,
+        String status,
+        List<RepOrderItemInfo> items
+    ) {}
 }

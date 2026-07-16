@@ -22,6 +22,7 @@ public record DeliveryShopResponse(
     BigDecimal creditAmount,
     
     OffsetDateTime createdAt,
+    OffsetDateTime qrScannedAt,
     
     List<DeliveryShopItemResponse> items,
     List<DeliveryShopReturnResponse> returns,

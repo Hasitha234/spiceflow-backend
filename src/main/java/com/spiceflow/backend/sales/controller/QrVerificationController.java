@@ -28,6 +28,20 @@ public class QrVerificationController {
     private final QrVerificationService qrVerificationService;
 
     /**
+     * Resolve a QR token to get shop information.
+     */
+    @GetMapping("/shop/by-token/{token}")
+    @PreAuthorize("hasAuthority('DELIVERY_VIEW') or hasAuthority('SHOP_VIEW')")
+    @Operation(summary = "Resolve shop QR token", description = "Returns shop data from a QR token")
+    public ResponseEntity<ShopQrResponse> getShopQrDataByToken(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable String token) {
+        Long tenantId = Objects.requireNonNull(currentUser.getTenantId());
+        ShopQrResponse response = qrVerificationService.resolveShopByToken(token, tenantId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Get QR code data for a shop. The frontend will encode this as a QR code.
      */
     @GetMapping("/shop/{shopId}")
@@ -38,6 +52,20 @@ public class QrVerificationController {
             @PathVariable Long shopId) {
         Long tenantId = Objects.requireNonNull(currentUser.getTenantId());
         ShopQrResponse response = qrVerificationService.getShopQrData(shopId, tenantId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get today's loading sheets for a specific shop.
+     */
+    @GetMapping("/shop/{shopId}/today-sheets")
+    @PreAuthorize("hasAuthority('DELIVERY_VIEW')")
+    @Operation(summary = "Get today's loading sheets", description = "Returns today's deliveries/loading sheets containing this shop")
+    public ResponseEntity<List<LoadingSheetForShopResponse>> getShopTodaySheets(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long shopId) {
+        Long tenantId = Objects.requireNonNull(currentUser.getTenantId());
+        List<LoadingSheetForShopResponse> response = qrVerificationService.getLoadingSheetsForShopToday(shopId, tenantId);
         return ResponseEntity.ok(response);
     }
 

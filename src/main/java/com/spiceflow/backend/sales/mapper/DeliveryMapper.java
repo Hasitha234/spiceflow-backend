@@ -22,6 +22,7 @@ public interface DeliveryMapper {
     
     @Mapping(source = "shop.id", target = "shopId")
     @Mapping(source = "shop.name", target = "shopName")
+    @Mapping(target = "qrScannedAt", ignore = true)
     DeliveryShopResponse toShopResponse(DeliveryShop shop);
     
     @Mapping(source = "product.id", target = "productId")
