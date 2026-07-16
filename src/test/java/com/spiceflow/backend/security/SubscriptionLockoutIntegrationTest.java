@@ -142,5 +142,23 @@ class SubscriptionLockoutIntegrationTest {
                         .header("Authorization", "Bearer " + activeToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
+                
+        // 5. Test DISABLED tenant
+        java.util.Map<String, Object> disabledTenantMap = new java.util.HashMap<>();
+        disabledTenantMap.put("id", activeTenant.getId());
+        disabledTenantMap.put("status", "DISABLED");
+        String disabledToken = jwtUtil.generateAccessToken(activeUser, java.util.List.of(disabledTenantMap));
+
+        mockMvc.perform(get("/api/v1/roles")
+                        .header("Authorization", "Bearer " + disabledToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+                
+        // 6. Test missing assignedTenants claim (should just pass through and not be blocked by lockout, relies on other auth checks)
+        String noTenantToken = jwtUtil.generateAccessToken(activeUser, null);
+        mockMvc.perform(get("/api/v1/roles")
+                        .header("Authorization", "Bearer " + noTenantToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 }
