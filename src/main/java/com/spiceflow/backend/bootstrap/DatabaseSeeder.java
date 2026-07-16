@@ -40,28 +40,27 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final PermissionRepository permissionRepository;
     private final PasswordEncoder passwordEncoder;
     private final BusinessTypeRepository businessTypeRepository;
+    private final com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void run(String... args) {
-        log.info("Checking if Platform Admin needs to be seeded...");
-        if (platformAdminRepository.count() == 0) {
-            log.info("No Platform Admin found. Seeding default admin (admin@spiceflow.com / password)...");
-            
-            PlatformAdmin admin = PlatformAdmin.builder()
-                .name("Super Admin")
-                .email("admin@spiceflow.com")
-                .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode("password"), "Password hash cannot be null"))
-                .build();
-                
-            admin.setCreatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
-            admin.setUpdatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
-            
-            platformAdminRepository.save(admin);
-            log.info("Successfully seeded default Platform Admin!");
-        } else {
-            log.info("Platform Admin already exists. Skipping seed.");
-        }
+        log.info("Ensuring Platform Admin (hasitha@bussmanager.com) exists with correct password...");
+        PlatformAdmin admin = platformAdminRepository.findByEmailAndDeletedAtIsNull("hasitha@bussmanager.com")
+            .orElseGet(() -> {
+                PlatformAdmin newAdmin = PlatformAdmin.builder()
+                    .name("Hasitha")
+                    .email("hasitha@bussmanager.com")
+                    .build();
+                newAdmin.setCreatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
+                return newAdmin;
+            });
+        
+        admin.setPasswordHash(java.util.Objects.requireNonNull(passwordEncoder.encode("474383"), "Password hash cannot be null"));
+        admin.setUpdatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
+        
+        platformAdminRepository.save(admin);
+        log.info("Successfully seeded/updated default Platform Admin!");
 
         log.info("Checking if Tenant User needs to be seeded...");
         if (tenantRepository.count() == 0) {
@@ -100,9 +99,9 @@ public class DatabaseSeeder implements CommandLineRunner {
             ownerRole = roleRepository.save(ownerRole);
 
             User user = User.builder()
-                .tenant(tenant)
                 .email("user@spiceflow.com")
                 .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode("password"), "Password hash cannot be null"))
+                .userType("TENANT_OWNER")
                 .assignedRole(ownerRole)
                 .passwordChangeRequired(false)
                 .failedLoginAttempts(0)
@@ -111,9 +110,30 @@ public class DatabaseSeeder implements CommandLineRunner {
             user.setUpdatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
             userRepository.save(user);
 
+            // Link the Business Owner to the Tenant using the new join table
+            com.spiceflow.backend.auth.entity.BusinessOwnerTenant bot = com.spiceflow.backend.auth.entity.BusinessOwnerTenant.builder()
+                .user(user)
+                .tenant(tenant)
+                .build();
+            bot.setCreatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
+            businessOwnerTenantRepository.save(bot);
+
             log.info("Successfully seeded default Tenant and User!");
         } else {
-            log.info("Tenant already exists. Skipping seed.");
+            log.info("Tenant already exists. Checking if user@spiceflow.com needs to be linked to the default tenant...");
+            userRepository.findByEmailAndDeletedAtIsNull("user@spiceflow.com").ifPresent(user -> {
+                if (businessOwnerTenantRepository.findByUserId(user.getId()).isEmpty()) {
+                    tenantRepository.findAll().stream().findFirst().ifPresent(tenant -> {
+                        com.spiceflow.backend.auth.entity.BusinessOwnerTenant bot = com.spiceflow.backend.auth.entity.BusinessOwnerTenant.builder()
+                            .user(user)
+                            .tenant(tenant)
+                            .build();
+                        bot.setCreatedAt(OffsetDateTime.now(ZoneId.systemDefault()));
+                        businessOwnerTenantRepository.save(bot);
+                        log.info("Recovered missing business_owner_tenants mapping for user@spiceflow.com!");
+                    });
+                }
+            });
         }
     }
 }

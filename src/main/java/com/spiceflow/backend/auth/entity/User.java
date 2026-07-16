@@ -51,7 +51,7 @@ import org.hibernate.annotations.SQLRestriction;
 public class User extends BaseEntity implements UserDetails {
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_id", nullable = false)
+    @JoinColumn(name = "tenant_id", nullable = true)
     private Tenant tenant;
 
     @Column(name = "email", nullable = false, unique = true, length = 255)
@@ -60,6 +60,10 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "password_hash", nullable = false, length = 255)
     @ToString.Exclude // Never expose password hash in logs
     private String passwordHash;
+
+    @Column(name = "user_type", nullable = false, length = 30)
+    @Builder.Default
+    private String userType = "TENANT_OWNER";
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

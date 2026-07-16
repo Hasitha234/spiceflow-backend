@@ -38,7 +38,7 @@ public class SupplierController {
 
     @GetMapping
     @Operation(summary = "List all suppliers (with pagination and search)", description = "Returns suppliers for the authenticated tenant", operationId = "getSuppliers")
-    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT')")
+    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT', 'DATA_ENTRY')")
     public ResponseEntity<Page<SupplierResponse>> getSuppliers(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String search,
@@ -49,7 +49,7 @@ public class SupplierController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a supplier by ID", operationId = "getSupplier")
-    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT')")
+    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT', 'DATA_ENTRY')")
     public ResponseEntity<SupplierResponse> getSupplier(
             @PathVariable Long id,
             @AuthenticationPrincipal AuthenticatedUser currentUser) {

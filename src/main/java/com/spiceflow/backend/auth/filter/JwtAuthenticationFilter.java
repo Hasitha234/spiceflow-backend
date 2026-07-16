@@ -75,10 +75,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } else {
           userRepository.findByEmailAndDeletedAtIsNull(email).ifPresent(user -> {
             if (user.isEnabled() && user.isAccountNonLocked()) {
+              Long activeTenantId = user.getTenantId();
+              
+              if ("TENANT_OWNER".equals(userType)) {
+                  String tenantHeader = request.getHeader("X-Tenant-ID");
+                  if (org.springframework.util.StringUtils.hasText(tenantHeader)) {
+                      try {
+                          Long requestedTenantId = Long.parseLong(tenantHeader);
+                          
+                          // verify they own it from claims (or database if claims aren't sufficient)
+                          Object assignedClaim = jwtUtil.parseClaims(token).get("assignedTenants");
+                          if (assignedClaim instanceof java.util.List) {
+                              java.util.List<?> assigned = (java.util.List<?>) assignedClaim;
+                              boolean hasTenant = assigned.stream().anyMatch(item -> {
+                                  if (item instanceof java.util.Map) {
+                                      Object idObj = ((java.util.Map<?, ?>) item).get("id");
+                                      if (idObj instanceof Number) {
+                                          return ((Number) idObj).longValue() == requestedTenantId.longValue();
+                                      }
+                                  }
+                                  return false;
+                              });
+                              if (hasTenant) {
+                                  activeTenantId = requestedTenantId;
+                              }
+                          }
+                      } catch (NumberFormatException e) {
+                          // ignore bad header
+                      }
+                  } else {
+                      activeTenantId = null; // Forces them to be "tenant-less" until they pick one
+                  }
+              }
+
               com.spiceflow.backend.auth.dto.AuthenticatedUser authUser = com.spiceflow.backend.auth.dto.AuthenticatedUser.builder()
                   .id(user.getId())
                   .email(user.getEmail())
-                  .tenantId(user.getTenantId())
+                  .tenantId(activeTenantId)
                   .authorities(user.getAuthorities())
                   .accountNonExpired(true)
                   .accountNonLocked(user.isAccountNonLocked())
@@ -92,12 +125,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
               auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
               SecurityContextHolder.getContext().setAuthentication(auth);
               org.slf4j.MDC.put("userId", user.getEmail());
-              if (user.getTenantId() != null) {
-                  com.spiceflow.backend.common.context.TenantContext.setTenantId(user.getTenantId());
-                  org.slf4j.MDC.put("tenantId", user.getTenantId().toString());
+              if (activeTenantId != null) {
+                  com.spiceflow.backend.common.context.TenantContext.setTenantId(activeTenantId);
+                  org.slf4j.MDC.put("tenantId", activeTenantId.toString());
               }
-              log.debug("Authenticated tenant user: {} for tenant: {}",
-                  email, user.getTenantId());
+              log.debug("Authenticated tenant user: {} for active tenant: {}",
+                  email, activeTenantId);
             }
           });
         }
