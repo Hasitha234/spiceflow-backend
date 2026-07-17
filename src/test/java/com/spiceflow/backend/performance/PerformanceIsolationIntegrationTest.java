@@ -97,12 +97,14 @@ class PerformanceIsolationIntegrationTest {
 
         userA = userRepository.save(User.builder()
                 .tenant(tenantA)
+                .name("User A")
                 .email("usera_" + uniqueSuffix + "@perf.com")
                 .passwordHash("hash")
                 .build());
 
         userB = userRepository.save(User.builder()
                 .tenant(tenantB)
+                .name("User B")
                 .email("userb_" + uniqueSuffix + "@perf.com")
                 .passwordHash("hash")
                 .build());

@@ -126,6 +126,15 @@ public class GlobalExceptionHandler {
         .body(buildProblemDetail(HttpStatus.UNAUTHORIZED, "Unauthorized", "Full authentication is required to access this resource.", request, Collections.emptyList()));
   }
 
+  @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+  public ResponseEntity<ProblemDetail> handleDataIntegrityViolation(
+      org.springframework.dao.DataIntegrityViolationException ex, HttpServletRequest request) {
+    log.warn("Data integrity violation at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+    // Usually caused by unique constraint violations
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(buildProblemDetail(HttpStatus.CONFLICT, "Data Conflict", "The resource you are trying to create or update conflicts with an existing record.", request, Collections.emptyList()));
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ProblemDetail> handleAll(Exception ex, HttpServletRequest request) {
     if (ex.getClass().getSimpleName().equals("PropertyReferenceException")) {

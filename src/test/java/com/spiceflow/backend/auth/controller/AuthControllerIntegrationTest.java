@@ -52,11 +52,12 @@ public class AuthControllerIntegrationTest {
             .build();
 
         if (userRepository.findByEmailAndDeletedAtIsNull("test@spiceflow.com").isEmpty()) {
-            com.spiceflow.backend.admin.entity.BusinessType type = businessTypeRepository.save(
-                com.spiceflow.backend.admin.entity.BusinessType.builder()
-                    .name("DISTRIBUTOR_TEST")
-                    .description("Test Type")
-                    .build());
+            com.spiceflow.backend.admin.entity.BusinessType type = businessTypeRepository.findByName("DISTRIBUTOR_TEST")
+                .orElseGet(() -> businessTypeRepository.save(
+                    com.spiceflow.backend.admin.entity.BusinessType.builder()
+                        .name("DISTRIBUTOR_TEST")
+                        .description("Test Type")
+                        .build()));
 
             com.spiceflow.backend.auth.entity.Tenant tenant = tenantRepository.save(
                 com.spiceflow.backend.auth.entity.Tenant.builder()
@@ -77,6 +78,7 @@ public class AuthControllerIntegrationTest {
 
             com.spiceflow.backend.auth.entity.User user = com.spiceflow.backend.auth.entity.User.builder()
                 .tenant(tenant)
+                .name("Test User")
                 .email("test@spiceflow.com")
                 .passwordHash(passwordEncoder.encode("password123"))
                 .assignedRole(role)

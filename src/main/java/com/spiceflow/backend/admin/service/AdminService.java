@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import com.spiceflow.backend.admin.entity.BusinessType;
 import com.spiceflow.backend.admin.repository.BusinessTypeRepository;
 import org.springframework.transaction.annotation.Transactional;
-import com.spiceflow.backend.common.exception.ResourceNotFoundException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -143,7 +142,8 @@ public class AdminService {
 
 
   /** Returns a list of all active (non-deleted) tenants with pagination. */
-    public PageResponse<TenantResponse> getAllTenants(Pageable pageable) {
+  @Transactional(readOnly = true)
+  public PageResponse<TenantResponse> getAllTenants(Pageable pageable) {
     Page<Tenant> tenants = tenantRepository.findAllByDeletedAtIsNull(pageable);
     
     log.debug("Fetched {} active tenants from database", tenants.getNumberOfElements());
@@ -164,6 +164,7 @@ public class AdminService {
 
 
   /** Returns a single tenant by ID, or throws 404 if not found or deleted. */
+  @Transactional(readOnly = true)
   public TenantResponse getTenantById(Long id) {
     Tenant tenant = tenantRepository.findById(id)
         .filter(t -> t.getDeletedAt() == null)
@@ -250,11 +251,12 @@ public class AdminService {
 
   @Transactional(rollbackFor = Exception.class)
   public com.spiceflow.backend.admin.dto.response.UserResponse createUser(com.spiceflow.backend.admin.dto.request.CreateUserRequest request) {
-      if (userRepository.findByEmailAndDeletedAtIsNull(request.email()).isPresent()) {
+      if (userRepository.existsByEmailIncludingDeleted(request.email())) {
           throw new ResourceConflictException("Email is already registered");
       }
 
       User user = User.builder()
+          .name(request.name())
           .email(request.email())
           .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.password()), "Password hash cannot be null"))
           .userType(request.userType())
@@ -284,11 +286,13 @@ public class AdminService {
       return mapToUserResponse(user);
   }
 
+  @Transactional(readOnly = true)
   public PageResponse<com.spiceflow.backend.admin.dto.response.UserResponse> getAllUsers(Pageable pageable) {
       Page<User> users = userRepository.findAllByDeletedAtIsNull(pageable);
       return PageResponse.of(users.map(this::mapToUserResponse));
   }
 
+  @Transactional(readOnly = true)
   public com.spiceflow.backend.admin.dto.response.UserResponse getUserById(Long id) {
       User user = userRepository.findById(id)
           .filter(u -> u.getDeletedAt() == null)
@@ -379,6 +383,7 @@ public class AdminService {
       
       return new com.spiceflow.backend.admin.dto.response.UserResponse(
           user.getId(),
+          user.getName(),
           user.getEmail(),
           user.getUserType(),
           user.getTenantId() != null ? user.getTenantId() : -1L,
