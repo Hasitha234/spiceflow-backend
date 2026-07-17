@@ -86,6 +86,7 @@ class SubscriptionLockoutIntegrationTest {
         roleRepository.save(role);
 
         User expiredUser = User.builder()
+                .name("Expired User")
                 .email("user@expired.com")
                 .userType("DATA_ENTRY_OPERATOR")
                 .passwordHash(passwordEncoder.encode("Password123!"))
@@ -113,6 +114,7 @@ class SubscriptionLockoutIntegrationTest {
         roleRepository.save(activeRole);
 
         User activeUser = User.builder()
+                .name("Active User")
                 .email("user@active.com")
                 .userType("DATA_ENTRY_OPERATOR")
                 .passwordHash(passwordEncoder.encode("Password123!"))

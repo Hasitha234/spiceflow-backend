@@ -89,6 +89,7 @@ class TokenBlacklistIntegrationTest {
 
         userRepository.save(User.builder()
                 .tenant(tenant)
+                .name("Test User")
                 .email("user@tenant.com")
                 .passwordHash(passwordEncoder.encode("password123"))
                 .assignedRole(role)
