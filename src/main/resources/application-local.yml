@@ -35,6 +35,8 @@ spring:
     locations: classpath:db/migration
 
 logging:
+  file:
+    name: backend.log
   level:
     com.spiceflow: DEBUG
     org.hibernate.SQL: DEBUG

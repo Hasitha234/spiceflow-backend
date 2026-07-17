@@ -54,6 +54,9 @@ public class User extends BaseEntity implements UserDetails {
     @JoinColumn(name = "tenant_id", nullable = true)
     private Tenant tenant;
 
+    @Column(name = "name", nullable = false, length = 255)
+    private String name;
+
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
