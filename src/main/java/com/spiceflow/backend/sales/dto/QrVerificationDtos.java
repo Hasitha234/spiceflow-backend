@@ -32,6 +32,7 @@ public class QrVerificationDtos {
 
     @Builder
     public record LoadingSheetForShopResponse(
+        Long deliveryId,
         Long loadingSheetId,
         String sheetNumber,
         String driverName,

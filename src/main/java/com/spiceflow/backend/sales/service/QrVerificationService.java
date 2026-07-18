@@ -144,6 +144,7 @@ public class QrVerificationService {
                             .build()).toList();
 
                     result.add(LoadingSheetForShopResponse.builder()
+                        .deliveryId(delivery.getId())
                         .loadingSheetId(delivery.getLoadingSheet().getId())
                         .sheetNumber(delivery.getLoadingSheet().getSheetNumber())
                         .driverName(delivery.getLoadingSheet().getDriver() != null ? delivery.getLoadingSheet().getDriver().getName() : "")
