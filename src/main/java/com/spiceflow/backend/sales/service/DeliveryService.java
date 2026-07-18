@@ -74,6 +74,11 @@ public class DeliveryService {
             throw new BusinessRuleViolationException("Only CONFIRMED loading sheets can be delivered");
         }
         
+        deliveryRepository.findByLoadingSheetIdAndTenantId(request.loadingSheetId(), tenantId)
+            .ifPresent(d -> {
+                throw new BusinessRuleViolationException("A delivery already exists for this loading sheet");
+            });
+        
         Delivery delivery = Delivery.builder()
             .tenant(tenant)
             .loadingSheet(loadingSheet)
