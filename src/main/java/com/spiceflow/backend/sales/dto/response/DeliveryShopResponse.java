@@ -24,6 +24,12 @@ public record DeliveryShopResponse(
     OffsetDateTime createdAt,
     OffsetDateTime qrScannedAt,
     
+    Boolean locationVerified,
+    Double distanceFromShop,
+    Double latitude,
+    Double longitude,
+    String notes,
+    
     List<DeliveryShopItemResponse> items,
     List<DeliveryShopReturnResponse> returns,
     List<DeliveryPaymentResponse> payments

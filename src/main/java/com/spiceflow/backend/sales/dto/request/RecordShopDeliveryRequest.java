@@ -17,8 +17,14 @@ public record RecordShopDeliveryRequest(
     List<DeliveryShopReturnRequest> returns,
     
     @Valid
-    List<DeliveryPaymentRequest> payments
-
-
+    List<DeliveryPaymentRequest> payments,
+    
+    Double latitude,
+    
+    Double longitude,
+    
+    Double locationAccuracy,
+    
+    String notes
 
 ) {}
