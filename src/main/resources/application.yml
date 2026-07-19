@@ -73,6 +73,8 @@ app:
     access-token-expiry: 28800000
     refresh-token-expiry: 604800000
     refresh-token-expiry-days: 7  # Must match refresh-token-expiry / 86400000
+  delivery:
+    max-radius-meters: 500 # Max distance from shop for verified status
 
 security:
   rate-limit:

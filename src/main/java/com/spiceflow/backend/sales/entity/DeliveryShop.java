@@ -63,6 +63,25 @@ public class DeliveryShop {
     @Builder.Default
     private BigDecimal creditAmount = BigDecimal.ZERO;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
+    @Column(name = "location_accuracy")
+    private Double locationAccuracy;
+
+    @Column(name = "location_verified")
+    @Builder.Default
+    private Boolean locationVerified = false;
+
+    @Column(name = "distance_from_shop")
+    private Double distanceFromShop;
+
+    @Column(name = "notes", length = 500)
+    private String notes;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;

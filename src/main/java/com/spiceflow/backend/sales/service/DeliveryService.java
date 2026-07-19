@@ -37,16 +37,21 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.spiceflow.backend.common.util.GeoUtils;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DeliveryService {
+
+    @Value("${app.delivery.max-radius-meters:500}")
+    private double maxDeliveryRadiusMeters;
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryShopRepository deliveryShopRepository;
@@ -119,6 +124,23 @@ public class DeliveryService {
             .delivery(delivery)
             .shop(shop)
             .build();
+            
+        deliveryShop.setLatitude(request.latitude());
+        deliveryShop.setLongitude(request.longitude());
+        deliveryShop.setLocationAccuracy(request.locationAccuracy());
+        deliveryShop.setNotes(request.notes());
+
+        if (request.latitude() != null && request.longitude() != null
+            && shop.getLatitude() != null && shop.getLongitude() != null) {
+            double distance = GeoUtils.haversineDistance(
+                request.latitude(), request.longitude(),
+                shop.getLatitude().doubleValue(), shop.getLongitude().doubleValue()
+            );
+            deliveryShop.setDistanceFromShop(distance);
+            deliveryShop.setLocationVerified(distance <= maxDeliveryRadiusMeters);
+        } else {
+            deliveryShop.setLocationVerified(false);
+        }
             
         BigDecimal grossBillAmount = BigDecimal.ZERO;
         BigDecimal totalDiscount = BigDecimal.ZERO;
