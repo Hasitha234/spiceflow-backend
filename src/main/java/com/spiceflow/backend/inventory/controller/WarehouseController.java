@@ -57,7 +57,7 @@ public class WarehouseController {
 
     @PostMapping
     @Operation(summary = "Create warehouse", description = "Creates a new warehouse for the authenticated tenant", operationId = "createWarehouse")
-    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER')")
+    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'DATA_ENTRY')")
     public ResponseEntity<WarehouseResponse> createWarehouse(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody WarehouseRequest request) {
@@ -66,7 +66,7 @@ public class WarehouseController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update an existing warehouse", operationId = "updateWarehouse")
-    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER')")
+    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'DATA_ENTRY')")
     public ResponseEntity<WarehouseResponse> updateWarehouse(
             @PathVariable Long id,
             @Valid @RequestBody WarehouseRequest request,
