@@ -58,7 +58,7 @@ public class SupplierController {
 
     @PostMapping
     @Operation(summary = "Create supplier", description = "Creates a new supplier for the authenticated tenant", operationId = "createSupplier")
-    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT')")
+    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'PURCHASING_AGENT', 'DATA_ENTRY')")
     public ResponseEntity<SupplierResponse> createSupplier(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody SupplierRequest request) {
@@ -67,7 +67,7 @@ public class SupplierController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update an existing supplier", operationId = "updateSupplier")
-    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'PURCHASING_AGENT')")
+    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'PURCHASING_AGENT', 'DATA_ENTRY')")
     public ResponseEntity<SupplierResponse> updateSupplier(
             @PathVariable Long id,
             @Valid @RequestBody SupplierRequest request,
@@ -77,7 +77,7 @@ public class SupplierController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete supplier", description = "Soft deletes a supplier", operationId = "deleteSupplier")
-    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER')")
+    @PreAuthorize("hasAnyRole('TENANT_OWNER', 'INVENTORY_MANAGER', 'DATA_ENTRY')")
     public ResponseEntity<Void> deleteSupplier(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
