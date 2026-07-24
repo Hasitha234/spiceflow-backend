@@ -1,0 +1,1 @@
+ALTER TABLE rep_order_shops ADD COLUMN reverse_grts DECIMAL(15,2) NOT NULL DEFAULT 0;

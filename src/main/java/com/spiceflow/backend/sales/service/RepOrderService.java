@@ -82,6 +82,7 @@ public class RepOrderService {
                 .shop(shop)
                 .discountAmount(shopReq.discountAmount() != null ? shopReq.discountAmount() : BigDecimal.ZERO)
                 .skuDiscountAmount(shopReq.skuDiscountAmount() != null ? shopReq.skuDiscountAmount() : BigDecimal.ZERO)
+                .reverseGrts(shopReq.reverseGrts() != null ? shopReq.reverseGrts() : BigDecimal.ZERO)
                 .returns(new ArrayList<>())
                 .build();
             
@@ -136,7 +137,9 @@ public class RepOrderService {
 
             orderShop.setGrossOrderAmount(shopGross);
             orderShop.setReturnsValue(shopReturns);
-            orderShop.setNetAmount(shopGross.subtract(shopReturns).subtract(orderShop.getDiscountAmount()).subtract(orderShop.getSkuDiscountAmount()));
+            // Net = Gross - (Returns - ReverseGrts) - Discount - SKU Discount
+            BigDecimal effectiveReturns = shopReturns.subtract(orderShop.getReverseGrts()).max(BigDecimal.ZERO);
+            orderShop.setNetAmount(shopGross.subtract(effectiveReturns).subtract(orderShop.getDiscountAmount()).subtract(orderShop.getSkuDiscountAmount()));
             
             orderShop.setItems(items);
             orderShop.setReturns(returns);

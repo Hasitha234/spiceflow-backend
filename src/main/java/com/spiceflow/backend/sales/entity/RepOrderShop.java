@@ -56,6 +56,10 @@ public class RepOrderShop {
     @Builder.Default
     private BigDecimal skuDiscountAmount = BigDecimal.ZERO;
 
+    @Column(name = "reverse_grts", nullable = false, precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal reverseGrts = BigDecimal.ZERO;
+
     @Column(name = "net_amount", nullable = false, precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal netAmount = BigDecimal.ZERO;
