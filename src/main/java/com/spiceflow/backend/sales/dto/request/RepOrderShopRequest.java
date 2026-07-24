@@ -17,6 +17,8 @@ public record RepOrderShopRequest(
     
     BigDecimal skuDiscountAmount,
 
+    BigDecimal reverseGrts,
+
     Long returnWarehouseId,
     
     @Valid
