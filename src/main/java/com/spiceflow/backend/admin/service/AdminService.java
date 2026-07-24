@@ -68,9 +68,12 @@ public class AdminService {
         @Transactional(rollbackFor = Exception.class)
     public TenantResponse createTenant(CreateTenantRequest request) {
         
-        // 1. Validate that the email is not already used by another tenant
+        // 1. Validate that the email is not already used by another tenant or user
         if (tenantRepository.findByEmailAndDeletedAtIsNull(request.ownerEmail()).isPresent()) {
             throw new ResourceConflictException("Email is already registered to a business");
+        }
+        if (userRepository.findByEmailAndDeletedAtIsNull(request.ownerEmail()).isPresent()) {
+            throw new ResourceConflictException("A user account with this email already exists");
         }
 
         BusinessType businessType = businessTypeRepository.findById(request.businessTypeId())
@@ -101,6 +104,7 @@ public class AdminService {
         // 4. Create the Tenant Owner User with the multi-agency multi-tenant structure
         User owner = User.builder()
             // Do NOT link directly via tenant_id
+            .name(request.businessName() + " Owner")
             .email(request.ownerEmail())
             .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.ownerPassword()), "Password hash cannot be null"))
             .userType("TENANT_OWNER")
