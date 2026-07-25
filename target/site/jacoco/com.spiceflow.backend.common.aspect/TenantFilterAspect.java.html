@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TenantFilterAspect.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.common.aspect</a> &gt; <span class="el_source">TenantFilterAspect.java</span></div><h1>TenantFilterAspect.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.common.aspect;
+
+import com.spiceflow.backend.auth.entity.User;
+import jakarta.persistence.EntityManager;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.hibernate.Session;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+
+/**
+ * AOP Aspect to automatically enable the Hibernate &quot;tenantFilter&quot;
+ * on every repository query made by an authenticated tenant User.
+ * 
+ * This provides a critical safety net against cross-tenant data leakage.
+ */
+@Aspect
+@Component
+public class TenantFilterAspect {
+
+    private final EntityManager entityManager;
+
+<span class="fc" id="L24">    public TenantFilterAspect(EntityManager entityManager) {</span>
+<span class="fc" id="L25">        this.entityManager = entityManager;</span>
+<span class="fc" id="L26">    }</span>
+
+    // Intercept all methods in all repositories inside our application
+    @Before(&quot;execution(* com.spiceflow.backend..*Repository.*(..))&quot;)
+    public void enableTenantFilter() {
+<span class="fc" id="L31">        Long tenantId = com.spiceflow.backend.common.context.TenantContext.getTenantId();</span>
+        
+        // Only apply if the current principal is a tenant User (has tenantId)
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        if (tenantId != null) {</span>
+            // Unwrap the underlying Hibernate Session and enable the filter
+<span class="fc" id="L36">            Session session = entityManager.unwrap(Session.class);</span>
+<span class="fc" id="L37">            session.enableFilter(&quot;tenantFilter&quot;).setParameter(&quot;tenantId&quot;, tenantId);</span>
+        }
+<span class="fc" id="L39">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

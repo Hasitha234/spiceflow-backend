@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ShopReturnItem.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.order.domain</a> &gt; <span class="el_source">ShopReturnItem.java</span></div><h1>ShopReturnItem.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.order.domain;
+
+import java.math.BigDecimal;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Immutable return item representing expired or damaged goods returned by a shop.
+ * Rule 15 compliant: no setter mutations; all state is frozen upon construction.
+ */
+public record ShopReturnItem(
+        @Nullable Long id,
+        Long productId,
+        Integer quantity,
+        @Nullable String unitType,
+        BigDecimal creditValue,
+        String returnType,
+        @Nullable String status
+) {
+<span class="fc" id="L20">    public ShopReturnItem {</span>
+<span class="fc" id="L21">        Objects.requireNonNull(productId, &quot;productId cannot be null&quot;);</span>
+<span class="fc" id="L22">        Objects.requireNonNull(quantity, &quot;quantity cannot be null&quot;);</span>
+<span class="fc" id="L23">        Objects.requireNonNull(creditValue, &quot;creditValue cannot be null&quot;);</span>
+<span class="fc" id="L24">        Objects.requireNonNull(returnType, &quot;returnType cannot be null&quot;);</span>
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        if (quantity &lt; 0) {</span>
+<span class="nc" id="L26">            throw new IllegalArgumentException(&quot;quantity cannot be negative&quot;);</span>
+        }
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">        if (creditValue.compareTo(BigDecimal.ZERO) &lt; 0) {</span>
+<span class="nc" id="L29">            throw new IllegalArgumentException(&quot;creditValue cannot be negative&quot;);</span>
+        }
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        status = status != null ? status : &quot;PENDING&quot;;</span>
+<span class="fc" id="L32">    }</span>
+
+    public ShopReturnItem(Long productId, Integer quantity, String unitType, BigDecimal creditValue,
+                          String returnType) {
+<span class="fc" id="L36">        this(null, productId, quantity, unitType, creditValue, returnType, &quot;PENDING&quot;);</span>
+<span class="fc" id="L37">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoadingSheet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.loading.domain</a> &gt; <span class="el_source">LoadingSheet.java</span></div><h1>LoadingSheet.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.loading.domain;
+
+import com.spiceflow.backend.events.DomainEventType;
+import com.spiceflow.backend.workflow.WorkflowAggregate;
+import com.spiceflow.backend.workflow.WorkflowContext;
+import com.spiceflow.backend.workflow.WorkflowTransitionOutput;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Root aggregate representing a Van Loading Sheet.
+ * Rule 15 compliant: copy-on-write immutability, defensive item/return list copying, and self-validating invariants.
+ */
+public class LoadingSheet implements WorkflowAggregate&lt;LoadingSheet, LoadingSheetState&gt; {
+
+    private @Nullable Long id;
+    private String sheetNumber;
+    private Long tenantId;
+    private Long repOrderId;
+    private String repOrderNumber;
+    private Long driverId;
+    private String driverName;
+    private LocalDate loadingDate;
+    private LoadingSheetState state;
+<span class="fc" id="L29">    private List&lt;LoadingSheetItem&gt; items = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L30">    private List&lt;LoadingSheetReturnItem&gt; returns = new ArrayList&lt;&gt;();</span>
+    private String createdBy;
+    private @Nullable String confirmedBy;
+    private @Nullable String cancelledBy;
+    private @Nullable Long version;
+    private String correlationId;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private @Nullable Instant confirmedAt;
+    private @Nullable Instant cancelledAt;
+
+<span class="fc" id="L41">    protected LoadingSheet() {</span>
+<span class="fc" id="L42">        this.sheetNumber = &quot;&quot;;</span>
+<span class="fc" id="L43">        this.tenantId = 0L;</span>
+<span class="fc" id="L44">        this.repOrderId = 0L;</span>
+<span class="fc" id="L45">        this.repOrderNumber = &quot;&quot;;</span>
+<span class="fc" id="L46">        this.driverId = 0L;</span>
+<span class="fc" id="L47">        this.driverName = &quot;&quot;;</span>
+<span class="fc" id="L48">        this.loadingDate = LocalDate.now(java.time.ZoneId.systemDefault());</span>
+<span class="fc" id="L49">        this.state = LoadingSheetState.DRAFT;</span>
+<span class="fc" id="L50">        this.createdBy = &quot;&quot;;</span>
+<span class="fc" id="L51">        this.correlationId = &quot;&quot;;</span>
+<span class="fc" id="L52">        this.createdAt = Instant.EPOCH;</span>
+<span class="fc" id="L53">        this.updatedAt = Instant.EPOCH;</span>
+<span class="fc" id="L54">    }</span>
+
+    // COPY-ON-WRITE constructor (Rule 15 compliant)
+    public LoadingSheet(LoadingSheet source,
+                        LoadingSheetState newState,
+                        @Nullable List&lt;LoadingSheetItem&gt; newItems,
+<span class="fc" id="L60">                        @Nullable List&lt;LoadingSheetReturnItem&gt; newReturns) {</span>
+<span class="fc" id="L61">        this.id = source.id;</span>
+<span class="fc" id="L62">        this.sheetNumber = source.sheetNumber;</span>
+<span class="fc" id="L63">        this.tenantId = source.tenantId;</span>
+<span class="fc" id="L64">        this.repOrderId = source.repOrderId;</span>
+<span class="fc" id="L65">        this.repOrderNumber = source.repOrderNumber;</span>
+<span class="fc" id="L66">        this.driverId = source.driverId;</span>
+<span class="fc" id="L67">        this.driverName = source.driverName;</span>
+<span class="fc" id="L68">        this.loadingDate = source.loadingDate;</span>
+<span class="fc" id="L69">        this.createdBy = source.createdBy;</span>
+<span class="fc" id="L70">        this.confirmedBy = source.confirmedBy;</span>
+<span class="fc" id="L71">        this.cancelledBy = source.cancelledBy;</span>
+<span class="fc" id="L72">        this.createdAt = source.createdAt;</span>
+<span class="fc" id="L73">        this.updatedAt = Instant.now();</span>
+<span class="fc" id="L74">        this.confirmedAt = source.confirmedAt;</span>
+<span class="fc" id="L75">        this.cancelledAt = source.cancelledAt;</span>
+<span class="fc" id="L76">        this.version = source.version;</span>
+<span class="fc" id="L77">        this.correlationId = source.correlationId;</span>
+
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        this.items = newItems != null ? new ArrayList&lt;&gt;(newItems) : new ArrayList&lt;&gt;(source.items);</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        this.returns = newReturns != null ? new ArrayList&lt;&gt;(newReturns) : new ArrayList&lt;&gt;(source.returns);</span>
+<span class="fc" id="L81">        this.state = newState;</span>
+<span class="fc" id="L82">    }</span>
+
+    // Full constructor for persistence adapter restoration
+    public LoadingSheet(@Nullable Long id, String sheetNumber, Long tenantId, Long repOrderId, String repOrderNumber,
+                        Long driverId, String driverName, LocalDate loadingDate, LoadingSheetState state,
+                        String createdBy, @Nullable String confirmedBy, @Nullable String cancelledBy,
+                        @Nullable Long version, String correlationId, Instant createdAt, Instant updatedAt,
+                        @Nullable Instant confirmedAt, @Nullable Instant cancelledAt,
+<span class="fc" id="L90">                        List&lt;LoadingSheetItem&gt; items, List&lt;LoadingSheetReturnItem&gt; returns) {</span>
+<span class="fc" id="L91">        this.id = id;</span>
+<span class="fc" id="L92">        this.sheetNumber = sheetNumber;</span>
+<span class="fc" id="L93">        this.tenantId = tenantId;</span>
+<span class="fc" id="L94">        this.repOrderId = repOrderId;</span>
+<span class="fc" id="L95">        this.repOrderNumber = repOrderNumber;</span>
+<span class="fc" id="L96">        this.driverId = driverId;</span>
+<span class="fc" id="L97">        this.driverName = driverName;</span>
+<span class="fc" id="L98">        this.loadingDate = loadingDate;</span>
+<span class="fc" id="L99">        this.state = state;</span>
+<span class="fc" id="L100">        this.createdBy = createdBy;</span>
+<span class="fc" id="L101">        this.confirmedBy = confirmedBy;</span>
+<span class="fc" id="L102">        this.cancelledBy = cancelledBy;</span>
+<span class="fc" id="L103">        this.version = version;</span>
+<span class="fc" id="L104">        this.correlationId = correlationId;</span>
+<span class="fc" id="L105">        this.createdAt = createdAt;</span>
+<span class="fc" id="L106">        this.updatedAt = updatedAt;</span>
+<span class="fc" id="L107">        this.confirmedAt = confirmedAt;</span>
+<span class="fc" id="L108">        this.cancelledAt = cancelledAt;</span>
+<span class="fc" id="L109">        this.items = new ArrayList&lt;&gt;(items);</span>
+<span class="fc" id="L110">        this.returns = new ArrayList&lt;&gt;(returns);</span>
+<span class="fc" id="L111">    }</span>
+
+    public static LoadingSheet create(String sheetNumber, Long tenantId, Long repOrderId, String repOrderNumber,
+                                      Long driverId, String driverName, LocalDate loadingDate, String createdBy,
+                                      List&lt;LoadingSheetItem&gt; items, List&lt;LoadingSheetReturnItem&gt; returns) {
+<span class="fc" id="L116">        LoadingSheet ls = new LoadingSheet();</span>
+<span class="fc" id="L117">        ls.sheetNumber = sheetNumber;</span>
+<span class="fc" id="L118">        ls.tenantId = tenantId;</span>
+<span class="fc" id="L119">        ls.repOrderId = repOrderId;</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        ls.repOrderNumber = repOrderNumber != null ? repOrderNumber : &quot;&quot;;</span>
+<span class="fc" id="L121">        ls.driverId = driverId;</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">        ls.driverName = driverName != null ? driverName : &quot;&quot;;</span>
+<span class="fc" id="L123">        ls.loadingDate = loadingDate;</span>
+<span class="fc" id="L124">        ls.state = LoadingSheetState.DRAFT;</span>
+<span class="fc" id="L125">        ls.createdBy = createdBy;</span>
+<span class="fc" id="L126">        ls.items = new ArrayList&lt;&gt;(items);</span>
+<span class="fc" id="L127">        ls.returns = new ArrayList&lt;&gt;(returns);</span>
+<span class="fc" id="L128">        ls.correlationId = sheetNumber;</span>
+<span class="fc" id="L129">        ls.createdAt = Instant.now();</span>
+<span class="fc" id="L130">        ls.updatedAt = Instant.now();</span>
+<span class="fc" id="L131">        return ls;</span>
+    }
+
+    @Override
+    public String getAggregateId() {
+<span class="fc" id="L136">        return sheetNumber;</span>
+    }
+
+    @Override
+    public LoadingSheetState getWorkflowState() {
+<span class="fc" id="L141">        return state;</span>
+    }
+
+    @Override
+    public WorkflowTransitionOutput&lt;LoadingSheet&gt; transitionTo(LoadingSheetState targetState, WorkflowContext context) {
+<span class="fc" id="L146">        LoadingSheet copy = new LoadingSheet(this, targetState, this.items, this.returns);</span>
+<span class="pc bpc" id="L147" title="1 of 4 branches missed.">        if (targetState == LoadingSheetState.CONFIRMED &amp;&amp; copy.confirmedAt == null) {</span>
+<span class="fc" id="L148">            copy.confirmedAt = context.timestamp();</span>
+<span class="fc" id="L149">            copy.confirmedBy = String.valueOf(context.userId());</span>
+        }
+<span class="pc bpc" id="L151" title="1 of 4 branches missed.">        if (targetState == LoadingSheetState.CANCELLED &amp;&amp; copy.cancelledAt == null) {</span>
+<span class="fc" id="L152">            copy.cancelledAt = context.timestamp();</span>
+<span class="fc" id="L153">            copy.cancelledBy = String.valueOf(context.userId());</span>
+        }
+
+<span class="pc bpc" id="L156" title="1 of 3 branches missed.">        DomainEventType eventType = switch (targetState) {</span>
+<span class="nc" id="L157">            case DRAFT -&gt; DomainEventType.LOADING_SHEET_GENERATED;</span>
+<span class="fc" id="L158">            case CONFIRMED -&gt; DomainEventType.LOADING_SHEET_CONFIRMED;</span>
+<span class="fc" id="L159">            case CANCELLED -&gt; DomainEventType.LOADING_SHEET_CANCELLED;</span>
+        };
+
+<span class="fc" id="L162">        LoadingSheetEvent event = new LoadingSheetEvent(</span>
+                this.sheetNumber,
+                eventType,
+<span class="fc" id="L165">                context.correlationId(),</span>
+<span class="fc" id="L166">                context.timestamp(),</span>
+<span class="fc" id="L167">                context.tenantId()</span>
+        );
+<span class="fc" id="L169">        return new WorkflowTransitionOutput&lt;&gt;(copy, List.of(event));</span>
+    }
+
+    // GETTERS ONLY (NO SETTERS — STRICT RULE 15)
+<span class="fc" id="L173">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L174">    public String getSheetNumber() { return sheetNumber; }</span>
+<span class="fc" id="L175">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L176">    public Long getRepOrderId() { return repOrderId; }</span>
+<span class="nc" id="L177">    public String getRepOrderNumber() { return repOrderNumber; }</span>
+<span class="fc" id="L178">    public Long getDriverId() { return driverId; }</span>
+<span class="fc" id="L179">    public String getDriverName() { return driverName; }</span>
+<span class="fc" id="L180">    public LocalDate getLoadingDate() { return loadingDate; }</span>
+<span class="fc" id="L181">    public LoadingSheetState getState() { return state; }</span>
+<span class="fc" id="L182">    public List&lt;LoadingSheetItem&gt; getItems() { return Collections.unmodifiableList(items); }</span>
+<span class="fc" id="L183">    public List&lt;LoadingSheetReturnItem&gt; getReturns() { return Collections.unmodifiableList(returns); }</span>
+<span class="fc" id="L184">    public String getCreatedBy() { return createdBy; }</span>
+<span class="fc" id="L185">    public @Nullable String getConfirmedBy() { return confirmedBy; }</span>
+<span class="fc" id="L186">    public @Nullable String getCancelledBy() { return cancelledBy; }</span>
+<span class="fc" id="L187">    public @Nullable Long getVersion() { return version; }</span>
+<span class="nc" id="L188">    public String getCorrelationId() { return correlationId; }</span>
+<span class="fc" id="L189">    public Instant getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L190">    public Instant getUpdatedAt() { return updatedAt; }</span>
+<span class="fc" id="L191">    public @Nullable Instant getConfirmedAt() { return confirmedAt; }</span>
+<span class="fc" id="L192">    public @Nullable Instant getCancelledAt() { return cancelledAt; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

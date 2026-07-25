@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PurchasingDashboardRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.dashboard.purchasing.repository</a> &gt; <span class="el_source">PurchasingDashboardRepository.java</span></div><h1>PurchasingDashboardRepository.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.dashboard.purchasing.repository;
+
+import com.spiceflow.backend.dashboard.purchasing.dto.AgingBucketDto;
+import com.spiceflow.backend.dashboard.purchasing.dto.OpenPurchaseOrderProjection;
+import com.spiceflow.backend.dashboard.purchasing.dto.SupplierLeadTimeDto;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Pure CQRS Read Model repository for the Purchasing Dashboard.
+ * Executes read-only SQL aggregations against purchase_orders and suppliers tables
+ * without importing or depending on transactional JPA entities (ADR-013 Point 10).
+ */
+<span class="fc" id="L22">@Slf4j</span>
+@Repository
+@RequiredArgsConstructor
+public class PurchasingDashboardRepository {
+
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+
+<span class="fc" id="L29">    public record SummaryMetrics(</span>
+        long totalOpenOrders,
+        BigDecimal totalOpenOrderValue,
+        BigDecimal totalReceivedMonthValue,
+        double averageSupplierLeadTimeDays
+    ) {}
+
+    public SummaryMetrics getSummaryMetrics(Long tenantId, Instant startOfMonth) {
+<span class="nc" id="L37">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                COALESCE(SUM(CASE WHEN status IN ('SUBMITTED', 'APPROVED', 'ORDERED', 'PARTIALLY_RECEIVED') THEN 1 ELSE 0 END), 0) AS total_open_orders,
+                COALESCE(SUM(CASE WHEN status IN ('SUBMITTED', 'APPROVED', 'ORDERED', 'PARTIALLY_RECEIVED') THEN total_amount ELSE 0.00 END), 0.00) AS total_open_val,
+                COALESCE(SUM(CASE WHEN status IN ('RECEIVED', 'CLOSED') AND order_date &gt;= :startOfMonth THEN total_amount ELSE 0.00 END), 0.00) AS total_received_val,
+                COALESCE(AVG(CASE WHEN status IN ('RECEIVED', 'CLOSED') THEN (EXTRACT(EPOCH FROM (CAST(COALESCE(received_at, updated_at) AS TIMESTAMP) - CAST(COALESCE(submitted_at, order_date) AS TIMESTAMP))) / 86400.0) ELSE NULL END), 0.0) AS avg_lead_time
+            FROM purchase_orders
+            WHERE tenant_id = :tenantId
+            &quot;&quot;&quot;;
+<span class="nc" id="L46">        MapSqlParameterSource params = new MapSqlParameterSource()</span>
+<span class="nc" id="L47">            .addValue(&quot;tenantId&quot;, tenantId)</span>
+<span class="nc" id="L48">            .addValue(&quot;startOfMonth&quot;, java.sql.Timestamp.from(startOfMonth));</span>
+
+<span class="nc" id="L50">        SummaryMetrics metrics = jdbcTemplate.queryForObject(sql, params, (rs, rowNum) -&gt; new SummaryMetrics(</span>
+<span class="nc" id="L51">            rs.getLong(&quot;total_open_orders&quot;),</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">            rs.getBigDecimal(&quot;total_open_val&quot;) != null ? rs.getBigDecimal(&quot;total_open_val&quot;) : BigDecimal.ZERO,</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">            rs.getBigDecimal(&quot;total_received_val&quot;) != null ? rs.getBigDecimal(&quot;total_received_val&quot;) : BigDecimal.ZERO,</span>
+<span class="nc" id="L54">            rs.getDouble(&quot;avg_lead_time&quot;)</span>
+        ));
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        return metrics != null ? metrics : new SummaryMetrics(0L, BigDecimal.ZERO, BigDecimal.ZERO, 0.0);</span>
+    }
+
+    public List&lt;AgingBucketDto&gt; getAgingBuckets(Long tenantId) {
+<span class="nc" id="L60">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                COALESCE(SUM(CASE WHEN order_date &gt;= CURRENT_TIMESTAMP - INTERVAL '30' DAY THEN 1 ELSE 0 END), 0) as count_0_30,
+                COALESCE(SUM(CASE WHEN order_date &gt;= CURRENT_TIMESTAMP - INTERVAL '30' DAY THEN total_amount ELSE 0.00 END), 0.00) as val_0_30,
+                COALESCE(SUM(CASE WHEN order_date &lt; CURRENT_TIMESTAMP - INTERVAL '30' DAY AND order_date &gt;= CURRENT_TIMESTAMP - INTERVAL '60' DAY THEN 1 ELSE 0 END), 0) as count_31_60,
+                COALESCE(SUM(CASE WHEN order_date &lt; CURRENT_TIMESTAMP - INTERVAL '30' DAY AND order_date &gt;= CURRENT_TIMESTAMP - INTERVAL '60' DAY THEN total_amount ELSE 0.00 END), 0.00) as val_31_60,
+                COALESCE(SUM(CASE WHEN order_date &lt; CURRENT_TIMESTAMP - INTERVAL '60' DAY AND order_date &gt;= CURRENT_TIMESTAMP - INTERVAL '90' DAY THEN 1 ELSE 0 END), 0) as count_61_90,
+                COALESCE(SUM(CASE WHEN order_date &lt; CURRENT_TIMESTAMP - INTERVAL '60' DAY AND order_date &gt;= CURRENT_TIMESTAMP - INTERVAL '90' DAY THEN total_amount ELSE 0.00 END), 0.00) as val_61_90,
+                COALESCE(SUM(CASE WHEN order_date &lt; CURRENT_TIMESTAMP - INTERVAL '90' DAY THEN 1 ELSE 0 END), 0) as count_90_plus,
+                COALESCE(SUM(CASE WHEN order_date &lt; CURRENT_TIMESTAMP - INTERVAL '90' DAY THEN total_amount ELSE 0.00 END), 0.00) as val_90_plus
+            FROM purchase_orders
+            WHERE tenant_id = :tenantId
+              AND status IN ('SUBMITTED', 'APPROVED', 'ORDERED', 'PARTIALLY_RECEIVED')
+            &quot;&quot;&quot;;
+<span class="nc" id="L74">        MapSqlParameterSource params = new MapSqlParameterSource(&quot;tenantId&quot;, tenantId);</span>
+
+<span class="nc" id="L76">        List&lt;AgingBucketDto&gt; buckets = jdbcTemplate.query(sql, params, rs -&gt; {</span>
+<span class="nc" id="L77">            List&lt;AgingBucketDto&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">            if (rs.next()) {</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">                list.add(new AgingBucketDto(&quot;0–30 Days&quot;, rs.getLong(&quot;count_0_30&quot;), rs.getBigDecimal(&quot;val_0_30&quot;) != null ? rs.getBigDecimal(&quot;val_0_30&quot;) : BigDecimal.ZERO));</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">                list.add(new AgingBucketDto(&quot;31–60 Days&quot;, rs.getLong(&quot;count_31_60&quot;), rs.getBigDecimal(&quot;val_31_60&quot;) != null ? rs.getBigDecimal(&quot;val_31_60&quot;) : BigDecimal.ZERO));</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">                list.add(new AgingBucketDto(&quot;61–90 Days&quot;, rs.getLong(&quot;count_61_90&quot;), rs.getBigDecimal(&quot;val_61_90&quot;) != null ? rs.getBigDecimal(&quot;val_61_90&quot;) : BigDecimal.ZERO));</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">                list.add(new AgingBucketDto(&quot;90+ Days&quot;, rs.getLong(&quot;count_90_plus&quot;), rs.getBigDecimal(&quot;val_90_plus&quot;) != null ? rs.getBigDecimal(&quot;val_90_plus&quot;) : BigDecimal.ZERO));</span>
+            } else {
+<span class="nc" id="L84">                list.add(new AgingBucketDto(&quot;0–30 Days&quot;, 0L, BigDecimal.ZERO));</span>
+<span class="nc" id="L85">                list.add(new AgingBucketDto(&quot;31–60 Days&quot;, 0L, BigDecimal.ZERO));</span>
+<span class="nc" id="L86">                list.add(new AgingBucketDto(&quot;61–90 Days&quot;, 0L, BigDecimal.ZERO));</span>
+<span class="nc" id="L87">                list.add(new AgingBucketDto(&quot;90+ Days&quot;, 0L, BigDecimal.ZERO));</span>
+            }
+<span class="nc" id="L89">            return list;</span>
+        });
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        return buckets != null ? buckets : Collections.emptyList();</span>
+    }
+
+    public List&lt;SupplierLeadTimeDto&gt; getSupplierLeadTimes(Long tenantId) {
+<span class="nc" id="L95">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                s.id as supplier_id,
+                s.name as supplier_name,
+                COUNT(po.id) as total_orders,
+                COALESCE(SUM(CASE WHEN po.status IN ('RECEIVED', 'CLOSED') THEN 1 ELSE 0 END), 0) as completed_orders,
+                COALESCE(AVG(CASE WHEN po.status IN ('RECEIVED', 'CLOSED') THEN (CAST(COALESCE(po.received_at, po.updated_at) AS DATE) - CAST(COALESCE(po.submitted_at, po.order_date) AS DATE)) ELSE NULL END), 0.0) as avg_lead_time
+            FROM suppliers s
+            JOIN purchase_orders po ON po.supplier_id = s.id
+            WHERE po.tenant_id = :tenantId
+            GROUP BY s.id, s.name
+            ORDER BY s.name ASC
+            &quot;&quot;&quot;;
+<span class="nc" id="L108">        MapSqlParameterSource params = new MapSqlParameterSource(&quot;tenantId&quot;, tenantId);</span>
+
+<span class="nc" id="L110">        List&lt;SupplierLeadTimeDto&gt; list = jdbcTemplate.query(sql, params, (rs, rowNum) -&gt; new SupplierLeadTimeDto(</span>
+<span class="nc" id="L111">            rs.getLong(&quot;supplier_id&quot;),</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">            rs.getString(&quot;supplier_name&quot;) != null ? rs.getString(&quot;supplier_name&quot;) : &quot;Unknown Supplier&quot;,</span>
+<span class="nc" id="L113">            rs.getLong(&quot;total_orders&quot;),</span>
+<span class="nc" id="L114">            rs.getLong(&quot;completed_orders&quot;),</span>
+<span class="nc" id="L115">            rs.getDouble(&quot;avg_lead_time&quot;)</span>
+        ));
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        return list != null ? list : Collections.emptyList();</span>
+    }
+
+    public List&lt;OpenPurchaseOrderProjection&gt; getRecentOpenOrders(Long tenantId, int limit) {
+<span class="nc" id="L121">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                po.correlation_id as po_number,
+                po.supplier_id as supplier_id,
+                s.name as supplier_name,
+                po.order_date as order_date,
+                po.total_amount as total_amount,
+                po.status as status,
+                (CAST(CURRENT_TIMESTAMP AS DATE) - CAST(po.order_date AS DATE)) as age_in_days
+            FROM purchase_orders po
+            JOIN suppliers s ON s.id = po.supplier_id
+            WHERE po.tenant_id = :tenantId
+              AND po.status IN ('SUBMITTED', 'APPROVED', 'ORDERED', 'PARTIALLY_RECEIVED')
+            ORDER BY po.order_date DESC
+            LIMIT :limit
+            &quot;&quot;&quot;;
+<span class="nc" id="L137">        MapSqlParameterSource params = new MapSqlParameterSource()</span>
+<span class="nc" id="L138">            .addValue(&quot;tenantId&quot;, tenantId)</span>
+<span class="nc" id="L139">            .addValue(&quot;limit&quot;, limit);</span>
+
+<span class="nc" id="L141">        List&lt;OpenPurchaseOrderProjection&gt; list = jdbcTemplate.query(sql, params, (rs, rowNum) -&gt; new OpenPurchaseOrderProjection(</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">            rs.getString(&quot;po_number&quot;) != null ? rs.getString(&quot;po_number&quot;) : &quot;&quot;,</span>
+<span class="nc" id="L143">            rs.getLong(&quot;supplier_id&quot;),</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            rs.getString(&quot;supplier_name&quot;) != null ? rs.getString(&quot;supplier_name&quot;) : &quot;Unknown Supplier&quot;,</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            rs.getTimestamp(&quot;order_date&quot;) != null ? rs.getTimestamp(&quot;order_date&quot;).toInstant() : Instant.EPOCH,</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">            rs.getBigDecimal(&quot;total_amount&quot;) != null ? rs.getBigDecimal(&quot;total_amount&quot;) : BigDecimal.ZERO,</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">            rs.getString(&quot;status&quot;) != null ? rs.getString(&quot;status&quot;) : &quot;&quot;,</span>
+<span class="nc" id="L148">            Math.max(0L, rs.getLong(&quot;age_in_days&quot;))</span>
+        ));
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        return list != null ? list : Collections.emptyList();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CashCollectionWorkflowService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.collection.service</a> &gt; <span class="el_source">CashCollectionWorkflowService.java</span></div><h1>CashCollectionWorkflowService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.collection.service;
+
+import com.spiceflow.backend.audit.AuditService;
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.events.DomainEvent;
+import com.spiceflow.backend.events.DomainEventPublisher;
+import com.spiceflow.backend.sales.collection.adapter.CashCollectionPersistenceAdapter;
+import com.spiceflow.backend.sales.collection.domain.CashCollection;
+import com.spiceflow.backend.sales.collection.domain.CashCollectionState;
+import com.spiceflow.backend.sales.collection.dto.CashCollectionResponse;
+import com.spiceflow.backend.sales.collection.dto.CreateCashCollectionRequest;
+import com.spiceflow.backend.sales.collection.entity.CashCollectionWorkflowEntity;
+import com.spiceflow.backend.sales.collection.repository.CashCollectionWorkflowRepository;
+import com.spiceflow.backend.sales.collection.workflow.command.CancelCashCollectionCommand;
+import com.spiceflow.backend.sales.collection.workflow.command.ConfirmCashCollectionCommand;
+import com.spiceflow.backend.sales.entity.Shop;
+import com.spiceflow.backend.sales.repository.ShopRepository;
+import com.spiceflow.backend.workflow.WorkflowCommand;
+import com.spiceflow.backend.workflow.WorkflowContext;
+import com.spiceflow.backend.workflow.WorkflowEngine;
+import com.spiceflow.backend.workflow.WorkflowResult;
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Operational workflow service for Cash Collection.
+ *
+ * Orchestrates FSM transitions via {@link WorkflowEngine}, event publishing,
+ * audit logging, and automated side-effects:
+ *
+ * &lt;ul&gt;
+ *   &lt;li&gt;&lt;b&gt;On CONFIRMED&lt;/b&gt;: Validates payment against shop's outstanding loan balance.
+ *       Prevents overpayment and deducts collection amount from outstanding loan.&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;On CANCELLED (Reversal)&lt;/b&gt;: If cancelling a previously CONFIRMED collection,
+ *       re-adds the collection amount back to the shop's outstanding loan balance.&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+<span class="fc" id="L46">@Slf4j</span>
+@Service
+public class CashCollectionWorkflowService {
+
+    private final CashCollectionWorkflowRepository repository;
+    private final CashCollectionPersistenceAdapter adapter;
+    private final WorkflowEngine engine;
+    private final DomainEventPublisher eventPublisher;
+    private final AuditService auditService;
+    private final ShopRepository shopRepository;
+
+    public CashCollectionWorkflowService(CashCollectionWorkflowRepository repository,
+                                         CashCollectionPersistenceAdapter adapter,
+                                         WorkflowEngine engine,
+                                         DomainEventPublisher eventPublisher,
+                                         AuditService auditService,
+<span class="fc" id="L62">                                         ShopRepository shopRepository) {</span>
+<span class="fc" id="L63">        this.repository = repository;</span>
+<span class="fc" id="L64">        this.adapter = adapter;</span>
+<span class="fc" id="L65">        this.engine = engine;</span>
+<span class="fc" id="L66">        this.eventPublisher = eventPublisher;</span>
+<span class="fc" id="L67">        this.auditService = auditService;</span>
+<span class="fc" id="L68">        this.shopRepository = shopRepository;</span>
+<span class="fc" id="L69">    }</span>
+
+    @Transactional
+    public CashCollection createCollection(CashCollection collection) {
+<span class="fc" id="L73">        CashCollectionWorkflowEntity entity = adapter.toEntity(collection);</span>
+<span class="fc" id="L74">        CashCollectionWorkflowEntity saved = repository.save(entity);</span>
+<span class="fc" id="L75">        log.info(&quot;Created cash collection {} for tenant {}&quot;, collection.getCollectionNumber(), collection.getTenantId());</span>
+<span class="fc" id="L76">        return adapter.toAggregate(saved);</span>
+    }
+
+    @Transactional
+    public CashCollectionResponse createCollection(Long tenantId, CreateCashCollectionRequest request, String username) {
+<span class="nc" id="L81">        String collectionNumber = &quot;COL-&quot; + UUID.randomUUID().toString().substring(0, 8).toUpperCase(java.util.Locale.ROOT);</span>
+<span class="nc" id="L82">        CashCollection collection = CashCollection.create(</span>
+                collectionNumber,
+                tenantId,
+<span class="nc" id="L85">                request.shopId(),</span>
+<span class="nc" id="L86">                request.repId(),</span>
+<span class="nc" id="L87">                request.collectionDate(),</span>
+<span class="nc" id="L88">                request.amount(),</span>
+<span class="nc" id="L89">                request.paymentMethod(),</span>
+<span class="nc" id="L90">                request.chequeNo(),</span>
+<span class="nc" id="L91">                request.chequeBankName(),</span>
+<span class="nc" id="L92">                request.chequeDate(),</span>
+<span class="nc" id="L93">                request.notes(),</span>
+                username
+        );
+<span class="nc" id="L96">        CashCollection created = createCollection(collection);</span>
+<span class="nc" id="L97">        return CashCollectionResponse.from(created);</span>
+    }
+
+    @Transactional
+    public CashCollectionResponse confirmCollection(String collectionNumber, Long tenantId, Long userId, @Nullable String comment) {
+<span class="nc" id="L102">        WorkflowContext context = new WorkflowContext(</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">                userId != null ? userId : 1L,</span>
+                tenantId,
+                collectionNumber,
+<span class="nc" id="L106">                Instant.now(Clock.systemUTC())</span>
+        );
+<span class="nc" id="L108">        WorkflowResult&lt;CashCollection&gt; result = executeCommand(</span>
+                collectionNumber, tenantId, new ConfirmCashCollectionCommand(comment), context
+        );
+<span class="nc" id="L111">        return CashCollectionResponse.from(result.updatedAggregate());</span>
+    }
+
+    @Transactional
+    public CashCollectionResponse cancelCollection(String collectionNumber, Long tenantId, Long userId, @Nullable String comment) {
+<span class="nc" id="L116">        WorkflowContext context = new WorkflowContext(</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">                userId != null ? userId : 1L,</span>
+                tenantId,
+                collectionNumber,
+<span class="nc" id="L120">                Instant.now(Clock.systemUTC())</span>
+        );
+<span class="nc" id="L122">        WorkflowResult&lt;CashCollection&gt; result = executeCommand(</span>
+                collectionNumber, tenantId, new CancelCashCollectionCommand(comment), context
+        );
+<span class="nc" id="L125">        return CashCollectionResponse.from(result.updatedAggregate());</span>
+    }
+
+    @Transactional(readOnly = true)
+    public CashCollection getCollection(String collectionNumber, Long tenantId) {
+<span class="fc" id="L130">        CashCollectionWorkflowEntity entity = repository.findByCollectionNumberAndTenantId(collectionNumber, tenantId)</span>
+<span class="pc" id="L131">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Cash collection not found: &quot; + collectionNumber));</span>
+<span class="fc" id="L132">        return adapter.toAggregate(entity);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public CashCollection getCollectionById(Long id, Long tenantId) {
+<span class="nc" id="L137">        CashCollectionWorkflowEntity entity = repository.findByIdAndTenantId(id, tenantId)</span>
+<span class="nc" id="L138">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Cash collection not found with id: &quot; + id));</span>
+<span class="nc" id="L139">        return adapter.toAggregate(entity);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;CashCollection&gt; listCollections(Long tenantId, @Nullable CashCollectionState status) {
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        if (status == null) {</span>
+<span class="nc" id="L145">            return listAllCollections(tenantId);</span>
+        }
+<span class="nc" id="L147">        return repository.findAllByTenantId(tenantId).stream()</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">                .filter(e -&gt; e.getStatus() == status)</span>
+<span class="nc" id="L149">                .map(adapter::toAggregate)</span>
+<span class="nc" id="L150">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;CashCollection&gt; listCollectionsByShop(Long tenantId, Long shopId) {
+<span class="nc" id="L155">        return repository.findAllByTenantId(tenantId).stream()</span>
+<span class="nc" id="L156">                .filter(e -&gt; e.getShopId().equals(shopId))</span>
+<span class="nc" id="L157">                .map(adapter::toAggregate)</span>
+<span class="nc" id="L158">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;CashCollection&gt; listAllCollections(Long tenantId) {
+<span class="nc" id="L163">        return repository.findAllByTenantId(tenantId).stream()</span>
+<span class="nc" id="L164">                .map(adapter::toAggregate)</span>
+<span class="nc" id="L165">                .toList();</span>
+    }
+
+    @Transactional
+    public WorkflowResult&lt;CashCollection&gt; executeCommand(String collectionNumber,
+                                                         Long tenantId,
+                                                         WorkflowCommand&lt;CashCollection, CashCollectionState&gt; command,
+                                                         WorkflowContext context) {
+<span class="fc" id="L173">        CashCollection current = getCollection(collectionNumber, tenantId);</span>
+<span class="fc" id="L174">        WorkflowResult&lt;CashCollection&gt; result = engine.execute(command, current, context);</span>
+
+<span class="fc" id="L176">        CashCollection updated = result.updatedAggregate();</span>
+<span class="fc" id="L177">        CashCollectionState newState = updated.getState();</span>
+
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        if (newState == CashCollectionState.CONFIRMED) {</span>
+<span class="fc" id="L180">            applyCollectionToShopBalance(updated, tenantId);</span>
+        }
+
+<span class="pc bpc" id="L183" title="1 of 4 branches missed.">        if (newState == CashCollectionState.CANCELLED &amp;&amp; current.getState() == CashCollectionState.CONFIRMED) {</span>
+<span class="fc" id="L184">            reverseCollectionFromShopBalance(updated, tenantId);</span>
+        }
+
+<span class="fc" id="L187">        CashCollectionWorkflowEntity updatedEntity = adapter.toEntity(updated);</span>
+<span class="fc" id="L188">        repository.save(updatedEntity);</span>
+
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        if (result.auditEntry() != null) {</span>
+<span class="fc" id="L191">            auditService.record(result.auditEntry());</span>
+        }
+
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        for (DomainEvent event : result.events()) {</span>
+<span class="fc" id="L195">            eventPublisher.publish(event);</span>
+<span class="fc" id="L196">        }</span>
+
+<span class="fc" id="L198">        log.info(&quot;Cash collection {} transitioned to {} for tenant {}&quot;, collectionNumber, newState, tenantId);</span>
+<span class="fc" id="L199">        return result;</span>
+    }
+
+    private void applyCollectionToShopBalance(CashCollection collection, Long tenantId) {
+<span class="fc" id="L203">        Shop shop = shopRepository.findByIdAndTenantId(collection.getShopId(), tenantId)</span>
+<span class="pc" id="L204">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Shop not found: &quot; + collection.getShopId()));</span>
+
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        if (collection.getAmount().compareTo(shop.getOutstandingLoan()) &gt; 0) {</span>
+<span class="fc" id="L207">            throw new BusinessRuleViolationException(</span>
+<span class="fc" id="L208">                    &quot;Payment amount (&quot; + collection.getAmount() + &quot;) exceeds shop outstanding balance (&quot; + shop.getOutstandingLoan() + &quot;)&quot;</span>
+            );
+        }
+
+<span class="fc" id="L212">        shop.setOutstandingLoan(shop.getOutstandingLoan().subtract(collection.getAmount()));</span>
+<span class="fc" id="L213">        shopRepository.save(shop);</span>
+<span class="fc" id="L214">        log.debug(&quot;Applied payment {} to shop {} balance&quot;, collection.getAmount(), collection.getShopId());</span>
+<span class="fc" id="L215">    }</span>
+
+    private void reverseCollectionFromShopBalance(CashCollection collection, Long tenantId) {
+<span class="fc" id="L218">        Shop shop = shopRepository.findByIdAndTenantId(collection.getShopId(), tenantId)</span>
+<span class="pc" id="L219">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Shop not found: &quot; + collection.getShopId()));</span>
+
+<span class="fc" id="L221">        shop.setOutstandingLoan(shop.getOutstandingLoan().add(collection.getAmount()));</span>
+<span class="fc" id="L222">        shopRepository.save(shop);</span>
+<span class="fc" id="L223">        log.debug(&quot;Reversed payment {} from shop {} balance&quot;, collection.getAmount(), collection.getShopId());</span>
+<span class="fc" id="L224">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

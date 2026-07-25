@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CashCollection.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.collection.domain</a> &gt; <span class="el_source">CashCollection.java</span></div><h1>CashCollection.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.collection.domain;
+
+import com.spiceflow.backend.events.DomainEventType;
+import com.spiceflow.backend.workflow.WorkflowAggregate;
+import com.spiceflow.backend.workflow.WorkflowContext;
+import com.spiceflow.backend.workflow.WorkflowTransitionOutput;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Root aggregate representing a Cash Collection operational workflow.
+ *
+ * Rule 15 compliant: copy-on-write immutability, self-validating invariants,
+ * and @Version optimistic locking.
+ * Follows ADR-013 stateless WorkflowEngine execution contract.
+ */
+public class CashCollection implements WorkflowAggregate&lt;CashCollection, CashCollectionState&gt; {
+
+    private @Nullable Long id;
+    private String collectionNumber;
+    private Long tenantId;
+    private Long shopId;
+    private @Nullable Long repId;
+    private LocalDate collectionDate;
+    private BigDecimal amount;
+    private String paymentMethod; // CASH, CHEQUE, BANK_TRANSFER
+    private @Nullable String chequeNo;
+    private @Nullable String chequeBankName;
+    private @Nullable LocalDate chequeDate;
+    private @Nullable String notes;
+    private CashCollectionState state;
+
+    // Audit fields
+    private String createdBy;
+    private @Nullable String confirmedBy;
+    private @Nullable String cancelledBy;
+    private @Nullable Long version;
+    private String correlationId;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private @Nullable Instant confirmedAt;
+    private @Nullable Instant cancelledAt;
+
+    /** JPA/Jackson no-arg constructor — package-private to enforce factory usage. */
+<span class="fc" id="L49">    protected CashCollection() {</span>
+<span class="fc" id="L50">        this.collectionNumber = &quot;&quot;;</span>
+<span class="fc" id="L51">        this.tenantId = 0L;</span>
+<span class="fc" id="L52">        this.shopId = 0L;</span>
+<span class="fc" id="L53">        this.collectionDate = LocalDate.now(ZoneOffset.UTC);</span>
+<span class="fc" id="L54">        this.amount = BigDecimal.ZERO;</span>
+<span class="fc" id="L55">        this.paymentMethod = &quot;CASH&quot;;</span>
+<span class="fc" id="L56">        this.state = CashCollectionState.PENDING;</span>
+<span class="fc" id="L57">        this.createdBy = &quot;&quot;;</span>
+<span class="fc" id="L58">        this.correlationId = &quot;&quot;;</span>
+<span class="fc" id="L59">        this.createdAt = Instant.EPOCH;</span>
+<span class="fc" id="L60">        this.updatedAt = Instant.EPOCH;</span>
+<span class="fc" id="L61">    }</span>
+
+    // ─── COPY-ON-WRITE constructor (Rule 15 compliant) ─────────────────────────
+<span class="fc" id="L64">    public CashCollection(CashCollection source, CashCollectionState newState) {</span>
+<span class="fc" id="L65">        this.id = source.id;</span>
+<span class="fc" id="L66">        this.collectionNumber = source.collectionNumber;</span>
+<span class="fc" id="L67">        this.tenantId = source.tenantId;</span>
+<span class="fc" id="L68">        this.shopId = source.shopId;</span>
+<span class="fc" id="L69">        this.repId = source.repId;</span>
+<span class="fc" id="L70">        this.collectionDate = source.collectionDate;</span>
+<span class="fc" id="L71">        this.amount = source.amount;</span>
+<span class="fc" id="L72">        this.paymentMethod = source.paymentMethod;</span>
+<span class="fc" id="L73">        this.chequeNo = source.chequeNo;</span>
+<span class="fc" id="L74">        this.chequeBankName = source.chequeBankName;</span>
+<span class="fc" id="L75">        this.chequeDate = source.chequeDate;</span>
+<span class="fc" id="L76">        this.notes = source.notes;</span>
+<span class="fc" id="L77">        this.createdBy = source.createdBy;</span>
+<span class="fc" id="L78">        this.confirmedBy = source.confirmedBy;</span>
+<span class="fc" id="L79">        this.cancelledBy = source.cancelledBy;</span>
+<span class="fc" id="L80">        this.version = source.version;</span>
+<span class="fc" id="L81">        this.correlationId = source.correlationId;</span>
+<span class="fc" id="L82">        this.createdAt = source.createdAt;</span>
+<span class="fc" id="L83">        this.updatedAt = Instant.now();</span>
+<span class="fc" id="L84">        this.confirmedAt = source.confirmedAt;</span>
+<span class="fc" id="L85">        this.cancelledAt = source.cancelledAt;</span>
+<span class="fc" id="L86">        this.state = newState;</span>
+<span class="fc" id="L87">    }</span>
+
+    // ─── Full constructor for PersistenceAdapter restoration ───────────────────
+    public CashCollection(@Nullable Long id, String collectionNumber, Long tenantId, Long shopId,
+                          @Nullable Long repId, LocalDate collectionDate, BigDecimal amount,
+                          String paymentMethod, @Nullable String chequeNo, @Nullable String chequeBankName,
+                          @Nullable LocalDate chequeDate, @Nullable String notes, CashCollectionState state,
+                          String createdBy, @Nullable String confirmedBy, @Nullable String cancelledBy,
+                          @Nullable Long version, String correlationId, Instant createdAt, Instant updatedAt,
+<span class="fc" id="L96">                          @Nullable Instant confirmedAt, @Nullable Instant cancelledAt) {</span>
+<span class="fc" id="L97">        this.id = id;</span>
+<span class="fc" id="L98">        this.collectionNumber = collectionNumber;</span>
+<span class="fc" id="L99">        this.tenantId = tenantId;</span>
+<span class="fc" id="L100">        this.shopId = shopId;</span>
+<span class="fc" id="L101">        this.repId = repId;</span>
+<span class="fc" id="L102">        this.collectionDate = collectionDate;</span>
+<span class="fc" id="L103">        this.amount = amount;</span>
+<span class="fc" id="L104">        this.paymentMethod = paymentMethod;</span>
+<span class="fc" id="L105">        this.chequeNo = chequeNo;</span>
+<span class="fc" id="L106">        this.chequeBankName = chequeBankName;</span>
+<span class="fc" id="L107">        this.chequeDate = chequeDate;</span>
+<span class="fc" id="L108">        this.notes = notes;</span>
+<span class="fc" id="L109">        this.state = state;</span>
+<span class="fc" id="L110">        this.createdBy = createdBy;</span>
+<span class="fc" id="L111">        this.confirmedBy = confirmedBy;</span>
+<span class="fc" id="L112">        this.cancelledBy = cancelledBy;</span>
+<span class="fc" id="L113">        this.version = version;</span>
+<span class="fc" id="L114">        this.correlationId = correlationId;</span>
+<span class="fc" id="L115">        this.createdAt = createdAt;</span>
+<span class="fc" id="L116">        this.updatedAt = updatedAt;</span>
+<span class="fc" id="L117">        this.confirmedAt = confirmedAt;</span>
+<span class="fc" id="L118">        this.cancelledAt = cancelledAt;</span>
+<span class="fc" id="L119">    }</span>
+
+    // ─── Factory method ─────────────────────────────────────────────────────────
+    public static CashCollection create(String collectionNumber, Long tenantId, Long shopId,
+                                        @Nullable Long repId, LocalDate collectionDate, BigDecimal amount,
+                                        String paymentMethod, @Nullable String chequeNo, @Nullable String chequeBankName,
+                                        @Nullable LocalDate chequeDate, @Nullable String notes, String createdBy) {
+<span class="fc" id="L126">        CashCollection c = new CashCollection();</span>
+<span class="fc" id="L127">        c.collectionNumber = collectionNumber;</span>
+<span class="fc" id="L128">        c.tenantId = tenantId;</span>
+<span class="fc" id="L129">        c.shopId = shopId;</span>
+<span class="fc" id="L130">        c.repId = repId;</span>
+<span class="fc" id="L131">        c.collectionDate = collectionDate;</span>
+<span class="fc" id="L132">        c.amount = amount;</span>
+<span class="fc" id="L133">        c.paymentMethod = paymentMethod;</span>
+<span class="fc" id="L134">        c.chequeNo = chequeNo;</span>
+<span class="fc" id="L135">        c.chequeBankName = chequeBankName;</span>
+<span class="fc" id="L136">        c.chequeDate = chequeDate;</span>
+<span class="fc" id="L137">        c.notes = notes;</span>
+<span class="fc" id="L138">        c.state = CashCollectionState.PENDING;</span>
+<span class="fc" id="L139">        c.createdBy = createdBy;</span>
+<span class="fc" id="L140">        c.correlationId = collectionNumber;</span>
+<span class="fc" id="L141">        c.createdAt = Instant.now();</span>
+<span class="fc" id="L142">        c.updatedAt = Instant.now();</span>
+<span class="fc" id="L143">        return c;</span>
+    }
+
+    // ─── WorkflowAggregate interface ────────────────────────────────────────────
+    @Override
+    public String getAggregateId() {
+<span class="fc" id="L149">        return collectionNumber;</span>
+    }
+
+    @Override
+    public CashCollectionState getWorkflowState() {
+<span class="fc" id="L154">        return state;</span>
+    }
+
+    @Override
+    public WorkflowTransitionOutput&lt;CashCollection&gt; transitionTo(CashCollectionState targetState, WorkflowContext context) {
+        // Build a copy with the new state
+<span class="fc" id="L160">        CashCollection copy = new CashCollection(this, targetState);</span>
+
+        // Stamp lifecycle timestamps on the copy
+<span class="pc bpc" id="L163" title="1 of 4 branches missed.">        if (targetState == CashCollectionState.CONFIRMED &amp;&amp; copy.confirmedAt == null) {</span>
+<span class="fc" id="L164">            copy.confirmedAt = context.timestamp();</span>
+<span class="fc" id="L165">            copy.confirmedBy = String.valueOf(context.userId());</span>
+        }
+<span class="pc bpc" id="L167" title="1 of 4 branches missed.">        if (targetState == CashCollectionState.CANCELLED &amp;&amp; copy.cancelledAt == null) {</span>
+<span class="fc" id="L168">            copy.cancelledAt = context.timestamp();</span>
+<span class="fc" id="L169">            copy.cancelledBy = String.valueOf(context.userId());</span>
+        }
+
+<span class="pc bpc" id="L172" title="1 of 3 branches missed.">        DomainEventType eventType = switch (targetState) {</span>
+<span class="nc" id="L173">            case PENDING -&gt; DomainEventType.CASH_COLLECTED; // should not occur normally</span>
+<span class="fc" id="L174">            case CONFIRMED -&gt; DomainEventType.CASH_COLLECTED;</span>
+<span class="fc" id="L175">            case CANCELLED -&gt; DomainEventType.CASH_COLLECTED;</span>
+        };
+
+<span class="fc" id="L178">        CashCollectionEvent event = new CashCollectionEvent(</span>
+                this.collectionNumber,
+                eventType,
+<span class="fc" id="L181">                context.correlationId(),</span>
+<span class="fc" id="L182">                context.timestamp(),</span>
+<span class="fc" id="L183">                context.tenantId()</span>
+        );
+<span class="fc" id="L185">        return new WorkflowTransitionOutput&lt;&gt;(copy, List.of(event));</span>
+    }
+
+    // ─── GETTERS ONLY (NO SETTERS — STRICT RULE 15) ─────────────────────────────
+<span class="fc" id="L189">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L190">    public String getCollectionNumber() { return collectionNumber; }</span>
+<span class="fc" id="L191">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L192">    public Long getShopId() { return shopId; }</span>
+<span class="fc" id="L193">    public @Nullable Long getRepId() { return repId; }</span>
+<span class="fc" id="L194">    public LocalDate getCollectionDate() { return collectionDate; }</span>
+<span class="fc" id="L195">    public BigDecimal getAmount() { return amount; }</span>
+<span class="fc" id="L196">    public String getPaymentMethod() { return paymentMethod; }</span>
+<span class="fc" id="L197">    public @Nullable String getChequeNo() { return chequeNo; }</span>
+<span class="fc" id="L198">    public @Nullable String getChequeBankName() { return chequeBankName; }</span>
+<span class="fc" id="L199">    public @Nullable LocalDate getChequeDate() { return chequeDate; }</span>
+<span class="fc" id="L200">    public @Nullable String getNotes() { return notes; }</span>
+<span class="fc" id="L201">    public CashCollectionState getState() { return state; }</span>
+<span class="fc" id="L202">    public String getCreatedBy() { return createdBy; }</span>
+<span class="fc" id="L203">    public @Nullable String getConfirmedBy() { return confirmedBy; }</span>
+<span class="fc" id="L204">    public @Nullable String getCancelledBy() { return cancelledBy; }</span>
+<span class="fc" id="L205">    public @Nullable Long getVersion() { return version; }</span>
+<span class="fc" id="L206">    public String getCorrelationId() { return correlationId; }</span>
+<span class="fc" id="L207">    public Instant getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L208">    public Instant getUpdatedAt() { return updatedAt; }</span>
+<span class="fc" id="L209">    public @Nullable Instant getConfirmedAt() { return confirmedAt; }</span>
+<span class="fc" id="L210">    public @Nullable Instant getCancelledAt() { return cancelledAt; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

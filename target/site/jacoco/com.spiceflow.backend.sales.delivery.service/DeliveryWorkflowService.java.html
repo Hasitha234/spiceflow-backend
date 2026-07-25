@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DeliveryWorkflowService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.delivery.service</a> &gt; <span class="el_source">DeliveryWorkflowService.java</span></div><h1>DeliveryWorkflowService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.delivery.service;
+
+import com.spiceflow.backend.audit.AuditService;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.events.DomainEvent;
+import com.spiceflow.backend.events.DomainEventPublisher;
+import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.ledger.InventoryMovementType;
+import com.spiceflow.backend.inventory.ledger.service.InventoryLedgerService;
+import com.spiceflow.backend.inventory.repository.WarehouseRepository;
+import com.spiceflow.backend.sales.delivery.adapter.DeliveryPersistenceAdapter;
+import com.spiceflow.backend.sales.delivery.domain.Delivery;
+import com.spiceflow.backend.sales.delivery.domain.DeliveryReturnItemRecord;
+import com.spiceflow.backend.sales.delivery.domain.DeliveryShopItemRecord;
+import com.spiceflow.backend.sales.delivery.domain.DeliveryShopRecord;
+import com.spiceflow.backend.sales.delivery.domain.DeliveryState;
+import com.spiceflow.backend.sales.delivery.entity.DeliveryWorkflowEntity;
+import com.spiceflow.backend.sales.delivery.repository.DeliveryWorkflowRepository;
+import com.spiceflow.backend.sales.entity.Shop;
+import com.spiceflow.backend.sales.repository.ShopRepository;
+import com.spiceflow.backend.workflow.WorkflowCommand;
+import com.spiceflow.backend.workflow.WorkflowContext;
+import com.spiceflow.backend.workflow.WorkflowEngine;
+import com.spiceflow.backend.workflow.WorkflowResult;
+import java.math.BigDecimal;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Operational workflow service for Customer Deliveries.
+ *
+ * Orchestrates FSM transitions via {@link WorkflowEngine}, event publishing,
+ * audit logging, and automated side-effects:
+ *
+ * &lt;ul&gt;
+ *   &lt;li&gt;&lt;b&gt;On DISPATCHED&lt;/b&gt;: Records {@code DELIVERY} stock movements (deductions) from
+ *       the driver's vehicle warehouse for every delivered line item.&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;On COMPLETED&lt;/b&gt;: Records {@code RECEIPT}/{@code DAMAGED} movements for
+ *       returned items back into the vehicle warehouse, then posts credit amounts
+ *       (unpaid net payable) to the respective shop's outstanding loan.&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+<span class="fc" id="L45">@Slf4j</span>
+@Service
+public class DeliveryWorkflowService {
+
+    private final DeliveryWorkflowRepository repository;
+    private final DeliveryPersistenceAdapter adapter;
+    private final WorkflowEngine engine;
+    private final InventoryLedgerService ledgerService;
+    private final DomainEventPublisher eventPublisher;
+    private final AuditService auditService;
+    private final WarehouseRepository warehouseRepository;
+    private final ShopRepository shopRepository;
+
+    public DeliveryWorkflowService(DeliveryWorkflowRepository repository,
+                                   DeliveryPersistenceAdapter adapter,
+                                   WorkflowEngine engine,
+                                   InventoryLedgerService ledgerService,
+                                   DomainEventPublisher eventPublisher,
+                                   AuditService auditService,
+                                   WarehouseRepository warehouseRepository,
+<span class="fc" id="L65">                                   ShopRepository shopRepository) {</span>
+<span class="fc" id="L66">        this.repository = repository;</span>
+<span class="fc" id="L67">        this.adapter = adapter;</span>
+<span class="fc" id="L68">        this.engine = engine;</span>
+<span class="fc" id="L69">        this.ledgerService = ledgerService;</span>
+<span class="fc" id="L70">        this.eventPublisher = eventPublisher;</span>
+<span class="fc" id="L71">        this.auditService = auditService;</span>
+<span class="fc" id="L72">        this.warehouseRepository = warehouseRepository;</span>
+<span class="fc" id="L73">        this.shopRepository = shopRepository;</span>
+<span class="fc" id="L74">    }</span>
+
+    @Transactional
+    public Delivery createDelivery(Delivery delivery) {
+<span class="fc" id="L78">        DeliveryWorkflowEntity entity = adapter.toEntity(delivery);</span>
+<span class="fc" id="L79">        DeliveryWorkflowEntity saved = repository.save(entity);</span>
+<span class="fc" id="L80">        log.info(&quot;Created delivery {} for tenant {}&quot;, delivery.getDeliveryNumber(), delivery.getTenantId());</span>
+<span class="fc" id="L81">        return adapter.toDomain(saved);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Delivery getDelivery(String deliveryNumber, Long tenantId) {
+<span class="fc" id="L86">        DeliveryWorkflowEntity entity = repository.findByDeliveryNumberAndTenantId(deliveryNumber, tenantId)</span>
+<span class="pc" id="L87">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Delivery not found: &quot; + deliveryNumber));</span>
+<span class="fc" id="L88">        return adapter.toDomain(entity);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Delivery getDeliveryById(Long id, Long tenantId) {
+<span class="nc" id="L93">        DeliveryWorkflowEntity entity = repository.findByIdAndTenantId(id, tenantId)</span>
+<span class="nc" id="L94">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Delivery not found with id: &quot; + id));</span>
+<span class="nc" id="L95">        return adapter.toDomain(entity);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;Delivery&gt; listDeliveries(Long tenantId, DeliveryState status) {
+<span class="nc" id="L100">        return repository.findAllByTenantId(tenantId).stream()</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">                .filter(e -&gt; e.getStatus() == status)</span>
+<span class="nc" id="L102">                .map(adapter::toDomain)</span>
+<span class="nc" id="L103">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;Delivery&gt; listAllDeliveries(Long tenantId) {
+<span class="nc" id="L108">        return repository.findAllByTenantId(tenantId).stream()</span>
+<span class="nc" id="L109">                .map(adapter::toDomain)</span>
+<span class="nc" id="L110">                .toList();</span>
+    }
+
+    @Transactional
+    public WorkflowResult&lt;Delivery&gt; executeCommand(String deliveryNumber,
+                                                    Long tenantId,
+                                                    WorkflowCommand&lt;Delivery, DeliveryState&gt; command,
+                                                    WorkflowContext context) {
+<span class="fc" id="L118">        Delivery current = getDelivery(deliveryNumber, tenantId);</span>
+<span class="fc" id="L119">        WorkflowResult&lt;Delivery&gt; result = engine.execute(command, current, context);</span>
+
+<span class="fc" id="L121">        DeliveryWorkflowEntity updatedEntity = adapter.toEntity(result.updatedAggregate());</span>
+<span class="fc" id="L122">        repository.save(updatedEntity);</span>
+
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">        if (result.auditEntry() != null) {</span>
+<span class="fc" id="L125">            auditService.record(result.auditEntry());</span>
+        }
+
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        for (DomainEvent event : result.events()) {</span>
+<span class="fc" id="L129">            eventPublisher.publish(event);</span>
+<span class="fc" id="L130">        }</span>
+
+<span class="fc" id="L132">        Delivery updated = result.updatedAggregate();</span>
+<span class="fc" id="L133">        DeliveryState newState = updated.getState();</span>
+
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        if (newState == DeliveryState.DISPATCHED) {</span>
+<span class="fc" id="L136">            recordDispatchLedgerMovements(updated, context);</span>
+        }
+
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (newState == DeliveryState.COMPLETED) {</span>
+<span class="fc" id="L140">            recordReturnLedgerMovements(updated, context);</span>
+<span class="fc" id="L141">            postCreditToShopOutstandingBalance(updated, tenantId);</span>
+        }
+
+<span class="fc" id="L144">        log.info(&quot;Delivery {} transitioned to {} for tenant {}&quot;, deliveryNumber, newState, tenantId);</span>
+<span class="fc" id="L145">        return result;</span>
+    }
+
+    // ─── PRIVATE: Ledger &amp; Receivables accounting helpers ───────────────────────
+
+    /**
+     * On DISPATCH: deduct delivered quantities from the driver's vehicle warehouse.
+     * Uses {@link InventoryMovementType#DELIVERY} to record outflows to customer shops.
+     */
+    private void recordDispatchLedgerMovements(Delivery delivery, WorkflowContext context) {
+<span class="fc" id="L155">        Long vehicleStoreId = resolveVehicleWarehouseId(delivery.getTenantId());</span>
+
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        for (DeliveryShopRecord shop : delivery.getShops()) {</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">            for (DeliveryShopItemRecord item : shop.items()) {</span>
+<span class="pc bpc" id="L159" title="2 of 4 branches missed.">                if (!item.isFreeItem() &amp;&amp; item.quantityDelivered() &gt; 0) {</span>
+<span class="fc" id="L160">                    ledgerService.recordMovement(</span>
+<span class="fc" id="L161">                            delivery.getTenantId(),</span>
+                            vehicleStoreId,
+<span class="fc" id="L163">                            item.productId(),</span>
+                            InventoryMovementType.DELIVERY,
+<span class="fc" id="L165">                            new BigDecimal(item.quantityDelivered()).negate(),</span>
+<span class="fc" id="L166">                            item.netAmount(),</span>
+<span class="fc" id="L167">                            delivery.getDeliveryNumber(),</span>
+<span class="fc" id="L168">                            &quot;Shop ID: &quot; + shop.shopId(),</span>
+                            null,
+<span class="fc" id="L170">                            context.timestamp(),</span>
+<span class="fc" id="L171">                            String.valueOf(context.userId())</span>
+                    );
+                }
+<span class="fc" id="L174">            }</span>
+<span class="fc" id="L175">        }</span>
+<span class="fc" id="L176">    }</span>
+
+    /**
+     * On COMPLETION: credit returned items back into the vehicle warehouse.
+     * DAMAGED items use {@link InventoryMovementType#DAMAGED};
+     * all others use {@link InventoryMovementType#RECEIPT}.
+     */
+    private void recordReturnLedgerMovements(Delivery delivery, WorkflowContext context) {
+<span class="fc" id="L184">        Long vehicleStoreId = resolveVehicleWarehouseId(delivery.getTenantId());</span>
+
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        for (DeliveryShopRecord shop : delivery.getShops()) {</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">            for (DeliveryReturnItemRecord ret : shop.returns()) {</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">                if (ret.quantityReturned() &gt; 0) {</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">                    InventoryMovementType movementType = &quot;DAMAGED&quot;.equalsIgnoreCase(ret.returnType())</span>
+<span class="nc" id="L190">                            ? InventoryMovementType.DAMAGED</span>
+<span class="fc" id="L191">                            : InventoryMovementType.RECEIPT;</span>
+
+<span class="fc" id="L193">                    ledgerService.recordMovement(</span>
+<span class="fc" id="L194">                            delivery.getTenantId(),</span>
+                            vehicleStoreId,
+<span class="fc" id="L196">                            ret.productId(),</span>
+                            movementType,
+<span class="fc" id="L198">                            new BigDecimal(ret.quantityReturned()),</span>
+<span class="fc" id="L199">                            ret.creditValue(),</span>
+<span class="fc" id="L200">                            delivery.getDeliveryNumber(),</span>
+<span class="fc" id="L201">                            &quot;Return from shop ID: &quot; + shop.shopId(),</span>
+                            null,
+<span class="fc" id="L203">                            context.timestamp(),</span>
+<span class="fc" id="L204">                            String.valueOf(context.userId())</span>
+                    );
+                }
+<span class="fc" id="L207">            }</span>
+<span class="fc" id="L208">        }</span>
+<span class="fc" id="L209">    }</span>
+
+    /**
+     * On COMPLETION: for each shop, if credit was extended (netPayable &gt; paidAmount),
+     * add the credit amount to the shop's outstanding loan balance.
+     */
+    private void postCreditToShopOutstandingBalance(Delivery delivery, Long tenantId) {
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        for (DeliveryShopRecord shopRecord : delivery.getShops()) {</span>
+<span class="fc" id="L217">            BigDecimal credit = shopRecord.creditAmount();</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">            if (credit.compareTo(BigDecimal.ZERO) &gt; 0) {</span>
+<span class="fc" id="L219">                Shop shop = shopRepository.findByIdAndTenantId(shopRecord.shopId(), tenantId)</span>
+<span class="pc" id="L220">                        .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Shop not found: &quot; + shopRecord.shopId()));</span>
+<span class="fc" id="L221">                shop.setOutstandingLoan(shop.getOutstandingLoan().add(credit));</span>
+<span class="fc" id="L222">                shopRepository.save(shop);</span>
+<span class="fc" id="L223">                log.debug(&quot;Posted credit {} to shop {} outstanding balance&quot;, credit, shopRecord.shopId());</span>
+            }
+<span class="fc" id="L225">        }</span>
+<span class="fc" id="L226">    }</span>
+
+    /**
+     * Resolves the vehicle (van) warehouse for this delivery's tenant.
+     * Vehicle warehouses are tagged CUSTOM and created by LoadingSheetWorkflowService on confirm.
+     * Falls back to the MAIN warehouse to avoid NPE if no vehicle warehouse is found.
+     */
+    private Long resolveVehicleWarehouseId(Long tenantId) {
+<span class="fc" id="L234">        return warehouseRepository.findAllByTenantId(tenantId).stream()</span>
+<span class="fc" id="L235">                .filter(w -&gt; &quot;CUSTOM&quot;.equals(w.getStoreType()))</span>
+<span class="fc" id="L236">                .map(Warehouse::getId)</span>
+<span class="fc" id="L237">                .findFirst()</span>
+<span class="fc" id="L238">                .orElseGet(() -&gt;</span>
+<span class="nc" id="L239">                    warehouseRepository.findAllByTenantId(tenantId).stream()</span>
+<span class="nc bnc" id="L240" title="All 4 branches missed.">                            .filter(w -&gt; &quot;MAIN&quot;.equals(w.getStoreType()) || Boolean.TRUE.equals(w.getIsSystemStore()))</span>
+<span class="nc" id="L241">                            .map(Warehouse::getId)</span>
+<span class="nc" id="L242">                            .findFirst()</span>
+<span class="nc" id="L243">                            .orElse(1L)</span>
+                );
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

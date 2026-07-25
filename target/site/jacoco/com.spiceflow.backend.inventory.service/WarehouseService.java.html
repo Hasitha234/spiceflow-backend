@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WarehouseService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.inventory.service</a> &gt; <span class="el_source">WarehouseService.java</span></div><h1>WarehouseService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.inventory.service;
+
+import com.spiceflow.backend.auth.entity.Tenant;
+import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.inventory.dto.request.WarehouseRequest;
+import com.spiceflow.backend.inventory.dto.response.WarehouseResponse;
+import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.repository.WarehouseRepository;
+import com.spiceflow.backend.inventory.mapper.WarehouseMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+<span class="fc" id="L19">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class WarehouseService {
+
+    private final WarehouseRepository warehouseRepository;
+    private final TenantRepository tenantRepository;
+    private final WarehouseMapper warehouseMapper;
+
+    @Transactional(rollbackFor = Exception.class)
+    public WarehouseResponse createWarehouse(Long tenantId, WarehouseRequest request) {
+<span class="fc" id="L31">        log.debug(&quot;Creating new warehouse for tenantId: {}, name: {}&quot;, tenantId, request.name());</span>
+        try {
+<span class="fc" id="L33">            Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L34">                    .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Tenant with ID &quot; + tenantId + &quot; not found&quot;));</span>
+
+<span class="fc" id="L36">            Warehouse warehouse = Warehouse.builder()</span>
+<span class="fc" id="L37">                    .name(request.name())</span>
+<span class="fc" id="L38">                    .location(request.location())</span>
+<span class="fc" id="L39">                    .capacity(request.capacity())</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">                    .storeType(request.storeType() != null ? request.storeType() : &quot;CUSTOM&quot;)</span>
+<span class="fc" id="L41">                    .description(request.description())</span>
+<span class="fc" id="L42">                    .tenant(tenant)</span>
+<span class="fc" id="L43">                    .build();</span>
+
+<span class="fc" id="L45">            Warehouse savedWarehouse = warehouseRepository.save(warehouse);</span>
+<span class="fc" id="L46">            log.info(&quot;Successfully created warehouse with ID: {} for tenantId: {}&quot;, savedWarehouse.getId(), tenantId);</span>
+<span class="fc" id="L47">            return warehouseMapper.toResponse(savedWarehouse);</span>
+<span class="nc" id="L48">        } catch (Exception e) {</span>
+<span class="nc" id="L49">            log.error(&quot;Failed to create warehouse for tenantId: {}&quot;, tenantId, e);</span>
+<span class="nc" id="L50">            throw new BusinessRuleViolationException(&quot;Failed to create warehouse: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    public Page&lt;WarehouseResponse&gt; getAllWarehouses(Long tenantId, String search, Pageable pageable) {
+<span class="fc" id="L55">        log.debug(&quot;Fetching warehouses for tenantId: {}, search: {}&quot;, tenantId, search);</span>
+        try {
+            Page&lt;Warehouse&gt; warehousePage;
+<span class="pc bpc" id="L58" title="1 of 4 branches missed.">            if (search != null &amp;&amp; !search.trim().isEmpty()) {</span>
+<span class="fc" id="L59">                warehousePage = warehouseRepository.findByTenantIdAndNameContainingIgnoreCase(tenantId, search.trim(), pageable);</span>
+            } else {
+<span class="fc" id="L61">                warehousePage = warehouseRepository.findByTenantId(tenantId, pageable);</span>
+            }
+<span class="fc" id="L63">            return warehousePage.map(warehouseMapper::toResponse);</span>
+<span class="nc" id="L64">        } catch (Exception e) {</span>
+<span class="nc" id="L65">            log.error(&quot;Failed to fetch warehouses for tenantId: {}&quot;, tenantId, e);</span>
+<span class="nc" id="L66">            throw new BusinessRuleViolationException(&quot;Failed to fetch warehouses&quot;);</span>
+        }
+    }
+    
+    public WarehouseResponse getWarehouse(Long tenantId, Long warehouseId) {
+<span class="nc" id="L71">        log.debug(&quot;Fetching warehouse with ID: {} for tenantId: {}&quot;, warehouseId, tenantId);</span>
+<span class="nc" id="L72">        return warehouseMapper.toResponse(getWarehouseEntity(tenantId, warehouseId));</span>
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public WarehouseResponse updateWarehouse(Long tenantId, Long warehouseId, WarehouseRequest request) {
+<span class="fc" id="L77">        log.debug(&quot;Updating warehouse with ID: {} for tenantId: {}&quot;, warehouseId, tenantId);</span>
+        try {
+<span class="fc" id="L79">            Warehouse warehouse = getWarehouseEntity(tenantId, warehouseId);</span>
+
+<span class="fc" id="L81">            warehouse.setName(request.name());</span>
+<span class="fc" id="L82">            warehouse.setLocation(request.location());</span>
+<span class="fc" id="L83">            warehouse.setCapacity(request.capacity());</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">            if (request.storeType() != null) {</span>
+<span class="nc" id="L85">                warehouse.setStoreType(request.storeType());</span>
+            }
+<span class="fc" id="L87">            warehouse.setDescription(request.description());</span>
+
+<span class="fc" id="L89">            Warehouse updatedWarehouse = warehouseRepository.save(warehouse);</span>
+<span class="fc" id="L90">            log.info(&quot;Successfully updated warehouse with ID: {} for tenantId: {}&quot;, updatedWarehouse.getId(), tenantId);</span>
+<span class="fc" id="L91">            return warehouseMapper.toResponse(updatedWarehouse);</span>
+<span class="nc" id="L92">        } catch (ResourceNotFoundException e) {</span>
+<span class="nc" id="L93">            throw e;</span>
+<span class="nc" id="L94">        } catch (Exception e) {</span>
+<span class="nc" id="L95">            log.error(&quot;Failed to update warehouse with ID: {} for tenantId: {}&quot;, warehouseId, tenantId, e);</span>
+<span class="nc" id="L96">            throw new BusinessRuleViolationException(&quot;Failed to update warehouse: &quot; + e.getMessage());</span>
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteWarehouse(Long tenantId, Long warehouseId) {
+<span class="fc" id="L102">        log.debug(&quot;Deleting warehouse with ID: {} for tenantId: {}&quot;, warehouseId, tenantId);</span>
+        try {
+<span class="fc" id="L104">            Warehouse warehouse = getWarehouseEntity(tenantId, warehouseId);</span>
+<span class="pc bpc" id="L105" title="1 of 4 branches missed.">            if (warehouse.getIsSystemStore() != null &amp;&amp; warehouse.getIsSystemStore()) {</span>
+<span class="fc" id="L106">                throw new BusinessRuleViolationException(&quot;Cannot delete a system store&quot;);</span>
+            }
+<span class="fc" id="L108">            warehouseRepository.delete(warehouse);</span>
+<span class="fc" id="L109">            log.info(&quot;Successfully deleted warehouse with ID: {} for tenantId: {}&quot;, warehouseId, tenantId);</span>
+<span class="nc" id="L110">        } catch (ResourceNotFoundException e) {</span>
+<span class="nc" id="L111">            throw e;</span>
+<span class="fc" id="L112">        } catch (Exception e) {</span>
+<span class="fc" id="L113">            log.error(&quot;Failed to delete warehouse with ID: {} for tenantId: {}&quot;, warehouseId, tenantId, e);</span>
+<span class="fc" id="L114">            throw new BusinessRuleViolationException(&quot;Failed to delete warehouse due to existing dependencies&quot;);</span>
+<span class="fc" id="L115">        }</span>
+<span class="fc" id="L116">    }</span>
+
+    public Warehouse getWarehouseEntity(Long tenantId, Long warehouseId) {
+<span class="fc" id="L119">        return warehouseRepository.findByIdAndTenantId(warehouseId, tenantId)</span>
+<span class="fc" id="L120">                .orElseThrow(() -&gt; {</span>
+<span class="nc" id="L121">                    log.error(&quot;Warehouse not found with ID: {} for tenantId: {}&quot;, warehouseId, tenantId);</span>
+<span class="nc" id="L122">                    return new ResourceNotFoundException(&quot;Warehouse not found with id: &quot; + warehouseId);</span>
+                });
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GoodsReceiptEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.receiving.entity</a> &gt; <span class="el_source">GoodsReceiptEntity.java</span></div><h1>GoodsReceiptEntity.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.receiving.entity;
+
+import com.spiceflow.backend.receiving.domain.GoodsReceiptState;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+@Entity
+@Table(name = &quot;goods_receipts&quot;)
+public class GoodsReceiptEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private @Nullable Long id;
+
+    @Column(name = &quot;receipt_number&quot;, nullable = false, unique = true)
+    private String receiptNumber;
+
+    @Column(name = &quot;tenant_id&quot;, nullable = false)
+    private Long tenantId;
+
+    @Column(name = &quot;purchase_order_id&quot;)
+    private @Nullable Long purchaseOrderId;
+
+    @Column(name = &quot;po_number&quot;, nullable = false)
+    private String poNumber;
+
+    @Column(name = &quot;supplier_id&quot;, nullable = false)
+    private Long supplierId;
+
+    @Column(name = &quot;warehouse_id&quot;, nullable = false)
+    private Long warehouseId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;status&quot;, nullable = false)
+    private GoodsReceiptState status;
+
+    @Column(name = &quot;receipt_date&quot;, nullable = false)
+    private Instant receiptDate;
+
+    @Column(name = &quot;total_accepted_value&quot;, nullable = false, precision = 19, scale = 2)
+    private BigDecimal totalAcceptedValue;
+
+    @Column(name = &quot;total_damaged_value&quot;, nullable = false, precision = 19, scale = 2)
+    private BigDecimal totalDamagedValue;
+
+    @Column(name = &quot;created_by&quot;, nullable = false)
+    private String createdBy;
+
+    @Column(name = &quot;verified_by&quot;)
+    private @Nullable String verifiedBy;
+
+    @Column(name = &quot;posted_by&quot;)
+    private @Nullable String postedBy;
+
+    @Version
+    private @Nullable Long version;
+
+    @Column(name = &quot;created_at&quot;, nullable = false)
+    private Instant createdAt;
+
+    @Column(name = &quot;updated_at&quot;, nullable = false)
+    private Instant updatedAt;
+
+    @Column(name = &quot;verified_at&quot;)
+    private @Nullable Instant verifiedAt;
+
+    @Column(name = &quot;posted_at&quot;)
+    private @Nullable Instant postedAt;
+
+<span class="fc" id="L84">    @OneToMany(</span>
+        mappedBy = &quot;goodsReceipt&quot;,
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
+    private List&lt;GoodsReceiptLineEntity&gt; lines = new ArrayList&lt;&gt;();
+
+<span class="fc" id="L91">    public GoodsReceiptEntity() {</span>
+<span class="fc" id="L92">        this.receiptNumber = &quot;&quot;;</span>
+<span class="fc" id="L93">        this.tenantId = 0L;</span>
+<span class="fc" id="L94">        this.purchaseOrderId = null;</span>
+<span class="fc" id="L95">        this.poNumber = &quot;&quot;;</span>
+<span class="fc" id="L96">        this.supplierId = 0L;</span>
+<span class="fc" id="L97">        this.warehouseId = 0L;</span>
+<span class="fc" id="L98">        this.status = GoodsReceiptState.DRAFT;</span>
+<span class="fc" id="L99">        this.receiptDate = Instant.EPOCH;</span>
+<span class="fc" id="L100">        this.totalAcceptedValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L101">        this.totalDamagedValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L102">        this.createdBy = &quot;&quot;;</span>
+<span class="fc" id="L103">        this.createdAt = Instant.EPOCH;</span>
+<span class="fc" id="L104">        this.updatedAt = Instant.EPOCH;</span>
+<span class="fc" id="L105">    }</span>
+
+<span class="fc" id="L107">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L108">    public void setId(@Nullable Long id) { this.id = id; }</span>
+
+<span class="fc" id="L110">    public String getReceiptNumber() { return receiptNumber; }</span>
+<span class="fc" id="L111">    public void setReceiptNumber(String receiptNumber) { this.receiptNumber = receiptNumber; }</span>
+
+<span class="fc" id="L113">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L114">    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }</span>
+
+<span class="fc" id="L116">    public @Nullable Long getPurchaseOrderId() { return purchaseOrderId; }</span>
+<span class="fc" id="L117">    public void setPurchaseOrderId(@Nullable Long purchaseOrderId) { this.purchaseOrderId = purchaseOrderId; }</span>
+
+<span class="fc" id="L119">    public String getPoNumber() { return poNumber; }</span>
+<span class="fc" id="L120">    public void setPoNumber(String poNumber) { this.poNumber = poNumber; }</span>
+
+<span class="fc" id="L122">    public Long getSupplierId() { return supplierId; }</span>
+<span class="fc" id="L123">    public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }</span>
+
+<span class="fc" id="L125">    public Long getWarehouseId() { return warehouseId; }</span>
+<span class="fc" id="L126">    public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }</span>
+
+<span class="fc" id="L128">    public GoodsReceiptState getStatus() { return status; }</span>
+<span class="fc" id="L129">    public void setStatus(GoodsReceiptState status) { this.status = status; }</span>
+
+<span class="fc" id="L131">    public Instant getReceiptDate() { return receiptDate; }</span>
+<span class="fc" id="L132">    public void setReceiptDate(Instant receiptDate) { this.receiptDate = receiptDate; }</span>
+
+<span class="fc" id="L134">    public BigDecimal getTotalAcceptedValue() { return totalAcceptedValue; }</span>
+<span class="fc" id="L135">    public void setTotalAcceptedValue(BigDecimal totalAcceptedValue) { this.totalAcceptedValue = totalAcceptedValue; }</span>
+
+<span class="fc" id="L137">    public BigDecimal getTotalDamagedValue() { return totalDamagedValue; }</span>
+<span class="fc" id="L138">    public void setTotalDamagedValue(BigDecimal totalDamagedValue) { this.totalDamagedValue = totalDamagedValue; }</span>
+
+<span class="fc" id="L140">    public String getCreatedBy() { return createdBy; }</span>
+<span class="fc" id="L141">    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }</span>
+
+<span class="fc" id="L143">    public @Nullable String getVerifiedBy() { return verifiedBy; }</span>
+<span class="fc" id="L144">    public void setVerifiedBy(@Nullable String verifiedBy) { this.verifiedBy = verifiedBy; }</span>
+
+<span class="fc" id="L146">    public @Nullable String getPostedBy() { return postedBy; }</span>
+<span class="fc" id="L147">    public void setPostedBy(@Nullable String postedBy) { this.postedBy = postedBy; }</span>
+
+<span class="fc" id="L149">    public @Nullable Long getVersion() { return version; }</span>
+<span class="fc" id="L150">    public void setVersion(@Nullable Long version) { this.version = version; }</span>
+
+<span class="fc" id="L152">    public Instant getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L153">    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }</span>
+
+<span class="fc" id="L155">    public Instant getUpdatedAt() { return updatedAt; }</span>
+<span class="fc" id="L156">    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }</span>
+
+<span class="fc" id="L158">    public @Nullable Instant getVerifiedAt() { return verifiedAt; }</span>
+<span class="fc" id="L159">    public void setVerifiedAt(@Nullable Instant verifiedAt) { this.verifiedAt = verifiedAt; }</span>
+
+<span class="fc" id="L161">    public @Nullable Instant getPostedAt() { return postedAt; }</span>
+<span class="fc" id="L162">    public void setPostedAt(@Nullable Instant postedAt) { this.postedAt = postedAt; }</span>
+
+<span class="fc" id="L164">    public List&lt;GoodsReceiptLineEntity&gt; getLines() { return lines; }</span>
+    public void setLines(List&lt;GoodsReceiptLineEntity&gt; lines) {
+<span class="fc" id="L166">        this.lines.clear();</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (lines != null) {</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            for (GoodsReceiptLineEntity line : lines) {</span>
+<span class="fc" id="L169">                addLine(line);</span>
+<span class="fc" id="L170">            }</span>
+        }
+<span class="fc" id="L172">    }</span>
+
+    public void addLine(GoodsReceiptLineEntity line) {
+<span class="fc" id="L175">        this.lines.add(line);</span>
+<span class="fc" id="L176">        line.setGoodsReceipt(this);</span>
+<span class="fc" id="L177">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

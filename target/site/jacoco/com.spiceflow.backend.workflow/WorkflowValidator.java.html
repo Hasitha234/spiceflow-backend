@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WorkflowValidator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.workflow</a> &gt; <span class="el_source">WorkflowValidator.java</span></div><h1>WorkflowValidator.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.workflow;
+
+import java.util.Set;
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+
+/**
+ * Helper interface for validating whether a state transition is permitted in a finite state machine.
+ *
+ * @param &lt;T&gt; The aggregate type
+ * @param &lt;S&gt; The workflow state type
+ */
+public interface WorkflowValidator&lt;T extends WorkflowAggregate&lt;T, S&gt;, S extends WorkflowState&gt; {
+    /**
+     * Returns the set of allowed transitions for this state machine.
+     */
+    Set&lt;WorkflowTransition&lt;S&gt;&gt; getAllowedTransitions();
+
+    /**
+     * Validates that transitioning from aggregate's current state to targetState is allowed.
+     * Throws BusinessRuleViolationException if the transition is forbidden.
+     */
+    default void validateTransition(T aggregate, S targetState) {
+<span class="fc" id="L23">        S current = aggregate.getWorkflowState();</span>
+<span class="fc" id="L24">        WorkflowTransition&lt;S&gt; transition = WorkflowTransition.of(current, targetState);</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">        if (!getAllowedTransitions().contains(transition)) {</span>
+<span class="fc" id="L26">            throw new BusinessRuleViolationException(</span>
+<span class="fc" id="L27">                String.format(&quot;Invalid workflow transition from '%s' to '%s' for aggregate '%s'&quot;,</span>
+<span class="fc" id="L28">                    current.name(), targetState.name(), aggregate.getAggregateId())</span>
+            );
+        }
+<span class="fc" id="L31">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

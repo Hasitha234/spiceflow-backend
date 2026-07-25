@@ -1,0 +1,105 @@
+2026-07-17T08:39:27.429+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] c.s.backend.SpiceflowBackendApplication  : Starting SpiceflowBackendApplication using Java 21.0.10 with PID 3200 (C:\Users\bdils\OneDrive\Desktop\Sysco\spice_business\spiceflow-backend\target\classes started by bdils in C:\Users\bdils\OneDrive\Desktop\Sysco\spice_business\spiceflow-backend)
+2026-07-17T08:39:27.430+05:30 DEBUG 3200 --- [spiceflow-backend] [restartedMain] c.s.backend.SpiceflowBackendApplication  : Running with Spring Boot v4.0.6, Spring v7.0.7
+2026-07-17T08:39:27.433+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] c.s.backend.SpiceflowBackendApplication  : The following 1 profile is active: "local"
+2026-07-17T08:39:28.775+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-07-17T08:39:28.779+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 0 ms. Found 0 JPA repository interfaces.
+2026-07-17T08:39:29.079+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-07-17T08:39:29.081+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-07-17T08:39:29.082+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.21]
+2026-07-17T08:39:29.194+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1750 ms
+2026-07-17T08:39:29.390+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-07-17T08:39:29.395+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection conn6: url=jdbc:h2:file:./data/spiceflow_dev user=SA
+2026-07-17T08:39:29.396+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-07-17T08:39:29.409+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:file:./data/spiceflow_dev (H2 2.4)
+2026-07-17T08:39:29.413+05:30  WARN 3200 --- [spiceflow-backend] [restartedMain] o.f.c.internal.database.base.Database    : Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.
+2026-07-17T08:39:29.527+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] o.f.core.internal.command.DbValidate     : Successfully validated 40 migrations (execution time 00:00.096s)
+2026-07-17T08:39:29.537+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": 42
+2026-07-17T08:39:29.540+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] o.f.core.internal.command.DbMigrate      : Schema "PUBLIC" is up to date. No migration necessary.
+2026-07-17T08:39:29.587+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-07-17T08:39:29.747+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-07-17T08:39:29.751+05:30  WARN 3200 --- [spiceflow-backend] [restartedMain] org.hibernate.orm.core                   : HHH000511: The 2.4.240 version for [org.hibernate.dialect.PostgreSQLDialect] is no longer supported, hence certain features may not work properly.The minimum supported version is 13.0.0. Check the community dialects project for available legacy versions.
+2026-07-17T08:39:29.752+05:30  WARN 3200 --- [spiceflow-backend] [restartedMain] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-07-17T08:39:29.754+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:h2:file:./data/spiceflow_dev]
+	Database driver: H2 JDBC Driver
+	Database dialect: PostgreSQLDialect
+	Database version: 2.4.240
+	Default catalog/schema: SPICEFLOW_DEV/PUBLIC
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: 100
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-07-17T08:39:29.803+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-07-17T08:39:29.804+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] org.hibernate.orm.jdbc.batch             : HHH100501: Automatic JDBC statement batching enabled (maximum batch size 50)
+2026-07-17T08:39:29.806+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-07-17T08:39:30.029+05:30  WARN 3200 --- [spiceflow-backend] [restartedMain] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-07-17T08:39:30.155+05:30  WARN 3200 --- [spiceflow-backend] [restartedMain] ion$DefaultTemplateResolverConfiguration : Cannot find template location: classpath:/templates/ (please add some templates, check your Thymeleaf configuration, or set spring.thymeleaf.check-template-location=false)
+2026-07-17T08:39:30.437+05:30  WARN 3200 --- [spiceflow-backend] [restartedMain] .s.a.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: f2d44ab6-b683-4f0c-8a97-534d5f44a432
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-07-17T08:39:30.471+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-07-17T08:39:30.975+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 4 endpoints beneath base path '/actuator'
+2026-07-17T08:39:31.207+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-07-17T08:39:31.223+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] c.s.backend.SpiceflowBackendApplication  : Started SpiceflowBackendApplication in 3.996 seconds (process running for 424.689)
+2026-07-17T08:39:31.235+05:30  INFO 3200 --- [spiceflow-backend] [restartedMain] .ConditionEvaluationDeltaLoggingListener : Condition evaluation delta:
+
+
+==========================
+CONDITION EVALUATION DELTA
+==========================
+
+
+Positive matches:
+-----------------
+
+   ManagementWebSecurityAutoConfiguration matched:
+      - @ConditionalOnClass found required classes 'org.springframework.security.web.util.matcher.RequestMatcher', 'org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointAutoConfiguration' (OnClassCondition)
+      - found 'session' scope (OnWebApplicationCondition)
+      - AllNestedConditions 2 matched 0 did not; NestedCondition on DefaultWebSecurityCondition.Beans @ConditionalOnMissingBean (types: org.springframework.security.web.SecurityFilterChain; SearchStrategy: all) did not find any beans; NestedCondition on DefaultWebSecurityCondition.Classes @ConditionalOnClass found required classes 'org.springframework.security.web.SecurityFilterChain', 'org.springframework.security.config.annotation.web.builders.HttpSecurity' (DefaultWebSecurityCondition)
+
+   ServletWebSecurityAutoConfiguration.EnableWebSecurityConfiguration matched:
+      - @ConditionalOnClass found required class 'org.springframework.security.config.annotation.web.configuration.EnableWebSecurity' (OnClassCondition)
+      - @ConditionalOnMissingBean (names: springSecurityFilterChain; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+   TaskExecutorConfigurations.AsyncConfigurerConfiguration matched:
+      - @ConditionalOnMissingBean (types: org.springframework.scheduling.annotation.AsyncConfigurer; SearchStrategy: all) did not find any beans (OnBeanCondition)
+
+
+Negative matches:
+-----------------
+
+   CacheMetricsAutoConfiguration:
+      Did not match:
+         - @ConditionalOnBean (types: org.springframework.cache.CacheManager; SearchStrategy: all) did not find any beans of type org.springframework.cache.CacheManager (OnBeanCondition)
+      Matched:
+         - @ConditionalOnClass found required class 'io.micrometer.core.instrument.MeterRegistry' (OnClassCondition)
+
+   TaskExecutorConfigurations.AsyncConfigurerWrapperConfiguration:
+      Did not match:
+         - @ConditionalOnBean (types: org.springframework.scheduling.annotation.AsyncConfigurer; SearchStrategy: all) did not find any beans of type org.springframework.scheduling.annotation.AsyncConfigurer (OnBeanCondition)
+
+
+Exclusions:
+-----------
+
+    None
+
+
+Unconditional classes:
+----------------------
+
+    None
+
+
+
+2026-07-17T08:39:56.126+05:30  INFO 3200 --- [spiceflow-backend] [File Watcher] rtingClassPathChangeChangedEventListener : Restarting due to 1 class path change (1 addition, 0 deletions, 0 modifications)
+2026-07-17T08:39:56.465+05:30  INFO 3200 --- [spiceflow-backend] [Thread-7] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2026-07-17T08:39:56.755+05:30  INFO 3200 --- [spiceflow-backend] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2026-07-17T08:39:56.840+05:30  INFO 3200 --- [spiceflow-backend] [Thread-7] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-07-17T08:39:56.916+05:30  INFO 3200 --- [spiceflow-backend] [Thread-7] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Shutdown initiated...
+2026-07-17T08:39:57.163+05:30  INFO 3200 --- [spiceflow-backend] [Thread-7] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Shutdown completed.

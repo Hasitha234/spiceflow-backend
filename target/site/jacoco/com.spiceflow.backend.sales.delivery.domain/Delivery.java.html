@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Delivery.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.delivery.domain</a> &gt; <span class="el_source">Delivery.java</span></div><h1>Delivery.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.delivery.domain;
+
+import com.spiceflow.backend.events.DomainEventType;
+import com.spiceflow.backend.workflow.WorkflowAggregate;
+import com.spiceflow.backend.workflow.WorkflowContext;
+import com.spiceflow.backend.workflow.WorkflowTransitionOutput;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Root aggregate representing a Customer Delivery operational workflow.
+ *
+ * Rule 15 compliant: copy-on-write immutability, defensive shop list copying,
+ * self-validating invariants, and @Version optimistic locking.
+ * Follows ADR-013 stateless WorkflowEngine execution contract.
+ */
+public class Delivery implements WorkflowAggregate&lt;Delivery, DeliveryState&gt; {
+
+    private @Nullable Long id;
+    private String deliveryNumber;
+    private Long tenantId;
+    private Long loadingSheetId;
+    private @Nullable String loadingSheetNumber;
+    private LocalDate deliveryDate;
+    private DeliveryState state;
+
+    // Financial summary (computed on completion)
+    private BigDecimal totalSalesValue;
+    private BigDecimal totalReturnsValue;
+    private BigDecimal totalCollectedAmount;
+
+    // Shop delivery records (one per customer shop visited)
+    private List&lt;DeliveryShopRecord&gt; shops;
+
+    // Audit fields
+    private String createdBy;
+    private @Nullable String dispatchedBy;
+    private @Nullable String completedBy;
+    private @Nullable String cancelledBy;
+    private @Nullable Long version;
+    private String correlationId;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private @Nullable Instant dispatchedAt;
+    private @Nullable Instant completedAt;
+    private @Nullable Instant cancelledAt;
+
+    /** JPA/Jackson no-arg constructor — package-private to enforce factory usage. */
+<span class="fc" id="L54">    protected Delivery() {</span>
+<span class="fc" id="L55">        this.deliveryNumber = &quot;&quot;;</span>
+<span class="fc" id="L56">        this.tenantId = 0L;</span>
+<span class="fc" id="L57">        this.loadingSheetId = 0L;</span>
+<span class="fc" id="L58">        this.deliveryDate = LocalDate.now(java.time.ZoneId.systemDefault());</span>
+<span class="fc" id="L59">        this.state = DeliveryState.IN_PROGRESS;</span>
+<span class="fc" id="L60">        this.totalSalesValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L61">        this.totalReturnsValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L62">        this.totalCollectedAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L63">        this.shops = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L64">        this.createdBy = &quot;&quot;;</span>
+<span class="fc" id="L65">        this.correlationId = &quot;&quot;;</span>
+<span class="fc" id="L66">        this.createdAt = Instant.EPOCH;</span>
+<span class="fc" id="L67">        this.updatedAt = Instant.EPOCH;</span>
+<span class="fc" id="L68">    }</span>
+
+    // ─── COPY-ON-WRITE constructor (Rule 15 compliant) ─────────────────────────
+<span class="fc" id="L71">    public Delivery(Delivery source, DeliveryState newState, @Nullable List&lt;DeliveryShopRecord&gt; newShops) {</span>
+<span class="fc" id="L72">        this.id = source.id;</span>
+<span class="fc" id="L73">        this.deliveryNumber = source.deliveryNumber;</span>
+<span class="fc" id="L74">        this.tenantId = source.tenantId;</span>
+<span class="fc" id="L75">        this.loadingSheetId = source.loadingSheetId;</span>
+<span class="fc" id="L76">        this.loadingSheetNumber = source.loadingSheetNumber;</span>
+<span class="fc" id="L77">        this.deliveryDate = source.deliveryDate;</span>
+<span class="fc" id="L78">        this.totalSalesValue = source.totalSalesValue;</span>
+<span class="fc" id="L79">        this.totalReturnsValue = source.totalReturnsValue;</span>
+<span class="fc" id="L80">        this.totalCollectedAmount = source.totalCollectedAmount;</span>
+<span class="fc" id="L81">        this.createdBy = source.createdBy;</span>
+<span class="fc" id="L82">        this.dispatchedBy = source.dispatchedBy;</span>
+<span class="fc" id="L83">        this.completedBy = source.completedBy;</span>
+<span class="fc" id="L84">        this.cancelledBy = source.cancelledBy;</span>
+<span class="fc" id="L85">        this.version = source.version;</span>
+<span class="fc" id="L86">        this.correlationId = source.correlationId;</span>
+<span class="fc" id="L87">        this.createdAt = source.createdAt;</span>
+<span class="fc" id="L88">        this.updatedAt = Instant.now();</span>
+<span class="fc" id="L89">        this.dispatchedAt = source.dispatchedAt;</span>
+<span class="fc" id="L90">        this.completedAt = source.completedAt;</span>
+<span class="fc" id="L91">        this.cancelledAt = source.cancelledAt;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        this.shops = newShops != null ? new ArrayList&lt;&gt;(newShops) : new ArrayList&lt;&gt;(source.shops);</span>
+<span class="fc" id="L93">        this.state = newState;</span>
+<span class="fc" id="L94">    }</span>
+
+    // ─── Full constructor for PersistenceAdapter restoration ───────────────────
+    public Delivery(@Nullable Long id, String deliveryNumber, Long tenantId, Long loadingSheetId,
+                    @Nullable String loadingSheetNumber, LocalDate deliveryDate, DeliveryState state,
+                    BigDecimal totalSalesValue, BigDecimal totalReturnsValue, BigDecimal totalCollectedAmount,
+                    String createdBy, @Nullable String dispatchedBy, @Nullable String completedBy,
+                    @Nullable String cancelledBy, @Nullable Long version, String correlationId,
+                    Instant createdAt, Instant updatedAt, @Nullable Instant dispatchedAt,
+                    @Nullable Instant completedAt, @Nullable Instant cancelledAt,
+<span class="fc" id="L104">                    List&lt;DeliveryShopRecord&gt; shops) {</span>
+<span class="fc" id="L105">        this.id = id;</span>
+<span class="fc" id="L106">        this.deliveryNumber = deliveryNumber;</span>
+<span class="fc" id="L107">        this.tenantId = tenantId;</span>
+<span class="fc" id="L108">        this.loadingSheetId = loadingSheetId;</span>
+<span class="fc" id="L109">        this.loadingSheetNumber = loadingSheetNumber;</span>
+<span class="fc" id="L110">        this.deliveryDate = deliveryDate;</span>
+<span class="fc" id="L111">        this.state = state;</span>
+<span class="fc" id="L112">        this.totalSalesValue = totalSalesValue;</span>
+<span class="fc" id="L113">        this.totalReturnsValue = totalReturnsValue;</span>
+<span class="fc" id="L114">        this.totalCollectedAmount = totalCollectedAmount;</span>
+<span class="fc" id="L115">        this.createdBy = createdBy;</span>
+<span class="fc" id="L116">        this.dispatchedBy = dispatchedBy;</span>
+<span class="fc" id="L117">        this.completedBy = completedBy;</span>
+<span class="fc" id="L118">        this.cancelledBy = cancelledBy;</span>
+<span class="fc" id="L119">        this.version = version;</span>
+<span class="fc" id="L120">        this.correlationId = correlationId;</span>
+<span class="fc" id="L121">        this.createdAt = createdAt;</span>
+<span class="fc" id="L122">        this.updatedAt = updatedAt;</span>
+<span class="fc" id="L123">        this.dispatchedAt = dispatchedAt;</span>
+<span class="fc" id="L124">        this.completedAt = completedAt;</span>
+<span class="fc" id="L125">        this.cancelledAt = cancelledAt;</span>
+<span class="fc" id="L126">        this.shops = new ArrayList&lt;&gt;(shops);</span>
+<span class="fc" id="L127">    }</span>
+
+    // ─── Factory method ─────────────────────────────────────────────────────────
+    public static Delivery create(String deliveryNumber, Long tenantId, Long loadingSheetId,
+                                   @Nullable String loadingSheetNumber, LocalDate deliveryDate,
+                                   String createdBy, List&lt;DeliveryShopRecord&gt; shops) {
+<span class="fc" id="L133">        Delivery d = new Delivery();</span>
+<span class="fc" id="L134">        d.deliveryNumber = deliveryNumber;</span>
+<span class="fc" id="L135">        d.tenantId = tenantId;</span>
+<span class="fc" id="L136">        d.loadingSheetId = loadingSheetId;</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        d.loadingSheetNumber = loadingSheetNumber != null ? loadingSheetNumber : &quot;&quot;;</span>
+<span class="fc" id="L138">        d.deliveryDate = deliveryDate;</span>
+<span class="fc" id="L139">        d.state = DeliveryState.IN_PROGRESS;</span>
+<span class="fc" id="L140">        d.createdBy = createdBy;</span>
+<span class="fc" id="L141">        d.shops = new ArrayList&lt;&gt;(shops);</span>
+<span class="fc" id="L142">        d.correlationId = deliveryNumber;</span>
+<span class="fc" id="L143">        d.createdAt = Instant.now();</span>
+<span class="fc" id="L144">        d.updatedAt = Instant.now();</span>
+<span class="fc" id="L145">        return d;</span>
+    }
+
+    // ─── WorkflowAggregate interface ────────────────────────────────────────────
+    @Override
+    public String getAggregateId() {
+<span class="fc" id="L151">        return deliveryNumber;</span>
+    }
+
+    @Override
+    public DeliveryState getWorkflowState() {
+<span class="fc" id="L156">        return state;</span>
+    }
+
+    @Override
+    public WorkflowTransitionOutput&lt;Delivery&gt; transitionTo(DeliveryState targetState, WorkflowContext context) {
+        // Build a copy with the new state
+<span class="fc" id="L162">        Delivery copy = new Delivery(this, targetState, null);</span>
+
+        // Stamp lifecycle timestamps on the copy
+<span class="pc bpc" id="L165" title="1 of 4 branches missed.">        if (targetState == DeliveryState.DISPATCHED &amp;&amp; copy.dispatchedAt == null) {</span>
+<span class="fc" id="L166">            copy.dispatchedAt = context.timestamp();</span>
+<span class="fc" id="L167">            copy.dispatchedBy = String.valueOf(context.userId());</span>
+        }
+<span class="pc bpc" id="L169" title="1 of 4 branches missed.">        if (targetState == DeliveryState.COMPLETED &amp;&amp; copy.completedAt == null) {</span>
+<span class="fc" id="L170">            copy.completedAt = context.timestamp();</span>
+<span class="fc" id="L171">            copy.completedBy = String.valueOf(context.userId());</span>
+        }
+<span class="pc bpc" id="L173" title="1 of 4 branches missed.">        if (targetState == DeliveryState.CANCELLED &amp;&amp; copy.cancelledAt == null) {</span>
+<span class="fc" id="L174">            copy.cancelledAt = context.timestamp();</span>
+<span class="fc" id="L175">            copy.cancelledBy = String.valueOf(context.userId());</span>
+        }
+
+<span class="pc bpc" id="L178" title="1 of 4 branches missed.">        DomainEventType eventType = switch (targetState) {</span>
+<span class="nc" id="L179">            case IN_PROGRESS -&gt; DomainEventType.DELIVERY_COMPLETED; // should not occur normally</span>
+<span class="fc" id="L180">            case DISPATCHED -&gt; DomainEventType.DELIVERY_DISPATCHED;</span>
+<span class="fc" id="L181">            case COMPLETED -&gt; DomainEventType.DELIVERY_COMPLETED;</span>
+<span class="fc" id="L182">            case CANCELLED -&gt; DomainEventType.DELIVERY_CANCELLED;</span>
+        };
+
+<span class="fc" id="L185">        DeliveryEvent event = new DeliveryEvent(</span>
+                this.deliveryNumber,
+                eventType,
+<span class="fc" id="L188">                context.correlationId(),</span>
+<span class="fc" id="L189">                context.timestamp(),</span>
+<span class="fc" id="L190">                context.tenantId()</span>
+        );
+<span class="fc" id="L192">        return new WorkflowTransitionOutput&lt;&gt;(copy, List.of(event));</span>
+    }
+
+    // ─── GETTERS ONLY (NO SETTERS — STRICT RULE 15) ─────────────────────────────
+<span class="fc" id="L196">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L197">    public String getDeliveryNumber() { return deliveryNumber; }</span>
+<span class="fc" id="L198">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L199">    public Long getLoadingSheetId() { return loadingSheetId; }</span>
+<span class="nc" id="L200">    public @Nullable String getLoadingSheetNumber() { return loadingSheetNumber; }</span>
+<span class="fc" id="L201">    public LocalDate getDeliveryDate() { return deliveryDate; }</span>
+<span class="fc" id="L202">    public DeliveryState getState() { return state; }</span>
+<span class="fc" id="L203">    public BigDecimal getTotalSalesValue() { return totalSalesValue; }</span>
+<span class="fc" id="L204">    public BigDecimal getTotalReturnsValue() { return totalReturnsValue; }</span>
+<span class="fc" id="L205">    public BigDecimal getTotalCollectedAmount() { return totalCollectedAmount; }</span>
+<span class="fc" id="L206">    public List&lt;DeliveryShopRecord&gt; getShops() { return Collections.unmodifiableList(shops); }</span>
+<span class="fc" id="L207">    public String getCreatedBy() { return createdBy; }</span>
+<span class="fc" id="L208">    public @Nullable String getDispatchedBy() { return dispatchedBy; }</span>
+<span class="fc" id="L209">    public @Nullable String getCompletedBy() { return completedBy; }</span>
+<span class="fc" id="L210">    public @Nullable String getCancelledBy() { return cancelledBy; }</span>
+<span class="fc" id="L211">    public @Nullable Long getVersion() { return version; }</span>
+<span class="nc" id="L212">    public String getCorrelationId() { return correlationId; }</span>
+<span class="fc" id="L213">    public Instant getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L214">    public Instant getUpdatedAt() { return updatedAt; }</span>
+<span class="fc" id="L215">    public @Nullable Instant getDispatchedAt() { return dispatchedAt; }</span>
+<span class="fc" id="L216">    public @Nullable Instant getCompletedAt() { return completedAt; }</span>
+<span class="fc" id="L217">    public @Nullable Instant getCancelledAt() { return cancelledAt; }</span>
+
+    /** Package-internal: called by DeliveryWorkflowService to set financial totals on completion. */
+<span class="nc" id="L220">    void setTotalSalesValue(BigDecimal totalSalesValue) { this.totalSalesValue = totalSalesValue; }</span>
+<span class="nc" id="L221">    void setTotalReturnsValue(BigDecimal totalReturnsValue) { this.totalReturnsValue = totalReturnsValue; }</span>
+<span class="nc" id="L222">    void setTotalCollectedAmount(BigDecimal totalCollectedAmount) { this.totalCollectedAmount = totalCollectedAmount; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

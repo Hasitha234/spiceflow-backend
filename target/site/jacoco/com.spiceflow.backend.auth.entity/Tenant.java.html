@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Tenant.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.auth.entity</a> &gt; <span class="el_source">Tenant.java</span></div><h1>Tenant.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.auth.entity;
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import com.spiceflow.backend.admin.entity.BusinessType;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.LastModifiedBy;
+import com.spiceflow.backend.common.entity.BaseEntity;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
+/**Represents a registered spice business(tenant) in the SpiceFlow platform */
+
+@Entity
+@Table(name = &quot;tenants&quot;)
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@SQLDelete(sql = &quot;UPDATE tenants SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?&quot;)
+@SQLRestriction(&quot;deleted_at IS NULL&quot;)
+public class Tenant extends BaseEntity {
+
+    @Column(name = &quot;business_name&quot;, nullable = false, length = 255)
+    private String businessName;
+    
+    @Column(name = &quot;email&quot;, nullable = false, unique = true, length = 255)
+    private String email;
+
+    @Column(name = &quot;status&quot;, nullable = false, length = 20)
+    @Builder.Default
+    private String status = &quot;TRIAL&quot;;
+
+    @Column(name = &quot;plan&quot;, nullable = false, length = 50)
+    @Builder.Default
+    private String plan = &quot;TRIAL&quot;;
+
+    @Column(name = &quot;trial_start_date&quot;)
+    private LocalDate trialStartDate;
+
+    @Column(name = &quot;trial_end_date&quot;)
+    private LocalDate trialEndDate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;business_type_id&quot;, nullable = false)
+    private BusinessType businessType;
+
+    public boolean isSuspended() {
+<span class="nc" id="L71">        return &quot;SUSPENDED&quot;.equals(status);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DeliveryPaymentWorkflowEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.delivery.entity</a> &gt; <span class="el_source">DeliveryPaymentWorkflowEntity.java</span></div><h1>DeliveryPaymentWorkflowEntity.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.delivery.entity;
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import org.jspecify.annotations.Nullable;
+
+@Entity
+@Table(name = &quot;delivery_payments&quot;)
+public class DeliveryPaymentWorkflowEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private @Nullable Long id;
+
+    @Column(name = &quot;tenant_id&quot;, nullable = false)
+    private Long tenantId;
+
+    @ManyToOne
+    @NotFound(action = NotFoundAction.IGNORE)
+    @JoinColumn(name = &quot;delivery_shop_id&quot;, nullable = false)
+    private DeliveryShopWorkflowEntity deliveryShop;
+
+    @Column(name = &quot;payment_method&quot;, nullable = false, length = 50)
+    private String paymentMethod;
+
+    @Column(nullable = false, precision = 15, scale = 2)
+    private BigDecimal amount;
+
+    @Column(name = &quot;cheque_no&quot;, length = 50)
+    private @Nullable String chequeNo;
+
+    @Column(name = &quot;cheque_bank_name&quot;, length = 100)
+    private @Nullable String chequeBankName;
+
+    @Column(name = &quot;cheque_date&quot;)
+    private @Nullable LocalDate chequeDate;
+
+<span class="fc" id="L49">    public DeliveryPaymentWorkflowEntity() {</span>
+<span class="fc" id="L50">        this.tenantId = 0L;</span>
+<span class="fc" id="L51">        this.paymentMethod = &quot;&quot;;</span>
+<span class="fc" id="L52">        this.amount = BigDecimal.ZERO;</span>
+<span class="fc" id="L53">        this.deliveryShop = new DeliveryShopWorkflowEntity();</span>
+<span class="fc" id="L54">    }</span>
+
+<span class="fc" id="L56">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L57">    public void setId(@Nullable Long id) { this.id = id; }</span>
+<span class="nc" id="L58">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L59">    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }</span>
+<span class="nc" id="L60">    public DeliveryShopWorkflowEntity getDeliveryShop() { return deliveryShop; }</span>
+<span class="fc" id="L61">    public void setDeliveryShop(DeliveryShopWorkflowEntity deliveryShop) { this.deliveryShop = deliveryShop; }</span>
+<span class="fc" id="L62">    public String getPaymentMethod() { return paymentMethod; }</span>
+<span class="fc" id="L63">    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }</span>
+<span class="fc" id="L64">    public BigDecimal getAmount() { return amount; }</span>
+<span class="fc" id="L65">    public void setAmount(BigDecimal amount) { this.amount = amount; }</span>
+<span class="fc" id="L66">    public @Nullable String getChequeNo() { return chequeNo; }</span>
+<span class="fc" id="L67">    public void setChequeNo(@Nullable String chequeNo) { this.chequeNo = chequeNo; }</span>
+<span class="fc" id="L68">    public @Nullable String getChequeBankName() { return chequeBankName; }</span>
+<span class="fc" id="L69">    public void setChequeBankName(@Nullable String chequeBankName) { this.chequeBankName = chequeBankName; }</span>
+<span class="fc" id="L70">    public @Nullable LocalDate getChequeDate() { return chequeDate; }</span>
+<span class="fc" id="L71">    public void setChequeDate(@Nullable LocalDate chequeDate) { this.chequeDate = chequeDate; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

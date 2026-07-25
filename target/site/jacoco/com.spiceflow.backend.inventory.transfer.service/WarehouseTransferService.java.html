@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WarehouseTransferService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.inventory.transfer.service</a> &gt; <span class="el_source">WarehouseTransferService.java</span></div><h1>WarehouseTransferService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.inventory.transfer.service;
+
+import com.spiceflow.backend.audit.AuditService;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.events.DomainEvent;
+import com.spiceflow.backend.events.DomainEventPublisher;
+import com.spiceflow.backend.inventory.ledger.InventoryMovementType;
+import com.spiceflow.backend.inventory.ledger.service.InventoryLedgerService;
+import com.spiceflow.backend.inventory.transfer.adapter.WarehouseTransferPersistenceAdapter;
+import com.spiceflow.backend.inventory.transfer.domain.WarehouseTransfer;
+import com.spiceflow.backend.inventory.transfer.domain.WarehouseTransferLine;
+import com.spiceflow.backend.inventory.transfer.domain.WarehouseTransferState;
+import com.spiceflow.backend.inventory.transfer.entity.WarehouseTransferEntity;
+import com.spiceflow.backend.inventory.transfer.repository.WarehouseTransferRepository;
+import com.spiceflow.backend.workflow.WorkflowCommand;
+import com.spiceflow.backend.workflow.WorkflowContext;
+import com.spiceflow.backend.workflow.WorkflowEngine;
+import com.spiceflow.backend.workflow.WorkflowResult;
+import java.math.BigDecimal;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class WarehouseTransferService {
+
+    private final WarehouseTransferRepository repository;
+    private final WarehouseTransferPersistenceAdapter adapter;
+    private final WorkflowEngine engine;
+    private final InventoryLedgerService ledgerService;
+    private final DomainEventPublisher eventPublisher;
+    private final AuditService auditService;
+
+    public WarehouseTransferService(WarehouseTransferRepository repository,
+                                    WarehouseTransferPersistenceAdapter adapter,
+                                    WorkflowEngine engine,
+                                    InventoryLedgerService ledgerService,
+                                    DomainEventPublisher eventPublisher,
+<span class="fc" id="L40">                                    AuditService auditService) {</span>
+<span class="fc" id="L41">        this.repository = repository;</span>
+<span class="fc" id="L42">        this.adapter = adapter;</span>
+<span class="fc" id="L43">        this.engine = engine;</span>
+<span class="fc" id="L44">        this.ledgerService = ledgerService;</span>
+<span class="fc" id="L45">        this.eventPublisher = eventPublisher;</span>
+<span class="fc" id="L46">        this.auditService = auditService;</span>
+<span class="fc" id="L47">    }</span>
+
+    @Transactional
+    public WarehouseTransfer createTransfer(WarehouseTransfer transfer) {
+<span class="fc" id="L51">        WarehouseTransferEntity entity = adapter.toEntity(transfer);</span>
+<span class="fc" id="L52">        WarehouseTransferEntity saved = repository.save(entity);</span>
+<span class="fc" id="L53">        return adapter.toDomain(saved);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public WarehouseTransfer getTransfer(String transferNumber, Long tenantId) {
+<span class="fc" id="L58">        WarehouseTransferEntity entity = repository.findByTransferNumberAndTenantId(transferNumber, tenantId)</span>
+<span class="pc" id="L59">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Warehouse Transfer not found: &quot; + transferNumber));</span>
+<span class="fc" id="L60">        return adapter.toDomain(entity);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;WarehouseTransfer&gt; listTransfers(Long tenantId, @Nullable WarehouseTransferState status) {
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        List&lt;WarehouseTransferEntity&gt; entities = status != null</span>
+<span class="nc" id="L66">                ? repository.findByTenantIdAndStatus(tenantId, status)</span>
+<span class="nc" id="L67">                : repository.findAll().stream().filter(e -&gt; e.getTenantId().equals(tenantId)).toList();</span>
+<span class="nc" id="L68">        return entities.stream().map(adapter::toDomain).toList();</span>
+    }
+
+    @Transactional
+    public WorkflowResult&lt;WarehouseTransfer&gt; executeCommand(String transferNumber,
+                                                            Long tenantId,
+                                                            WorkflowCommand&lt;WarehouseTransfer, WarehouseTransferState&gt; command,
+                                                            WorkflowContext context) {
+<span class="fc" id="L76">        WarehouseTransfer current = getTransfer(transferNumber, tenantId);</span>
+<span class="fc" id="L77">        WorkflowResult&lt;WarehouseTransfer&gt; result = engine.execute(command, current, context);</span>
+
+<span class="fc" id="L79">        WarehouseTransferEntity updatedEntity = adapter.toEntity(result.updatedAggregate());</span>
+<span class="fc" id="L80">        repository.save(updatedEntity);</span>
+
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        if (result.auditEntry() != null) {</span>
+<span class="fc" id="L83">            auditService.record(result.auditEntry());</span>
+        }
+
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (DomainEvent event : result.events()) {</span>
+<span class="fc" id="L87">            eventPublisher.publish(event);</span>
+<span class="fc" id="L88">        }</span>
+
+<span class="fc" id="L90">        WarehouseTransfer updated = result.updatedAggregate();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (updated.getState() == WarehouseTransferState.SHIPPED) {</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            for (WarehouseTransferLine line : updated.getLines()) {</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">                if (line.getShippedQty().compareTo(BigDecimal.ZERO) &gt; 0) {</span>
+<span class="fc" id="L94">                    ledgerService.recordMovement(</span>
+                            tenantId,
+<span class="fc" id="L96">                            updated.getFromWarehouseId(),</span>
+<span class="fc" id="L97">                            line.getProductId(),</span>
+                            InventoryMovementType.TRANSFER_OUT,
+<span class="fc" id="L99">                            line.getShippedQty().negate(),</span>
+<span class="fc" id="L100">                            line.getUnitCost(),</span>
+                            transferNumber,
+<span class="fc" id="L102">                            line.getLotNumber(),</span>
+                            null,
+<span class="fc" id="L104">                            context.timestamp(),</span>
+<span class="fc" id="L105">                            String.valueOf(context.userId())</span>
+                    );
+                }
+<span class="fc" id="L108">            }</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">        } else if (updated.getState() == WarehouseTransferState.RECEIVED) {</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">            for (WarehouseTransferLine line : updated.getLines()) {</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">                if (line.getReceivedQty().compareTo(BigDecimal.ZERO) &gt; 0) {</span>
+<span class="fc" id="L112">                    ledgerService.recordMovement(</span>
+                            tenantId,
+<span class="fc" id="L114">                            updated.getToWarehouseId(),</span>
+<span class="fc" id="L115">                            line.getProductId(),</span>
+                            InventoryMovementType.TRANSFER_IN,
+<span class="fc" id="L117">                            line.getReceivedQty(),</span>
+<span class="fc" id="L118">                            line.getUnitCost(),</span>
+                            transferNumber,
+<span class="fc" id="L120">                            line.getLotNumber(),</span>
+                            null,
+<span class="fc" id="L122">                            context.timestamp(),</span>
+<span class="fc" id="L123">                            String.valueOf(context.userId())</span>
+                    );
+                }
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">                if (line.getDamagedQty().compareTo(BigDecimal.ZERO) &gt; 0) {</span>
+<span class="fc" id="L127">                    ledgerService.recordMovement(</span>
+                            tenantId,
+<span class="fc" id="L129">                            updated.getToWarehouseId(),</span>
+<span class="fc" id="L130">                            line.getProductId(),</span>
+                            InventoryMovementType.DAMAGED,
+<span class="fc" id="L132">                            line.getDamagedQty().negate(),</span>
+<span class="fc" id="L133">                            line.getUnitCost(),</span>
+                            transferNumber,
+<span class="fc" id="L135">                            line.getLotNumber(),</span>
+                            null,
+<span class="fc" id="L137">                            context.timestamp(),</span>
+<span class="fc" id="L138">                            String.valueOf(context.userId())</span>
+                    );
+                }
+<span class="fc" id="L141">            }</span>
+        }
+
+<span class="fc" id="L144">        return result;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

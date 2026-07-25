@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReportService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.service</a> &gt; <span class="el_source">ReportService.java</span></div><h1>ReportService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.service;
+
+import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
+import com.spiceflow.backend.sales.dto.response.EndOfDaySummaryResponse;
+import com.spiceflow.backend.sales.dto.response.RepPerformanceResponse;
+import com.spiceflow.backend.sales.dto.response.SalesSummaryResponse;
+import com.spiceflow.backend.sales.dto.response.ShopOutstandingResponse;
+import com.spiceflow.backend.sales.dto.response.StockStatusResponse;
+import com.spiceflow.backend.sales.repository.DeliveryRepository;
+import com.spiceflow.backend.sales.repository.LoadingSheetRepository;
+import com.spiceflow.backend.sales.repository.ShopRepository;
+import com.spiceflow.backend.sales.repository.RepRepository;
+import com.spiceflow.backend.sales.repository.RepOrderRepository;
+import com.spiceflow.backend.purchase.repository.PurchaseRepository;
+import com.spiceflow.backend.finance.repository.ExpenseRepository;
+import com.spiceflow.backend.finance.entity.Expense;
+import com.spiceflow.backend.sales.dto.response.MonthSummaryResponse;
+import java.time.YearMonth;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.scheduling.annotation.Async;
+import java.util.concurrent.CompletableFuture;
+
+<span class="fc" id="L31">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class ReportService {
+
+    private final DeliveryRepository deliveryRepository;
+    private final ShopRepository shopRepository;
+    private final InventoryItemRepository inventoryItemRepository;
+    private final LoadingSheetRepository loadingSheetRepository;
+    private final RepOrderRepository repOrderRepository;
+    private final PurchaseRepository purchaseRepository;
+    private final ExpenseRepository expenseRepository;
+
+    @Async
+    public CompletableFuture&lt;SalesSummaryResponse&gt; getSalesSummary(Long tenantId, LocalDate startDate, LocalDate endDate) {
+<span class="fc" id="L47">        log.info(&quot;Generating sales summary for tenant {}, from {} to {}&quot;, tenantId, startDate, endDate);</span>
+        
+<span class="fc" id="L49">        List&lt;com.spiceflow.backend.sales.entity.Delivery&gt; deliveries = deliveryRepository.findDeliveriesInDateRange(tenantId, startDate, endDate);</span>
+            
+<span class="fc" id="L51">        BigDecimal totalSales = BigDecimal.ZERO;</span>
+<span class="fc" id="L52">        BigDecimal totalDiscounts = BigDecimal.ZERO;</span>
+<span class="fc" id="L53">        BigDecimal totalReturns = BigDecimal.ZERO;</span>
+<span class="fc" id="L54">        BigDecimal totalCollected = BigDecimal.ZERO;</span>
+        
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        for (var delivery : deliveries) {</span>
+<span class="fc" id="L57">            totalSales = totalSales.add(delivery.getTotalSalesValue());</span>
+<span class="fc" id="L58">            totalReturns = totalReturns.add(delivery.getTotalReturnsValue());</span>
+<span class="fc" id="L59">            totalCollected = totalCollected.add(delivery.getTotalCollectedAmount());</span>
+            
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            for (var shop : delivery.getShops()) {</span>
+<span class="fc" id="L62">                totalDiscounts = totalDiscounts.add(shop.getTotalDiscount());</span>
+<span class="fc" id="L63">            }</span>
+<span class="fc" id="L64">        }</span>
+        
+<span class="fc" id="L66">        BigDecimal netSales = totalSales.subtract(totalReturns);</span>
+<span class="fc" id="L67">        BigDecimal creditGiven = netSales.subtract(totalCollected);</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (creditGiven.compareTo(BigDecimal.ZERO) &lt; 0) {</span>
+<span class="nc" id="L69">            creditGiven = BigDecimal.ZERO;</span>
+        }
+        
+<span class="fc" id="L72">        SalesSummaryResponse response = new SalesSummaryResponse(</span>
+            startDate,
+            endDate,
+            totalSales,
+            totalDiscounts,
+            totalReturns,
+            netSales,
+            totalCollected,
+            creditGiven
+        );
+            
+<span class="fc" id="L83">        log.debug(&quot;Sales summary calculated: Net Sales = {}, Collected = {}&quot;, netSales, totalCollected);</span>
+<span class="fc" id="L84">        return CompletableFuture.completedFuture(response);</span>
+    }
+
+    public List&lt;ShopOutstandingResponse&gt; getShopOutstandings(Long tenantId) {
+<span class="fc" id="L88">        log.info(&quot;Generating shop outstanding report for tenant {}&quot;, tenantId);</span>
+        
+<span class="fc" id="L90">        List&lt;ShopOutstandingResponse&gt; outstandings = shopRepository.findByTenantId(tenantId, org.springframework.data.domain.Pageable.unpaged())</span>
+<span class="fc" id="L91">            .stream()</span>
+<span class="pc bpc" id="L92" title="2 of 4 branches missed.">            .filter(s -&gt; s.getOutstandingLoan() != null &amp;&amp; s.getOutstandingLoan().compareTo(BigDecimal.ZERO) &gt; 0)</span>
+<span class="fc" id="L93">            .map(s -&gt; new ShopOutstandingResponse(</span>
+<span class="fc" id="L94">                s.getId(),</span>
+<span class="fc" id="L95">                s.getName(),</span>
+<span class="fc" id="L96">                s.getRoute(),</span>
+<span class="fc" id="L97">                s.getOutstandingLoan()</span>
+            ))
+<span class="fc" id="L99">            .collect(Collectors.toList());</span>
+            
+<span class="fc" id="L101">        log.debug(&quot;Found {} shops with outstanding balances for tenant {}&quot;, outstandings.size(), tenantId);</span>
+<span class="fc" id="L102">        return outstandings;</span>
+    }
+
+    public List&lt;StockStatusResponse&gt; getStockStatus(Long tenantId) {
+<span class="fc" id="L106">        log.info(&quot;Generating stock status report for tenant {}&quot;, tenantId);</span>
+        
+        // This is a naive implementation that loads everything in memory.
+        // In a real application, a custom JPQL query would be used.
+<span class="fc" id="L110">        List&lt;StockStatusResponse&gt; stockStatus = inventoryItemRepository.findByTenantId(tenantId, org.springframework.data.domain.Pageable.unpaged())</span>
+<span class="fc" id="L111">            .stream()</span>
+<span class="fc" id="L112">            .collect(Collectors.groupingBy(i -&gt; i.getProduct()))</span>
+<span class="fc" id="L113">            .entrySet().stream()</span>
+<span class="fc" id="L114">            .map(e -&gt; {</span>
+<span class="fc" id="L115">                var product = e.getKey();</span>
+<span class="fc" id="L116">                var items = e.getValue();</span>
+                
+<span class="fc" id="L118">                int mainQuantity = items.stream()</span>
+<span class="fc" id="L119">                    .filter(i -&gt; &quot;MAIN&quot;.equals(i.getWarehouse().getStoreType()))</span>
+<span class="fc" id="L120">                    .mapToInt(i -&gt; i.getQuantityAvailable())</span>
+<span class="fc" id="L121">                    .sum();</span>
+                    
+<span class="fc" id="L123">                int otherQuantity = items.stream()</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">                    .filter(i -&gt; !&quot;MAIN&quot;.equals(i.getWarehouse().getStoreType()))</span>
+<span class="fc" id="L125">                    .mapToInt(i -&gt; i.getQuantityAvailable())</span>
+<span class="fc" id="L126">                    .sum();</span>
+                    
+<span class="fc" id="L128">                return new StockStatusResponse(</span>
+<span class="fc" id="L129">                    product.getId(),</span>
+<span class="fc" id="L130">                    product.getName(),</span>
+<span class="fc" id="L131">                    product.getSku(),</span>
+<span class="fc" id="L132">                    mainQuantity,</span>
+<span class="fc" id="L133">                    otherQuantity,</span>
+<span class="fc" id="L134">                    mainQuantity + otherQuantity</span>
+                );
+            })
+<span class="fc" id="L137">            .collect(Collectors.toList());</span>
+            
+<span class="fc" id="L139">        log.debug(&quot;Stock status calculated for {} distinct products for tenant {}&quot;, stockStatus.size(), tenantId);</span>
+<span class="fc" id="L140">        return stockStatus;</span>
+    }
+
+    public List&lt;RepPerformanceResponse&gt; getRepPerformance(Long tenantId, LocalDate startDate, LocalDate endDate) {
+<span class="fc" id="L144">        log.info(&quot;Generating rep performance report for tenant {}, from {} to {}&quot;, tenantId, startDate, endDate);</span>
+        
+<span class="fc" id="L146">        List&lt;com.spiceflow.backend.sales.entity.Delivery&gt; deliveries = deliveryRepository.findDeliveriesInDateRange(tenantId, startDate, endDate);</span>
+            
+<span class="fc" id="L148">        List&lt;RepPerformanceResponse&gt; performances = deliveries.stream()</span>
+<span class="fc" id="L149">            .collect(Collectors.groupingBy(d -&gt; d.getLoadingSheet().getRepOrder().getRep()))</span>
+<span class="fc" id="L150">            .entrySet().stream()</span>
+<span class="fc" id="L151">            .map(e -&gt; {</span>
+<span class="fc" id="L152">                var rep = e.getKey();</span>
+<span class="fc" id="L153">                var repDeliveries = e.getValue();</span>
+                
+<span class="fc" id="L155">                BigDecimal totalSales = repDeliveries.stream()</span>
+<span class="fc" id="L156">                    .map(d -&gt; d.getTotalSalesValue())</span>
+<span class="fc" id="L157">                    .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+                    
+<span class="fc" id="L159">                BigDecimal totalCollected = repDeliveries.stream()</span>
+<span class="fc" id="L160">                    .map(d -&gt; d.getTotalCollectedAmount())</span>
+<span class="fc" id="L161">                    .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+                    
+<span class="fc" id="L163">                return new RepPerformanceResponse(</span>
+<span class="fc" id="L164">                    rep.getId(),</span>
+<span class="fc" id="L165">                    rep.getName(),</span>
+<span class="fc" id="L166">                    repDeliveries.size(),</span>
+                    totalSales,
+                    totalCollected,
+                    null // performanceScore not calculated here
+                );
+            })
+<span class="fc" id="L172">            .collect(Collectors.toList());</span>
+            
+<span class="fc" id="L174">        log.debug(&quot;Rep performance calculated for {} reps&quot;, performances.size());</span>
+<span class="fc" id="L175">        return performances;</span>
+    }
+
+    public EndOfDaySummaryResponse getEndOfDaySummary(Long tenantId, LocalDate date) {
+<span class="nc" id="L179">        log.info(&quot;Generating end-of-day summary for tenant {} on {}&quot;, tenantId, date);</span>
+
+<span class="nc" id="L181">        List&lt;com.spiceflow.backend.sales.entity.Delivery&gt; deliveries = deliveryRepository.findDeliveriesInDateRange(tenantId, date, date);</span>
+
+<span class="nc" id="L183">        BigDecimal totalSales = BigDecimal.ZERO;</span>
+<span class="nc" id="L184">        BigDecimal totalCash = BigDecimal.ZERO;</span>
+<span class="nc" id="L185">        BigDecimal totalCheque = BigDecimal.ZERO;</span>
+<span class="nc" id="L186">        BigDecimal totalLoan = BigDecimal.ZERO;</span>
+<span class="nc" id="L187">        BigDecimal totalReturns = BigDecimal.ZERO;</span>
+<span class="nc" id="L188">        BigDecimal totalDiscounts = BigDecimal.ZERO;</span>
+<span class="nc" id="L189">        int shopsVisited = 0;</span>
+
+<span class="nc" id="L191">        List&lt;EndOfDaySummaryResponse.ChequeDetail&gt; chequeDetails = new java.util.ArrayList&lt;&gt;();</span>
+<span class="nc" id="L192">        List&lt;EndOfDaySummaryResponse.DeliverySummary&gt; deliverySummaries = new java.util.ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L194" title="All 2 branches missed.">        for (var delivery : deliveries) {</span>
+<span class="nc" id="L195">            totalSales = totalSales.add(delivery.getTotalSalesValue());</span>
+<span class="nc" id="L196">            totalReturns = totalReturns.add(delivery.getTotalReturnsValue());</span>
+<span class="nc" id="L197">            shopsVisited += delivery.getShops().size();</span>
+
+<span class="nc" id="L199">            String driverName = &quot;&quot;;</span>
+<span class="nc bnc" id="L200" title="All 4 branches missed.">            if (delivery.getLoadingSheet() != null &amp;&amp; delivery.getLoadingSheet().getDriver() != null) {</span>
+<span class="nc" id="L201">                driverName = delivery.getLoadingSheet().getDriver().getName();</span>
+            }
+
+<span class="nc bnc" id="L204" title="All 2 branches missed.">            for (var shop : delivery.getShops()) {</span>
+<span class="nc" id="L205">                totalDiscounts = totalDiscounts.add(shop.getTotalDiscount());</span>
+
+<span class="nc bnc" id="L207" title="All 2 branches missed.">                if (shop.getPayments() != null) {</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">                    for (var payment : shop.getPayments()) {</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">                        if (&quot;CASH&quot;.equals(payment.getPaymentMethod())) {</span>
+<span class="nc" id="L210">                            totalCash = totalCash.add(payment.getAmount());</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">                        } else if (&quot;CHEQUE&quot;.equals(payment.getPaymentMethod())) {</span>
+<span class="nc" id="L212">                            totalCheque = totalCheque.add(payment.getAmount());</span>
+<span class="nc" id="L213">                            chequeDetails.add(EndOfDaySummaryResponse.ChequeDetail.builder()</span>
+<span class="nc" id="L214">                                .chequeNo(payment.getChequeNo())</span>
+<span class="nc" id="L215">                                .bankName(payment.getChequeBankName())</span>
+<span class="nc" id="L216">                                .amount(payment.getAmount())</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">                                .shopName(shop.getShop() != null ? shop.getShop().getName() : &quot;&quot;)</span>
+<span class="nc" id="L218">                                .chequeDate(payment.getChequeDate())</span>
+<span class="nc" id="L219">                                .build());</span>
+                        }
+<span class="nc" id="L221">                    }</span>
+                }
+
+<span class="nc" id="L224">                totalLoan = totalLoan.add(shop.getCreditAmount());</span>
+<span class="nc" id="L225">            }</span>
+
+<span class="nc" id="L227">            deliverySummaries.add(EndOfDaySummaryResponse.DeliverySummary.builder()</span>
+<span class="nc" id="L228">                .deliveryId(delivery.getId())</span>
+<span class="nc" id="L229">                .driverName(driverName)</span>
+<span class="nc" id="L230">                .status(delivery.getStatus())</span>
+<span class="nc" id="L231">                .salesValue(delivery.getTotalSalesValue())</span>
+<span class="nc" id="L232">                .collectedAmount(delivery.getTotalCollectedAmount())</span>
+<span class="nc" id="L233">                .shopCount(delivery.getShops().size())</span>
+<span class="nc" id="L234">                .build());</span>
+<span class="nc" id="L235">        }</span>
+
+<span class="nc" id="L237">        List&lt;EndOfDaySummaryResponse.CancelledOrderSummary&gt; cancelledSummaries = loadingSheetRepository</span>
+<span class="nc" id="L238">            .findByTenantIdAndLoadingDateAndStatus(tenantId, date, &quot;CANCELLED&quot;).stream()</span>
+<span class="nc" id="L239">            .map(ls -&gt; EndOfDaySummaryResponse.CancelledOrderSummary.builder()</span>
+<span class="nc" id="L240">                .loadingSheetId(ls.getId())</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">                .repOrderId(ls.getRepOrder() != null ? ls.getRepOrder().getId() : null)</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">                .driverName(ls.getDriver() != null ? ls.getDriver().getName() : &quot;&quot;)</span>
+<span class="nc bnc" id="L243" title="All 4 branches missed.">                .repName(ls.getRepOrder() != null &amp;&amp; ls.getRepOrder().getRep() != null ? ls.getRepOrder().getRep().getName() : &quot;&quot;)</span>
+<span class="nc" id="L244">                .reason(&quot;Cancelled on &quot; + date)</span>
+<span class="nc" id="L245">                .build())</span>
+<span class="nc" id="L246">            .collect(Collectors.toList());</span>
+
+<span class="nc" id="L248">        return EndOfDaySummaryResponse.builder()</span>
+<span class="nc" id="L249">            .date(date)</span>
+<span class="nc" id="L250">            .totalSalesValue(totalSales)</span>
+<span class="nc" id="L251">            .totalCashCollected(totalCash)</span>
+<span class="nc" id="L252">            .totalChequeAmount(totalCheque)</span>
+<span class="nc" id="L253">            .totalLoanGiven(totalLoan)</span>
+<span class="nc" id="L254">            .totalReturnsValue(totalReturns)</span>
+<span class="nc" id="L255">            .totalDiscounts(totalDiscounts)</span>
+<span class="nc" id="L256">            .deliveryCount(deliveries.size())</span>
+<span class="nc" id="L257">            .shopsVisited(shopsVisited)</span>
+<span class="nc" id="L258">            .chequeDetails(chequeDetails)</span>
+<span class="nc" id="L259">            .deliveries(deliverySummaries)</span>
+<span class="nc" id="L260">            .cancelledOrders(cancelledSummaries)</span>
+<span class="nc" id="L261">            .build();</span>
+    }
+
+    public MonthSummaryResponse getMonthSummary(Long tenantId, YearMonth yearMonth) {
+<span class="nc" id="L265">        LocalDate startDate = yearMonth.atDay(1);</span>
+<span class="nc" id="L266">        LocalDate endDate = yearMonth.atEndOfMonth();</span>
+
+<span class="nc" id="L268">        List&lt;com.spiceflow.backend.sales.entity.Delivery&gt; deliveries = deliveryRepository.findDeliveriesInDateRange(tenantId, startDate, endDate);</span>
+<span class="nc" id="L269">        List&lt;com.spiceflow.backend.sales.entity.RepOrder&gt; repOrders = repOrderRepository.findByTenantIdAndOrderDateBetween(tenantId, startDate, endDate);</span>
+<span class="nc" id="L270">        List&lt;com.spiceflow.backend.purchase.entity.Purchase&gt; purchases = purchaseRepository.findByTenantIdAndInvoiceDateBetween(tenantId, startDate, endDate);</span>
+<span class="nc" id="L271">        List&lt;Expense&gt; expenses = expenseRepository.findByTenantIdAndDateBetween(tenantId, startDate, endDate);</span>
+
+<span class="nc" id="L273">        BigDecimal totalDeliverySales = deliveries.stream()</span>
+<span class="nc bnc" id="L274" title="All 2 branches missed.">                .map(d -&gt; d.getTotalSalesValue() != null ? d.getTotalSalesValue() : BigDecimal.ZERO)</span>
+<span class="nc" id="L275">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+
+<span class="nc" id="L277">        BigDecimal totalRepOrderSales = repOrders.stream()</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">                .map(r -&gt; r.getNetAmount() != null ? r.getNetAmount() : BigDecimal.ZERO)</span>
+<span class="nc" id="L279">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+
+<span class="nc" id="L281">        BigDecimal totalSales = totalDeliverySales.add(totalRepOrderSales);</span>
+
+<span class="nc" id="L283">        BigDecimal totalPurchases = purchases.stream()</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">                .map(p -&gt; p.getNetAmount() != null ? p.getNetAmount() : BigDecimal.ZERO)</span>
+<span class="nc" id="L285">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+
+<span class="nc" id="L287">        BigDecimal totalExpenses = expenses.stream()</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">                .map(e -&gt; e.getAmount() != null ? e.getAmount() : BigDecimal.ZERO)</span>
+<span class="nc" id="L289">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+
+<span class="nc" id="L291">        BigDecimal netProfit = totalSales.subtract(totalPurchases).subtract(totalExpenses);</span>
+
+<span class="nc" id="L293">        List&lt;MonthSummaryResponse.ExpenseBreakdown&gt; expenseBreakdown = expenses.stream()</span>
+<span class="nc" id="L294">                .collect(Collectors.groupingBy(Expense::getCategory,</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">                        Collectors.mapping(e -&gt; e.getAmount() != null ? e.getAmount() : BigDecimal.ZERO,</span>
+<span class="nc" id="L296">                                Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))))</span>
+<span class="nc" id="L297">                .entrySet().stream()</span>
+<span class="nc" id="L298">                .map(e -&gt; MonthSummaryResponse.ExpenseBreakdown.builder()</span>
+<span class="nc" id="L299">                        .category(e.getKey())</span>
+<span class="nc" id="L300">                        .amount(e.getValue())</span>
+<span class="nc" id="L301">                        .build())</span>
+<span class="nc" id="L302">                .collect(Collectors.toList());</span>
+
+<span class="nc" id="L304">        return MonthSummaryResponse.builder()</span>
+<span class="nc" id="L305">                .yearMonth(yearMonth)</span>
+<span class="nc" id="L306">                .totalSalesValue(totalSales)</span>
+<span class="nc" id="L307">                .totalPurchasesValue(totalPurchases)</span>
+<span class="nc" id="L308">                .totalExpensesValue(totalExpenses)</span>
+<span class="nc" id="L309">                .netProfit(netProfit)</span>
+<span class="nc" id="L310">                .deliveryCount(deliveries.size())</span>
+<span class="nc" id="L311">                .repOrderCount(repOrders.size())</span>
+<span class="nc" id="L312">                .purchaseOrderCount(purchases.size())</span>
+<span class="nc" id="L313">                .expenseBreakdown(expenseBreakdown)</span>
+<span class="nc" id="L314">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

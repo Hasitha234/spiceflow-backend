@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RepOrderItemWorkflowEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.order.entity</a> &gt; <span class="el_source">RepOrderItemWorkflowEntity.java</span></div><h1>RepOrderItemWorkflowEntity.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.order.entity;
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.time.Instant;
+import org.jspecify.annotations.Nullable;
+
+@Entity
+@Table(name = &quot;rep_order_items&quot;)
+public class RepOrderItemWorkflowEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private @Nullable Long id;
+
+    @Column(name = &quot;tenant_id&quot;, nullable = false)
+    private Long tenantId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;rep_order_shop_id&quot;, nullable = false)
+    private @Nullable RepOrderShopWorkflowEntity repOrderShop;
+
+    @Column(name = &quot;product_id&quot;, nullable = false)
+    private Long productId;
+
+    @Column(name = &quot;quantity&quot;, nullable = false)
+    private Integer quantity;
+
+    @Column(name = &quot;unit_type&quot;)
+    private @Nullable String unitType;
+
+    @Column(name = &quot;rate&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal rate;
+
+    @Column(name = &quot;gross_amount&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal grossAmount;
+
+    @Column(name = &quot;net_amount&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal netAmount;
+
+    @Column(name = &quot;is_free_item&quot;, nullable = false)
+    private Boolean isFreeItem;
+
+    @Column(name = &quot;boxes_needed&quot;, nullable = false)
+    private Integer boxesNeeded;
+
+    @Column(name = &quot;created_at&quot;, nullable = false)
+    private Instant createdAt;
+
+<span class="fc" id="L61">    public RepOrderItemWorkflowEntity() {</span>
+<span class="fc" id="L62">        this.tenantId = 0L;</span>
+<span class="fc" id="L63">        this.productId = 0L;</span>
+<span class="fc" id="L64">        this.quantity = 0;</span>
+<span class="fc" id="L65">        this.rate = BigDecimal.ZERO;</span>
+<span class="fc" id="L66">        this.grossAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L67">        this.netAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L68">        this.isFreeItem = false;</span>
+<span class="fc" id="L69">        this.boxesNeeded = 0;</span>
+<span class="fc" id="L70">        this.createdAt = Instant.EPOCH;</span>
+<span class="fc" id="L71">    }</span>
+
+<span class="fc" id="L73">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L74">    public void setId(@Nullable Long id) { this.id = id; }</span>
+
+<span class="nc" id="L76">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L77">    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }</span>
+
+<span class="nc" id="L79">    public @Nullable RepOrderShopWorkflowEntity getRepOrderShop() { return repOrderShop; }</span>
+<span class="fc" id="L80">    public void setRepOrderShop(@Nullable RepOrderShopWorkflowEntity repOrderShop) { this.repOrderShop = repOrderShop; }</span>
+
+<span class="fc" id="L82">    public Long getProductId() { return productId; }</span>
+<span class="fc" id="L83">    public void setProductId(Long productId) { this.productId = productId; }</span>
+
+<span class="fc" id="L85">    public Integer getQuantity() { return quantity; }</span>
+<span class="fc" id="L86">    public void setQuantity(Integer quantity) { this.quantity = quantity; }</span>
+
+<span class="fc" id="L88">    public @Nullable String getUnitType() { return unitType; }</span>
+<span class="fc" id="L89">    public void setUnitType(@Nullable String unitType) { this.unitType = unitType; }</span>
+
+<span class="fc" id="L91">    public BigDecimal getRate() { return rate; }</span>
+<span class="fc" id="L92">    public void setRate(BigDecimal rate) { this.rate = rate; }</span>
+
+<span class="fc" id="L94">    public BigDecimal getGrossAmount() { return grossAmount; }</span>
+<span class="fc" id="L95">    public void setGrossAmount(BigDecimal grossAmount) { this.grossAmount = grossAmount; }</span>
+
+<span class="fc" id="L97">    public BigDecimal getNetAmount() { return netAmount; }</span>
+<span class="fc" id="L98">    public void setNetAmount(BigDecimal netAmount) { this.netAmount = netAmount; }</span>
+
+<span class="fc" id="L100">    public Boolean getIsFreeItem() { return isFreeItem; }</span>
+<span class="fc" id="L101">    public void setIsFreeItem(Boolean isFreeItem) { this.isFreeItem = isFreeItem; }</span>
+
+<span class="fc" id="L103">    public Integer getBoxesNeeded() { return boxesNeeded; }</span>
+<span class="fc" id="L104">    public void setBoxesNeeded(Integer boxesNeeded) { this.boxesNeeded = boxesNeeded; }</span>
+
+<span class="nc" id="L106">    public Instant getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L107">    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

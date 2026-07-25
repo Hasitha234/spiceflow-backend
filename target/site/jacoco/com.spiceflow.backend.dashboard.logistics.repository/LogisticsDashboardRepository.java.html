@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LogisticsDashboardRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.dashboard.logistics.repository</a> &gt; <span class="el_source">LogisticsDashboardRepository.java</span></div><h1>LogisticsDashboardRepository.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.dashboard.logistics.repository;
+
+import com.spiceflow.backend.dashboard.logistics.dto.ActiveLoadingSheetDto;
+import com.spiceflow.backend.dashboard.logistics.dto.InProgressDeliveryDto;
+import java.util.Collections;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Pure CQRS Read Model repository for the Logistics Dashboard.
+ * Executes read-only SQL aggregations against loading_sheets, deliveries, drivers, and delivery_shop_returns.
+ */
+<span class="fc" id="L17">@Slf4j</span>
+@Repository
+@RequiredArgsConstructor
+public class LogisticsDashboardRepository {
+
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+
+<span class="fc" id="L24">    public record SummaryMetrics(</span>
+        long activeLoadingSheetsCount,
+        long inProgressDeliveriesCount,
+        long completedDeliveriesToday,
+        long totalReturnItemsToday
+    ) {}
+
+    public SummaryMetrics getSummaryMetrics(Long tenantId) {
+<span class="nc" id="L32">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                (SELECT COUNT(*)
+                 FROM loading_sheets
+                 WHERE tenant_id = :tenantId AND deleted_at IS NULL AND status IN ('DRAFT', 'PENDING', 'LOADED', 'DISPATCHED')) AS active_ls,
+                (SELECT COUNT(*)
+                 FROM deliveries
+                 WHERE tenant_id = :tenantId AND deleted_at IS NULL AND status IN ('IN_PROGRESS', 'DISPATCHED')) AS active_del,
+                (SELECT COUNT(*)
+                 FROM deliveries
+                 WHERE tenant_id = :tenantId AND deleted_at IS NULL AND status = 'COMPLETED' AND delivery_date = CURRENT_DATE) AS completed_today,
+                (SELECT COALESCE(SUM(r.quantity_returned), 0)
+                 FROM delivery_shop_returns r
+                 JOIN delivery_shops ds ON r.delivery_shop_id = ds.id
+                 JOIN deliveries d ON ds.delivery_id = d.id
+                 WHERE r.tenant_id = :tenantId AND d.delivery_date = CURRENT_DATE) AS returns_today
+            &quot;&quot;&quot;;
+<span class="nc" id="L49">        MapSqlParameterSource params = new MapSqlParameterSource(&quot;tenantId&quot;, tenantId);</span>
+
+<span class="nc" id="L51">        SummaryMetrics metrics = jdbcTemplate.queryForObject(sql, params, (rs, rowNum) -&gt; new SummaryMetrics(</span>
+<span class="nc" id="L52">            rs.getLong(&quot;active_ls&quot;),</span>
+<span class="nc" id="L53">            rs.getLong(&quot;active_del&quot;),</span>
+<span class="nc" id="L54">            rs.getLong(&quot;completed_today&quot;),</span>
+<span class="nc" id="L55">            rs.getLong(&quot;returns_today&quot;)</span>
+        ));
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        return metrics != null ? metrics : new SummaryMetrics(0L, 0L, 0L, 0L);</span>
+    }
+
+    public List&lt;ActiveLoadingSheetDto&gt; getActiveLoadingSheets(Long tenantId, int limit) {
+<span class="nc" id="L61">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                ls.id,
+                COALESCE(ls.sheet_number, CONCAT('LS-', ls.id)) AS sheet_no,
+                ls.driver_id,
+                COALESCE(d.name, 'Unknown Driver') AS driver_name,
+                ls.status,
+                CAST(ls.loading_date AS VARCHAR) AS loading_date,
+                (SELECT COALESCE(SUM(i.quantity_loaded), 0) FROM loading_sheet_items i WHERE i.loading_sheet_id = ls.id) AS item_count
+            FROM loading_sheets ls
+            LEFT JOIN drivers d ON ls.driver_id = d.id
+            WHERE ls.tenant_id = :tenantId AND ls.deleted_at IS NULL AND ls.status IN ('DRAFT', 'PENDING', 'LOADED', 'DISPATCHED')
+            ORDER BY ls.created_at DESC
+            LIMIT :limit
+            &quot;&quot;&quot;;
+<span class="nc" id="L76">        MapSqlParameterSource params = new MapSqlParameterSource()</span>
+<span class="nc" id="L77">            .addValue(&quot;tenantId&quot;, tenantId)</span>
+<span class="nc" id="L78">            .addValue(&quot;limit&quot;, limit);</span>
+
+<span class="nc" id="L80">        List&lt;ActiveLoadingSheetDto&gt; results = jdbcTemplate.query(sql, params, (rs, rowNum) -&gt; new ActiveLoadingSheetDto(</span>
+<span class="nc" id="L81">            rs.getLong(&quot;id&quot;),</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            rs.getString(&quot;sheet_no&quot;) != null ? rs.getString(&quot;sheet_no&quot;) : &quot;&quot;,</span>
+<span class="nc" id="L83">            rs.getLong(&quot;driver_id&quot;),</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            rs.getString(&quot;driver_name&quot;) != null ? rs.getString(&quot;driver_name&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            rs.getString(&quot;status&quot;) != null ? rs.getString(&quot;status&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            rs.getString(&quot;loading_date&quot;) != null ? rs.getString(&quot;loading_date&quot;) : &quot;&quot;,</span>
+<span class="nc" id="L87">            rs.getInt(&quot;item_count&quot;)</span>
+        ));
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        return results != null ? results : Collections.emptyList();</span>
+    }
+
+    public List&lt;InProgressDeliveryDto&gt; getInProgressDeliveries(Long tenantId, int limit) {
+<span class="nc" id="L93">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                del.id,
+                COALESCE(del.delivery_number, CONCAT('DEL-', del.id)) AS del_no,
+                COALESCE(ls.sheet_number, CONCAT('LS-', del.loading_sheet_id)) AS ls_no,
+                COALESCE(d.name, 'Unknown Driver') AS driver_name,
+                del.status,
+                CAST(del.delivery_date AS VARCHAR) AS del_date,
+                (SELECT COUNT(*) FROM delivery_shops ds WHERE ds.delivery_id = del.id) AS shop_count
+            FROM deliveries del
+            LEFT JOIN loading_sheets ls ON del.loading_sheet_id = ls.id
+            LEFT JOIN drivers d ON ls.driver_id = d.id
+            WHERE del.tenant_id = :tenantId AND del.deleted_at IS NULL AND del.status IN ('IN_PROGRESS', 'DISPATCHED')
+            ORDER BY del.created_at DESC
+            LIMIT :limit
+            &quot;&quot;&quot;;
+<span class="nc" id="L109">        MapSqlParameterSource params = new MapSqlParameterSource()</span>
+<span class="nc" id="L110">            .addValue(&quot;tenantId&quot;, tenantId)</span>
+<span class="nc" id="L111">            .addValue(&quot;limit&quot;, limit);</span>
+
+<span class="nc" id="L113">        List&lt;InProgressDeliveryDto&gt; results = jdbcTemplate.query(sql, params, (rs, rowNum) -&gt; new InProgressDeliveryDto(</span>
+<span class="nc" id="L114">            rs.getLong(&quot;id&quot;),</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            rs.getString(&quot;del_no&quot;) != null ? rs.getString(&quot;del_no&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            rs.getString(&quot;ls_no&quot;) != null ? rs.getString(&quot;ls_no&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            rs.getString(&quot;driver_name&quot;) != null ? rs.getString(&quot;driver_name&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            rs.getString(&quot;status&quot;) != null ? rs.getString(&quot;status&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            rs.getString(&quot;del_date&quot;) != null ? rs.getString(&quot;del_date&quot;) : &quot;&quot;,</span>
+<span class="nc" id="L120">            rs.getInt(&quot;shop_count&quot;)</span>
+        ));
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        return results != null ? results : Collections.emptyList();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

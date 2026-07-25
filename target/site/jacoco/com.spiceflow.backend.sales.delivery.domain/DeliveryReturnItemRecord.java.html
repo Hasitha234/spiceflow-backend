@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DeliveryReturnItemRecord.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.delivery.domain</a> &gt; <span class="el_source">DeliveryReturnItemRecord.java</span></div><h1>DeliveryReturnItemRecord.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.delivery.domain;
+
+import java.math.BigDecimal;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Immutable record representing a product returned from a shop during a Delivery.
+ * ADR-013: Self-validating, NullAway-safe, no setters.
+ * returnType: EXPIRED | DAMAGED | GOOD
+ */
+public record DeliveryReturnItemRecord(
+        @Nullable Long id,
+        Long productId,
+        Integer quantityReturned,
+        @Nullable String unitType,
+        BigDecimal creditValue,
+        String returnType
+) {
+<span class="fc" id="L19">    public DeliveryReturnItemRecord {</span>
+<span class="pc bpc" id="L20" title="1 of 2 branches missed.">        if (productId == null) throw new IllegalArgumentException(&quot;productId cannot be null&quot;);</span>
+<span class="pc bpc" id="L21" title="2 of 4 branches missed.">        if (quantityReturned == null || quantityReturned &lt; 0) throw new IllegalArgumentException(&quot;quantityReturned cannot be negative&quot;);</span>
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if (creditValue == null) throw new IllegalArgumentException(&quot;creditValue cannot be null&quot;);</span>
+<span class="pc bpc" id="L23" title="2 of 4 branches missed.">        if (returnType == null || returnType.isBlank()) throw new IllegalArgumentException(&quot;returnType cannot be blank&quot;);</span>
+<span class="fc" id="L24">    }</span>
+
+    /** Convenience constructor without a persisted id. */
+    public DeliveryReturnItemRecord(Long productId, Integer quantityReturned, @Nullable String unitType,
+                                     BigDecimal creditValue, String returnType) {
+<span class="nc" id="L29">        this(null, productId, quantityReturned, unitType, creditValue, returnType);</span>
+<span class="nc" id="L30">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

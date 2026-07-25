@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InventoryTransactionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.inventory.service</a> &gt; <span class="el_source">InventoryTransactionService.java</span></div><h1>InventoryTransactionService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.inventory.service;
+
+import com.spiceflow.backend.auth.entity.Tenant;
+import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.inventory.dto.request.InventoryTransactionRequest;
+import com.spiceflow.backend.inventory.dto.response.InventoryTransactionResponse;
+import com.spiceflow.backend.inventory.entity.InventoryItem;
+import com.spiceflow.backend.inventory.entity.InventoryTransaction;
+import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
+import com.spiceflow.backend.inventory.repository.InventoryTransactionRepository;
+import com.spiceflow.backend.inventory.mapper.InventoryTransactionMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+<span class="fc" id="L21">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class InventoryTransactionService {
+
+    private final InventoryTransactionRepository transactionRepository;
+    private final InventoryItemRepository inventoryItemRepository;
+    private final TenantRepository tenantRepository;
+    private final InventoryTransactionMapper transactionMapper;
+
+    @Transactional(rollbackFor = Exception.class)
+    public InventoryTransactionResponse recordTransaction(Long tenantId, InventoryTransactionRequest request) {
+<span class="fc" id="L34">        log.debug(&quot;Recording transaction for tenantId: {}, inventoryItemId: {}, type: {}&quot;, </span>
+<span class="fc" id="L35">                 tenantId, request.inventoryItemId(), request.transactionType());</span>
+        try {
+<span class="fc" id="L37">            Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L38">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Tenant with ID &quot; + tenantId + &quot; not found&quot;));</span>
+                
+<span class="fc" id="L40">            InventoryItem item = inventoryItemRepository.findByIdAndTenantId(request.inventoryItemId(), tenantId)</span>
+<span class="pc" id="L41">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Inventory item not found&quot;));</span>
+                
+<span class="fc" id="L43">            validateTransaction(item, request.transactionType(), request.quantity());</span>
+            
+            // Update inventory quantities
+<span class="fc" id="L46">            updateInventoryQuantities(item, request.transactionType(), request.quantity());</span>
+            
+<span class="fc" id="L48">            InventoryTransaction transaction = InventoryTransaction.builder()</span>
+<span class="fc" id="L49">                .inventoryItem(item)</span>
+<span class="fc" id="L50">                .transactionType(request.transactionType())</span>
+<span class="fc" id="L51">                .quantity(request.quantity())</span>
+<span class="fc" id="L52">                .referenceId(request.referenceId())</span>
+<span class="fc" id="L53">                .notes(request.notes())</span>
+<span class="fc" id="L54">                .tenant(tenant)</span>
+<span class="fc" id="L55">                .build();</span>
+                
+<span class="fc" id="L57">            InventoryTransaction savedTx = transactionRepository.save(transaction);</span>
+<span class="fc" id="L58">            inventoryItemRepository.save(item);</span>
+            
+<span class="fc" id="L60">            log.info(&quot;Successfully recorded transaction with ID: {} for tenantId: {}&quot;, savedTx.getId(), tenantId);</span>
+<span class="fc" id="L61">            return transactionMapper.toResponse(savedTx);</span>
+<span class="fc" id="L62">        } catch (BusinessRuleViolationException | ResourceNotFoundException e) {</span>
+<span class="fc" id="L63">            throw e;</span>
+<span class="nc" id="L64">        } catch (Exception e) {</span>
+<span class="nc" id="L65">            log.error(&quot;Failed to record transaction for tenantId: {}&quot;, tenantId, e);</span>
+<span class="nc" id="L66">            throw new BusinessRuleViolationException(&quot;Failed to record transaction: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    public Page&lt;InventoryTransactionResponse&gt; getTransactions(Long tenantId, Long inventoryItemId, String type, Pageable pageable) {
+<span class="nc" id="L71">        log.debug(&quot;Fetching transactions for tenantId: {}, inventoryItemId: {}, type: {}&quot;, tenantId, inventoryItemId, type);</span>
+        try {
+            Page&lt;InventoryTransaction&gt; txPage;
+<span class="nc bnc" id="L74" title="All 4 branches missed.">            if (inventoryItemId != null &amp;&amp; type != null) {</span>
+<span class="nc" id="L75">                txPage = transactionRepository.findByInventoryItemIdAndTransactionTypeAndTenantId(inventoryItemId, type, tenantId, pageable);</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">            } else if (inventoryItemId != null) {</span>
+<span class="nc" id="L77">                txPage = transactionRepository.findByInventoryItemIdAndTenantId(inventoryItemId, tenantId, pageable);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">            } else if (type != null) {</span>
+<span class="nc" id="L79">                txPage = transactionRepository.findByTransactionTypeAndTenantId(type, tenantId, pageable);</span>
+            } else {
+<span class="nc" id="L81">                txPage = transactionRepository.findByTenantId(tenantId, pageable);</span>
+            }
+<span class="nc" id="L83">            return txPage.map(transactionMapper::toResponse);</span>
+<span class="nc" id="L84">        } catch (Exception e) {</span>
+<span class="nc" id="L85">            log.error(&quot;Failed to fetch transactions for tenantId: {}&quot;, tenantId, e);</span>
+<span class="nc" id="L86">            throw new BusinessRuleViolationException(&quot;Failed to fetch transactions&quot;);</span>
+        }
+    }
+    
+    public InventoryTransactionResponse getTransaction(Long id, Long tenantId) {
+<span class="nc" id="L91">        log.debug(&quot;Fetching transaction with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="nc" id="L92">        InventoryTransaction tx = transactionRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="nc" id="L93">            .orElseThrow(() -&gt; {</span>
+<span class="nc" id="L94">                log.error(&quot;Transaction not found with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="nc" id="L95">                return new ResourceNotFoundException(&quot;Transaction not found with id: &quot; + id);</span>
+            });
+<span class="nc" id="L97">        return transactionMapper.toResponse(tx);</span>
+    }
+    
+    private void validateTransaction(InventoryItem item, String type, Integer quantity) {
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (quantity &lt;= 0) {</span>
+<span class="nc" id="L102">            throw new BusinessRuleViolationException(&quot;Transaction quantity must be greater than zero&quot;);</span>
+        }
+        
+<span class="fc bfc" id="L105" title="All 4 branches covered.">        switch (type) {</span>
+            case &quot;OUT&quot;:
+<span class="fc bfc" id="L107" title="All 2 branches covered.">                if (item.getQuantityAvailable() &lt; quantity) {</span>
+<span class="fc" id="L108">                    throw new BusinessRuleViolationException(</span>
+                        &quot;Insufficient available quantity. Requested: &quot; + quantity + 
+<span class="fc" id="L110">                        &quot;, Available: &quot; + item.getQuantityAvailable());</span>
+                }
+                break;
+            case &quot;RESERVE&quot;:
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">                if (item.getQuantityAvailable() &lt; quantity) {</span>
+<span class="nc" id="L115">                    throw new BusinessRuleViolationException(</span>
+                        &quot;Insufficient available quantity for reservation. Requested: &quot; + quantity + 
+<span class="nc" id="L117">                        &quot;, Available: &quot; + item.getQuantityAvailable());</span>
+                }
+                break;
+            case &quot;UNRESERVE&quot;:
+            case &quot;SHIP_RESERVED&quot;:
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">                if (item.getQuantityReserved() &lt; quantity) {</span>
+<span class="nc" id="L123">                    throw new BusinessRuleViolationException(</span>
+                        &quot;Insufficient reserved quantity. Requested: &quot; + quantity + 
+<span class="nc" id="L125">                        &quot;, Reserved: &quot; + item.getQuantityReserved());</span>
+                }
+                break;
+        }
+<span class="fc" id="L129">    }</span>
+    
+    private void updateInventoryQuantities(InventoryItem item, String type, Integer quantity) {
+<span class="pc bpc" id="L132" title="1 of 8 branches missed.">        switch (type) {</span>
+            case &quot;IN&quot;:
+<span class="fc" id="L134">                item.setQuantityAvailable(item.getQuantityAvailable() + quantity);</span>
+<span class="fc" id="L135">                break;</span>
+            case &quot;OUT&quot;:
+<span class="fc" id="L137">                item.setQuantityAvailable(item.getQuantityAvailable() - quantity);</span>
+<span class="fc" id="L138">                break;</span>
+            case &quot;RESERVE&quot;:
+<span class="fc" id="L140">                item.setQuantityAvailable(item.getQuantityAvailable() - quantity);</span>
+<span class="fc" id="L141">                item.setQuantityReserved(item.getQuantityReserved() + quantity);</span>
+<span class="fc" id="L142">                break;</span>
+            case &quot;UNRESERVE&quot;:
+<span class="fc" id="L144">                item.setQuantityReserved(item.getQuantityReserved() - quantity);</span>
+<span class="fc" id="L145">                item.setQuantityAvailable(item.getQuantityAvailable() + quantity);</span>
+<span class="fc" id="L146">                break;</span>
+            case &quot;SHIP_RESERVED&quot;:
+<span class="fc" id="L148">                item.setQuantityReserved(item.getQuantityReserved() - quantity);</span>
+                // Total physical inventory decreases, which is already accounted for 
+                // in Available when it was reserved.
+<span class="fc" id="L151">                break;</span>
+            case &quot;ADJUST_UP&quot;:
+<span class="fc" id="L153">                item.setQuantityAvailable(item.getQuantityAvailable() + quantity);</span>
+<span class="fc" id="L154">                break;</span>
+            case &quot;ADJUST_DOWN&quot;:
+<span class="fc bfc" id="L156" title="All 2 branches covered.">                if (item.getQuantityAvailable() &lt; quantity) {</span>
+<span class="fc" id="L157">                    throw new BusinessRuleViolationException(&quot;Cannot adjust down below zero&quot;);</span>
+                }
+<span class="fc" id="L159">                item.setQuantityAvailable(item.getQuantityAvailable() - quantity);</span>
+<span class="fc" id="L160">                break;</span>
+            default:
+<span class="nc" id="L162">                throw new BusinessRuleViolationException(&quot;Unknown transaction type: &quot; + type);</span>
+        }
+<span class="fc" id="L164">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

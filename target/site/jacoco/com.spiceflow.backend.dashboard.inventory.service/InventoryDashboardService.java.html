@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InventoryDashboardService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.dashboard.inventory.service</a> &gt; <span class="el_source">InventoryDashboardService.java</span></div><h1>InventoryDashboardService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.dashboard.inventory.service;
+
+import com.spiceflow.backend.dashboard.inventory.dto.InventoryDashboardResponse;
+import com.spiceflow.backend.dashboard.inventory.dto.LowStockItemDto;
+import com.spiceflow.backend.dashboard.inventory.dto.RecentMovementDto;
+import com.spiceflow.backend.dashboard.inventory.repository.InventoryDashboardRepository;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Pure CQRS Read Model service orchestrating queries for the Inventory Dashboard.
+ * Operates strictly read-only without transaction boundary entanglement or entity mutation.
+ */
+<span class="fc" id="L17">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class InventoryDashboardService {
+
+    private final InventoryDashboardRepository repository;
+
+    public InventoryDashboardResponse getDashboard(Long tenantId, int limit) {
+<span class="nc" id="L26">        log.debug(&quot;Fetching inventory dashboard projection for tenantId={}, limit={}&quot;, tenantId, limit);</span>
+
+<span class="nc" id="L28">        InventoryDashboardRepository.SummaryMetrics metrics = repository.getSummaryMetrics(tenantId);</span>
+<span class="nc" id="L29">        List&lt;LowStockItemDto&gt; lowStockItems = repository.getLowStockItems(tenantId, limit);</span>
+<span class="nc" id="L30">        List&lt;RecentMovementDto&gt; recentMovements = repository.getRecentMovements(tenantId, limit);</span>
+<span class="nc" id="L31">        List&lt;com.spiceflow.backend.dashboard.inventory.dto.WarehouseStockDto&gt; warehouseStocks = repository.getWarehouseStocks(tenantId);</span>
+
+<span class="nc" id="L33">        return new InventoryDashboardResponse(</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">            metrics.totalStockValue() != null ? metrics.totalStockValue() : java.math.BigDecimal.ZERO,</span>
+<span class="nc" id="L35">            metrics.totalItemsCount(),</span>
+<span class="nc" id="L36">            metrics.lowStockCount(),</span>
+<span class="nc" id="L37">            metrics.pendingTransfersCount(),</span>
+            lowStockItems,
+            recentMovements,
+            warehouseStocks
+        );
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

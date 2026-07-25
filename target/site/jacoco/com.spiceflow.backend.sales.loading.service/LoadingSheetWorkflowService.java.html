@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoadingSheetWorkflowService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.loading.service</a> &gt; <span class="el_source">LoadingSheetWorkflowService.java</span></div><h1>LoadingSheetWorkflowService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.loading.service;
+
+import com.spiceflow.backend.audit.AuditService;
+import com.spiceflow.backend.auth.entity.Tenant;
+import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.events.DomainEvent;
+import com.spiceflow.backend.events.DomainEventPublisher;
+import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.ledger.InventoryMovementType;
+import com.spiceflow.backend.inventory.ledger.service.InventoryLedgerService;
+import com.spiceflow.backend.inventory.repository.WarehouseRepository;
+import com.spiceflow.backend.sales.loading.adapter.LoadingSheetPersistenceAdapter;
+import com.spiceflow.backend.sales.loading.domain.LoadingSheet;
+import com.spiceflow.backend.sales.loading.domain.LoadingSheetItem;
+import com.spiceflow.backend.sales.loading.domain.LoadingSheetReturnItem;
+import com.spiceflow.backend.sales.loading.domain.LoadingSheetState;
+import com.spiceflow.backend.sales.loading.entity.LoadingSheetWorkflowEntity;
+import com.spiceflow.backend.sales.loading.repository.LoadingSheetWorkflowRepository;
+import com.spiceflow.backend.workflow.WorkflowCommand;
+import com.spiceflow.backend.workflow.WorkflowContext;
+import com.spiceflow.backend.workflow.WorkflowEngine;
+import com.spiceflow.backend.workflow.WorkflowResult;
+import java.math.BigDecimal;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Operational workflow service for Van Loading Sheets.
+ * Coordinates FSM transitions, event publishing, audit logging, and double-entry stock ledger movements.
+ */
+@Service
+public class LoadingSheetWorkflowService {
+
+    private final LoadingSheetWorkflowRepository repository;
+    private final LoadingSheetPersistenceAdapter adapter;
+    private final WorkflowEngine engine;
+    private final InventoryLedgerService ledgerService;
+    private final DomainEventPublisher eventPublisher;
+    private final AuditService auditService;
+    private final WarehouseRepository warehouseRepository;
+    private final TenantRepository tenantRepository;
+
+    public LoadingSheetWorkflowService(LoadingSheetWorkflowRepository repository,
+                                       LoadingSheetPersistenceAdapter adapter,
+                                       WorkflowEngine engine,
+                                       InventoryLedgerService ledgerService,
+                                       DomainEventPublisher eventPublisher,
+                                       AuditService auditService,
+                                       WarehouseRepository warehouseRepository,
+<span class="fc" id="L53">                                       TenantRepository tenantRepository) {</span>
+<span class="fc" id="L54">        this.repository = repository;</span>
+<span class="fc" id="L55">        this.adapter = adapter;</span>
+<span class="fc" id="L56">        this.engine = engine;</span>
+<span class="fc" id="L57">        this.ledgerService = ledgerService;</span>
+<span class="fc" id="L58">        this.eventPublisher = eventPublisher;</span>
+<span class="fc" id="L59">        this.auditService = auditService;</span>
+<span class="fc" id="L60">        this.warehouseRepository = warehouseRepository;</span>
+<span class="fc" id="L61">        this.tenantRepository = tenantRepository;</span>
+<span class="fc" id="L62">    }</span>
+
+    @Transactional
+    public LoadingSheet createLoadingSheet(LoadingSheet loadingSheet) {
+<span class="fc" id="L66">        LoadingSheetWorkflowEntity entity = adapter.toEntity(loadingSheet);</span>
+<span class="fc" id="L67">        LoadingSheetWorkflowEntity saved = repository.save(entity);</span>
+<span class="fc" id="L68">        return adapter.toDomain(saved);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public LoadingSheet getLoadingSheet(String sheetNumber, Long tenantId) {
+<span class="fc" id="L73">        LoadingSheetWorkflowEntity entity = repository.findBySheetNumberAndTenantId(sheetNumber, tenantId)</span>
+<span class="pc" id="L74">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Loading Sheet not found: &quot; + sheetNumber));</span>
+<span class="fc" id="L75">        return adapter.toDomain(entity);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;LoadingSheet&gt; listLoadingSheets(Long tenantId, @Nullable LoadingSheetState status) {
+<span class="nc" id="L80">        List&lt;LoadingSheetWorkflowEntity&gt; entities = repository.findAll().stream()</span>
+<span class="nc" id="L81">                .filter(e -&gt; e.getTenantId().equals(tenantId))</span>
+<span class="nc bnc" id="L82" title="All 4 branches missed.">                .filter(e -&gt; status == null || e.getStatus() == status)</span>
+<span class="nc" id="L83">                .toList();</span>
+<span class="nc" id="L84">        return entities.stream().map(adapter::toDomain).toList();</span>
+    }
+
+    @Transactional
+    public WorkflowResult&lt;LoadingSheet&gt; executeCommand(String sheetNumber,
+                                                       Long tenantId,
+                                                       WorkflowCommand&lt;LoadingSheet, LoadingSheetState&gt; command,
+                                                       WorkflowContext context) {
+<span class="fc" id="L92">        LoadingSheet current = getLoadingSheet(sheetNumber, tenantId);</span>
+<span class="fc" id="L93">        WorkflowResult&lt;LoadingSheet&gt; result = engine.execute(command, current, context);</span>
+
+<span class="fc" id="L95">        LoadingSheetWorkflowEntity updatedEntity = adapter.toEntity(result.updatedAggregate());</span>
+<span class="fc" id="L96">        repository.save(updatedEntity);</span>
+
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (result.auditEntry() != null) {</span>
+<span class="fc" id="L99">            auditService.record(result.auditEntry());</span>
+        }
+
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        for (DomainEvent event : result.events()) {</span>
+<span class="fc" id="L103">            eventPublisher.publish(event);</span>
+<span class="fc" id="L104">        }</span>
+
+<span class="fc" id="L106">        LoadingSheet updated = result.updatedAggregate();</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (updated.getState() == LoadingSheetState.CONFIRMED) {</span>
+<span class="fc" id="L108">            Long mainWarehouseId = warehouseRepository.findAllByTenantId(tenantId).stream()</span>
+<span class="pc bpc" id="L109" title="5 of 6 branches missed.">                    .filter(w -&gt; &quot;MAIN&quot;.equals(w.getStoreType()) || &quot;DEFAULT&quot;.equals(w.getStoreType()) || Boolean.TRUE.equals(w.getIsSystemStore()))</span>
+<span class="fc" id="L110">                    .map(Warehouse::getId)</span>
+<span class="fc" id="L111">                    .findFirst()</span>
+<span class="fc" id="L112">                    .orElse(1L);</span>
+
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">            String vehicleStoreName = &quot;Vehicle - &quot; + (updated.getDriverName().isEmpty() ? &quot;Driver &quot; + updated.getDriverId() : updated.getDriverName());</span>
+<span class="fc" id="L115">            Warehouse vehicleStore = warehouseRepository.findAllByTenantId(tenantId).stream()</span>
+<span class="pc bpc" id="L116" title="1 of 4 branches missed.">                    .filter(w -&gt; &quot;CUSTOM&quot;.equals(w.getStoreType()) &amp;&amp; vehicleStoreName.equals(w.getName()))</span>
+<span class="fc" id="L117">                    .findFirst()</span>
+<span class="fc" id="L118">                    .orElseGet(() -&gt; {</span>
+<span class="nc" id="L119">                        Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="nc" id="L120">                                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found: &quot; + tenantId));</span>
+<span class="nc" id="L121">                        Warehouse newStore = Warehouse.builder()</span>
+<span class="nc" id="L122">                                .tenant(tenant)</span>
+<span class="nc" id="L123">                                .name(vehicleStoreName)</span>
+<span class="nc" id="L124">                                .storeType(&quot;CUSTOM&quot;)</span>
+<span class="nc" id="L125">                                .isSystemStore(false)</span>
+<span class="nc" id="L126">                                .description(&quot;Store for vehicle/driver &quot; + updated.getDriverId())</span>
+<span class="nc" id="L127">                                .build();</span>
+<span class="nc" id="L128">                        return warehouseRepository.save(newStore);</span>
+                    });
+<span class="fc" id="L130">            Long vehicleStoreId = vehicleStore.getId();</span>
+
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            for (LoadingSheetItem item : updated.getItems()) {</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">                if (item.quantityLoaded() &gt; 0) {</span>
+                    // TRANSFER_OUT from MAIN warehouse
+<span class="fc" id="L135">                    ledgerService.recordMovement(</span>
+                            tenantId,
+                            mainWarehouseId,
+<span class="fc" id="L138">                            item.productId(),</span>
+                            InventoryMovementType.TRANSFER_OUT,
+<span class="fc" id="L140">                            new BigDecimal(item.quantityLoaded()).negate(),</span>
+                            BigDecimal.ZERO,
+                            sheetNumber,
+                            &quot;&quot;,
+                            null,
+<span class="fc" id="L145">                            context.timestamp(),</span>
+<span class="fc" id="L146">                            String.valueOf(context.userId())</span>
+                    );
+
+                    // TRANSFER_IN to VEHICLE warehouse
+<span class="fc" id="L150">                    ledgerService.recordMovement(</span>
+                            tenantId,
+                            vehicleStoreId,
+<span class="fc" id="L153">                            item.productId(),</span>
+                            InventoryMovementType.TRANSFER_IN,
+<span class="fc" id="L155">                            new BigDecimal(item.quantityLoaded()),</span>
+                            BigDecimal.ZERO,
+                            sheetNumber,
+                            &quot;&quot;,
+                            null,
+<span class="fc" id="L160">                            context.timestamp(),</span>
+<span class="fc" id="L161">                            String.valueOf(context.userId())</span>
+                    );
+                }
+<span class="fc" id="L164">            }</span>
+
+<span class="fc bfc" id="L166" title="All 2 branches covered.">            for (LoadingSheetReturnItem r : updated.getReturns()) {</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">                if (r.quantityReturned() &gt; 0) {</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">                    InventoryMovementType movementType = &quot;DAMAGED&quot;.equalsIgnoreCase(r.returnType())</span>
+<span class="fc" id="L169">                            ? InventoryMovementType.DAMAGED</span>
+<span class="pc" id="L170">                            : InventoryMovementType.RECEIPT;</span>
+
+                    // Return from vehicle back to MAIN warehouse
+<span class="fc" id="L173">                    ledgerService.recordMovement(</span>
+                            tenantId,
+                            mainWarehouseId,
+<span class="fc" id="L176">                            r.productId(),</span>
+                            movementType,
+<span class="fc" id="L178">                            new BigDecimal(r.quantityReturned()),</span>
+                            BigDecimal.ZERO,
+                            sheetNumber,
+                            &quot;&quot;,
+                            null,
+<span class="fc" id="L183">                            context.timestamp(),</span>
+<span class="fc" id="L184">                            String.valueOf(context.userId())</span>
+                    );
+                }
+<span class="fc" id="L187">            }</span>
+        }
+
+<span class="fc" id="L190">        return result;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

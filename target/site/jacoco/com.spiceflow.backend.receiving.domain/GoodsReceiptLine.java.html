@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GoodsReceiptLine.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.receiving.domain</a> &gt; <span class="el_source">GoodsReceiptLine.java</span></div><h1>GoodsReceiptLine.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.receiving.domain;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import org.jspecify.annotations.Nullable;
+
+public class GoodsReceiptLine {
+
+    private @Nullable Long id;
+    private Long productId;
+    private BigDecimal expectedQty;
+    private BigDecimal receivedQty;
+    private BigDecimal acceptedQty;
+    private BigDecimal damagedQty;
+    private String lotNumber;
+    private @Nullable LocalDate expirationDate;
+    private BigDecimal unitPrice;
+    private BigDecimal lineTotal;
+
+<span class="nc" id="L21">    protected GoodsReceiptLine() {</span>
+<span class="nc" id="L22">        this.productId = 0L;</span>
+<span class="nc" id="L23">        this.expectedQty = BigDecimal.ZERO;</span>
+<span class="nc" id="L24">        this.receivedQty = BigDecimal.ZERO;</span>
+<span class="nc" id="L25">        this.acceptedQty = BigDecimal.ZERO;</span>
+<span class="nc" id="L26">        this.damagedQty = BigDecimal.ZERO;</span>
+<span class="nc" id="L27">        this.lotNumber = &quot;&quot;;</span>
+<span class="nc" id="L28">        this.expirationDate = null;</span>
+<span class="nc" id="L29">        this.unitPrice = BigDecimal.ZERO;</span>
+<span class="nc" id="L30">        this.lineTotal = BigDecimal.ZERO;</span>
+<span class="nc" id="L31">    }</span>
+
+    public GoodsReceiptLine(Long productId, BigDecimal expectedQty, BigDecimal receivedQty,
+                            BigDecimal acceptedQty, BigDecimal damagedQty, String lotNumber,
+                            @Nullable LocalDate expirationDate, BigDecimal unitPrice) {
+<span class="fc" id="L36">        this(null, productId, expectedQty, receivedQty, acceptedQty, damagedQty, lotNumber, expirationDate, unitPrice);</span>
+<span class="fc" id="L37">    }</span>
+
+    public GoodsReceiptLine(@Nullable Long id, Long productId, BigDecimal expectedQty,
+                            BigDecimal receivedQty, BigDecimal acceptedQty, BigDecimal damagedQty,
+<span class="fc" id="L41">                            String lotNumber, @Nullable LocalDate expirationDate, BigDecimal unitPrice) {</span>
+<span class="fc" id="L42">        this.id = id;</span>
+<span class="fc" id="L43">        this.productId = productId;</span>
+<span class="fc" id="L44">        this.expectedQty = expectedQty;</span>
+<span class="fc" id="L45">        this.receivedQty = receivedQty;</span>
+<span class="fc" id="L46">        this.acceptedQty = acceptedQty;</span>
+<span class="fc" id="L47">        this.damagedQty = damagedQty;</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        this.lotNumber = lotNumber != null ? lotNumber : &quot;&quot;;</span>
+<span class="fc" id="L49">        this.expirationDate = expirationDate;</span>
+<span class="fc" id="L50">        this.unitPrice = unitPrice;</span>
+<span class="fc" id="L51">        this.lineTotal = acceptedQty.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);</span>
+<span class="fc" id="L52">    }</span>
+
+<span class="fc" id="L54">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L55">    public Long getProductId() { return productId; }</span>
+<span class="fc" id="L56">    public BigDecimal getExpectedQty() { return expectedQty; }</span>
+<span class="fc" id="L57">    public BigDecimal getReceivedQty() { return receivedQty; }</span>
+<span class="fc" id="L58">    public BigDecimal getAcceptedQty() { return acceptedQty; }</span>
+<span class="fc" id="L59">    public BigDecimal getDamagedQty() { return damagedQty; }</span>
+<span class="fc" id="L60">    public String getLotNumber() { return lotNumber; }</span>
+<span class="fc" id="L61">    public @Nullable LocalDate getExpirationDate() { return expirationDate; }</span>
+<span class="fc" id="L62">    public BigDecimal getUnitPrice() { return unitPrice; }</span>
+<span class="fc" id="L63">    public BigDecimal getLineTotal() { return lineTotal; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

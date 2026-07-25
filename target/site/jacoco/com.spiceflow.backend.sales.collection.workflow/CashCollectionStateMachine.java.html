@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CashCollectionStateMachine.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.collection.workflow</a> &gt; <span class="el_source">CashCollectionStateMachine.java</span></div><h1>CashCollectionStateMachine.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.collection.workflow;
+
+import com.spiceflow.backend.sales.collection.domain.CashCollectionState;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Finite State Machine transition registry for Cash Collection workflow.
+ *
+ * Valid transitions:
+ *   PENDING -&gt; CONFIRMED
+ *   PENDING -&gt; CANCELLED
+ *   CONFIRMED -&gt; CANCELLED (reversal support)
+ */
+<span class="nc" id="L17">public final class CashCollectionStateMachine {</span>
+
+    private static final Map&lt;CashCollectionState, Set&lt;CashCollectionState&gt;&gt; TRANSITIONS;
+
+    static {
+<span class="fc" id="L22">        Map&lt;CashCollectionState, Set&lt;CashCollectionState&gt;&gt; map = new EnumMap&lt;&gt;(CashCollectionState.class);</span>
+
+<span class="fc" id="L24">        map.put(CashCollectionState.PENDING, Set.of(</span>
+                CashCollectionState.CONFIRMED,
+                CashCollectionState.CANCELLED
+        ));
+
+<span class="fc" id="L29">        map.put(CashCollectionState.CONFIRMED, Set.of(</span>
+                CashCollectionState.CANCELLED
+        ));
+
+<span class="fc" id="L33">        map.put(CashCollectionState.CANCELLED, Set.of());</span>
+
+<span class="fc" id="L35">        TRANSITIONS = Collections.unmodifiableMap(map);</span>
+<span class="fc" id="L36">    }</span>
+
+    public static boolean canTransition(CashCollectionState from, CashCollectionState to) {
+<span class="fc" id="L39">        return TRANSITIONS.getOrDefault(from, Set.of()).contains(to);</span>
+    }
+
+    public static Set&lt;CashCollectionState&gt; allowedNext(CashCollectionState state) {
+<span class="nc" id="L43">        return TRANSITIONS.getOrDefault(state, Set.of());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

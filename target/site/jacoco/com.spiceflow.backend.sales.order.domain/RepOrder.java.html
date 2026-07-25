@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RepOrder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.order.domain</a> &gt; <span class="el_source">RepOrder.java</span></div><h1>RepOrder.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.order.domain;
+
+import com.spiceflow.backend.events.DomainEventType;
+import com.spiceflow.backend.workflow.WorkflowAggregate;
+import com.spiceflow.backend.workflow.WorkflowContext;
+import com.spiceflow.backend.workflow.WorkflowTransitionOutput;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Root aggregate representing a Sales Representative Order (Rep Order).
+ * Rule 15 compliant: copy-on-write immutability, defensive shop list copying, and self-validating invariants.
+ */
+public class RepOrder implements WorkflowAggregate&lt;RepOrder, RepOrderState&gt; {
+
+    private @Nullable Long id;
+    private String orderNumber;
+    private Long tenantId;
+    private Long repId;
+    private LocalDate orderDate;
+    private String routeArea;
+    private RepOrderState state;
+    private BigDecimal totalGrossAmount;
+    private BigDecimal totalReturnsValue;
+    private BigDecimal netAmount;
+<span class="fc" id="L31">    private List&lt;RepOrderShop&gt; shops = new ArrayList&lt;&gt;();</span>
+    private String createdBy;
+    private @Nullable String approvedBy;
+    private @Nullable String loadedBy;
+    private @Nullable String deliveredBy;
+    private @Nullable Long version;
+    private String correlationId;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private @Nullable Instant approvedAt;
+    private @Nullable Instant loadedAt;
+    private @Nullable Instant deliveredAt;
+
+<span class="fc" id="L44">    protected RepOrder() {</span>
+<span class="fc" id="L45">        this.orderNumber = &quot;&quot;;</span>
+<span class="fc" id="L46">        this.tenantId = 0L;</span>
+<span class="fc" id="L47">        this.repId = 0L;</span>
+<span class="fc" id="L48">        this.orderDate = LocalDate.now(java.time.ZoneId.systemDefault());</span>
+<span class="fc" id="L49">        this.routeArea = &quot;&quot;;</span>
+<span class="fc" id="L50">        this.state = RepOrderState.DRAFT;</span>
+<span class="fc" id="L51">        this.totalGrossAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L52">        this.totalReturnsValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L53">        this.netAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L54">        this.createdBy = &quot;&quot;;</span>
+<span class="fc" id="L55">        this.correlationId = &quot;&quot;;</span>
+<span class="fc" id="L56">        this.createdAt = Instant.EPOCH;</span>
+<span class="fc" id="L57">        this.updatedAt = Instant.EPOCH;</span>
+<span class="fc" id="L58">    }</span>
+
+    // COPY-ON-WRITE constructor (Rule 15 compliant)
+    public RepOrder(RepOrder source,
+                    RepOrderState newState,
+<span class="fc" id="L63">                    @Nullable List&lt;RepOrderShop&gt; newShops) {</span>
+<span class="fc" id="L64">        this.id = source.id;</span>
+<span class="fc" id="L65">        this.orderNumber = source.orderNumber;</span>
+<span class="fc" id="L66">        this.tenantId = source.tenantId;</span>
+<span class="fc" id="L67">        this.repId = source.repId;</span>
+<span class="fc" id="L68">        this.orderDate = source.orderDate;</span>
+<span class="fc" id="L69">        this.routeArea = source.routeArea;</span>
+<span class="fc" id="L70">        this.createdBy = source.createdBy;</span>
+<span class="fc" id="L71">        this.approvedBy = source.approvedBy;</span>
+<span class="fc" id="L72">        this.loadedBy = source.loadedBy;</span>
+<span class="fc" id="L73">        this.deliveredBy = source.deliveredBy;</span>
+<span class="fc" id="L74">        this.createdAt = source.createdAt;</span>
+<span class="fc" id="L75">        this.updatedAt = Instant.now();</span>
+<span class="fc" id="L76">        this.approvedAt = source.approvedAt;</span>
+<span class="fc" id="L77">        this.loadedAt = source.loadedAt;</span>
+<span class="fc" id="L78">        this.deliveredAt = source.deliveredAt;</span>
+<span class="fc" id="L79">        this.version = source.version;</span>
+<span class="fc" id="L80">        this.correlationId = source.correlationId;</span>
+
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">        this.shops = newShops != null ? new ArrayList&lt;&gt;(newShops) : new ArrayList&lt;&gt;(source.shops);</span>
+
+<span class="fc" id="L84">        this.totalGrossAmount = this.shops.stream()</span>
+<span class="fc" id="L85">                .map(RepOrderShop::grossOrderAmount)</span>
+<span class="fc" id="L86">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+<span class="fc" id="L87">        this.totalReturnsValue = this.shops.stream()</span>
+<span class="fc" id="L88">                .map(RepOrderShop::returnsValue)</span>
+<span class="fc" id="L89">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+<span class="fc" id="L90">        this.netAmount = this.totalGrossAmount.subtract(this.totalReturnsValue);</span>
+
+<span class="fc" id="L92">        this.state = newState;</span>
+<span class="fc" id="L93">    }</span>
+
+    // Full constructor for persistence adapter restoration
+    public RepOrder(@Nullable Long id, String orderNumber, Long tenantId, Long repId, LocalDate orderDate,
+                    String routeArea, RepOrderState state, BigDecimal totalGrossAmount, BigDecimal totalReturnsValue,
+                    BigDecimal netAmount, String createdBy, @Nullable String approvedBy, @Nullable String loadedBy,
+                    @Nullable String deliveredBy, @Nullable Long version, String correlationId, Instant createdAt,
+                    Instant updatedAt, @Nullable Instant approvedAt, @Nullable Instant loadedAt,
+<span class="fc" id="L101">                    @Nullable Instant deliveredAt, List&lt;RepOrderShop&gt; shops) {</span>
+<span class="fc" id="L102">        this.id = id;</span>
+<span class="fc" id="L103">        this.orderNumber = orderNumber;</span>
+<span class="fc" id="L104">        this.tenantId = tenantId;</span>
+<span class="fc" id="L105">        this.repId = repId;</span>
+<span class="fc" id="L106">        this.orderDate = orderDate;</span>
+<span class="fc" id="L107">        this.routeArea = routeArea;</span>
+<span class="fc" id="L108">        this.state = state;</span>
+<span class="fc" id="L109">        this.totalGrossAmount = totalGrossAmount;</span>
+<span class="fc" id="L110">        this.totalReturnsValue = totalReturnsValue;</span>
+<span class="fc" id="L111">        this.netAmount = netAmount;</span>
+<span class="fc" id="L112">        this.createdBy = createdBy;</span>
+<span class="fc" id="L113">        this.approvedBy = approvedBy;</span>
+<span class="fc" id="L114">        this.loadedBy = loadedBy;</span>
+<span class="fc" id="L115">        this.deliveredBy = deliveredBy;</span>
+<span class="fc" id="L116">        this.version = version;</span>
+<span class="fc" id="L117">        this.correlationId = correlationId;</span>
+<span class="fc" id="L118">        this.createdAt = createdAt;</span>
+<span class="fc" id="L119">        this.updatedAt = updatedAt;</span>
+<span class="fc" id="L120">        this.approvedAt = approvedAt;</span>
+<span class="fc" id="L121">        this.loadedAt = loadedAt;</span>
+<span class="fc" id="L122">        this.deliveredAt = deliveredAt;</span>
+<span class="fc" id="L123">        this.shops = new ArrayList&lt;&gt;(shops);</span>
+<span class="fc" id="L124">    }</span>
+
+    public static RepOrder create(String orderNumber, Long tenantId, Long repId, LocalDate orderDate,
+                                  String routeArea, String createdBy) {
+<span class="fc" id="L128">        RepOrder ro = new RepOrder();</span>
+<span class="fc" id="L129">        ro.orderNumber = orderNumber;</span>
+<span class="fc" id="L130">        ro.tenantId = tenantId;</span>
+<span class="fc" id="L131">        ro.repId = repId;</span>
+<span class="fc" id="L132">        ro.orderDate = orderDate;</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        ro.routeArea = routeArea != null ? routeArea : &quot;&quot;;</span>
+<span class="fc" id="L134">        ro.state = RepOrderState.DRAFT;</span>
+<span class="fc" id="L135">        ro.totalGrossAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L136">        ro.totalReturnsValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L137">        ro.netAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L138">        ro.createdBy = createdBy;</span>
+<span class="fc" id="L139">        ro.shops = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L140">        ro.correlationId = orderNumber;</span>
+<span class="fc" id="L141">        ro.createdAt = Instant.now();</span>
+<span class="fc" id="L142">        ro.updatedAt = Instant.now();</span>
+<span class="fc" id="L143">        return ro;</span>
+    }
+
+    @Override
+    public String getAggregateId() {
+<span class="fc" id="L148">        return orderNumber;</span>
+    }
+
+    @Override
+    public RepOrderState getWorkflowState() {
+<span class="fc" id="L153">        return state;</span>
+    }
+
+    @Override
+    public WorkflowTransitionOutput&lt;RepOrder&gt; transitionTo(RepOrderState targetState, WorkflowContext context) {
+<span class="fc" id="L158">        RepOrder copy = new RepOrder(this, targetState, this.shops);</span>
+<span class="pc bpc" id="L159" title="1 of 4 branches missed.">        if (targetState == RepOrderState.APPROVED &amp;&amp; copy.approvedAt == null) {</span>
+<span class="fc" id="L160">            copy.approvedAt = context.timestamp();</span>
+<span class="fc" id="L161">            copy.approvedBy = String.valueOf(context.userId());</span>
+        }
+<span class="pc bpc" id="L163" title="1 of 4 branches missed.">        if (targetState == RepOrderState.LOADED &amp;&amp; copy.loadedAt == null) {</span>
+<span class="fc" id="L164">            copy.loadedAt = context.timestamp();</span>
+<span class="fc" id="L165">            copy.loadedBy = String.valueOf(context.userId());</span>
+        }
+<span class="pc bpc" id="L167" title="1 of 4 branches missed.">        if (targetState == RepOrderState.DELIVERED &amp;&amp; copy.deliveredAt == null) {</span>
+<span class="fc" id="L168">            copy.deliveredAt = context.timestamp();</span>
+<span class="fc" id="L169">            copy.deliveredBy = String.valueOf(context.userId());</span>
+        }
+
+<span class="pc bpc" id="L172" title="1 of 6 branches missed.">        DomainEventType eventType = switch (targetState) {</span>
+<span class="nc" id="L173">            case DRAFT -&gt; DomainEventType.REP_ORDER_CREATED;</span>
+<span class="fc" id="L174">            case SUBMITTED -&gt; DomainEventType.REP_ORDER_SUBMITTED;</span>
+<span class="fc" id="L175">            case APPROVED -&gt; DomainEventType.REP_ORDER_APPROVED;</span>
+<span class="fc" id="L176">            case LOADED -&gt; DomainEventType.REP_ORDER_LOADED;</span>
+<span class="fc" id="L177">            case DELIVERED -&gt; DomainEventType.REP_ORDER_DELIVERED;</span>
+<span class="fc" id="L178">            case CANCELLED -&gt; DomainEventType.REP_ORDER_CANCELLED;</span>
+        };
+
+<span class="fc" id="L181">        RepOrderEvent event = new RepOrderEvent(</span>
+                this.orderNumber,
+                eventType,
+<span class="fc" id="L184">                context.correlationId(),</span>
+<span class="fc" id="L185">                context.timestamp(),</span>
+<span class="fc" id="L186">                context.tenantId()</span>
+        );
+<span class="fc" id="L188">        return new WorkflowTransitionOutput&lt;&gt;(copy, List.of(event));</span>
+    }
+
+    // GETTERS ONLY (NO SETTERS — STRICT RULE 15)
+<span class="fc" id="L192">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L193">    public String getOrderNumber() { return orderNumber; }</span>
+<span class="fc" id="L194">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L195">    public Long getRepId() { return repId; }</span>
+<span class="fc" id="L196">    public LocalDate getOrderDate() { return orderDate; }</span>
+<span class="fc" id="L197">    public String getRouteArea() { return routeArea; }</span>
+<span class="fc" id="L198">    public RepOrderState getState() { return state; }</span>
+<span class="fc" id="L199">    public BigDecimal getTotalGrossAmount() { return totalGrossAmount; }</span>
+<span class="fc" id="L200">    public BigDecimal getTotalReturnsValue() { return totalReturnsValue; }</span>
+<span class="fc" id="L201">    public BigDecimal getNetAmount() { return netAmount; }</span>
+<span class="fc" id="L202">    public List&lt;RepOrderShop&gt; getShops() { return Collections.unmodifiableList(shops); }</span>
+<span class="fc" id="L203">    public String getCreatedBy() { return createdBy; }</span>
+<span class="fc" id="L204">    public @Nullable String getApprovedBy() { return approvedBy; }</span>
+<span class="fc" id="L205">    public @Nullable String getLoadedBy() { return loadedBy; }</span>
+<span class="fc" id="L206">    public @Nullable String getDeliveredBy() { return deliveredBy; }</span>
+<span class="fc" id="L207">    public @Nullable Long getVersion() { return version; }</span>
+<span class="nc" id="L208">    public String getCorrelationId() { return correlationId; }</span>
+<span class="fc" id="L209">    public Instant getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L210">    public Instant getUpdatedAt() { return updatedAt; }</span>
+<span class="fc" id="L211">    public @Nullable Instant getApprovedAt() { return approvedAt; }</span>
+<span class="fc" id="L212">    public @Nullable Instant getLoadedAt() { return loadedAt; }</span>
+<span class="fc" id="L213">    public @Nullable Instant getDeliveredAt() { return deliveredAt; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QrVerificationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.service</a> &gt; <span class="el_source">QrVerificationService.java</span></div><h1>QrVerificationService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.service;
+
+import com.spiceflow.backend.auth.entity.Tenant;
+import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.sales.dto.QrVerificationDtos.*;
+import com.spiceflow.backend.sales.entity.Delivery;
+import com.spiceflow.backend.sales.entity.Driver;
+import com.spiceflow.backend.sales.entity.RepOrderShop;
+import com.spiceflow.backend.sales.entity.Shop;
+import com.spiceflow.backend.sales.entity.ShopVisit;
+import com.spiceflow.backend.sales.entity.RepOrder;
+import com.spiceflow.backend.sales.repository.DeliveryRepository;
+import com.spiceflow.backend.sales.repository.ShopRepository;
+import com.spiceflow.backend.sales.repository.ShopVisitRepository;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+<span class="fc" id="L24">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+public class QrVerificationService {
+
+    private final ShopRepository shopRepository;
+    private final ShopVisitRepository shopVisitRepository;
+    private final DeliveryRepository deliveryRepository;
+    private final TenantRepository tenantRepository;
+
+    @Transactional(readOnly = true)
+    public ShopQrResponse resolveShopByToken(String token, Long tenantId) {
+<span class="fc" id="L36">        Shop shop = shopRepository.findByQrCodeTokenAndTenantId(token, tenantId)</span>
+<span class="fc" id="L37">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Shop not found with provided QR token&quot;));</span>
+<span class="fc" id="L38">        return ShopQrResponse.builder()</span>
+<span class="fc" id="L39">            .shopId(shop.getId())</span>
+<span class="fc" id="L40">            .shopName(shop.getName())</span>
+<span class="fc" id="L41">            .tenantId(tenantId)</span>
+<span class="fc" id="L42">            .qrPayload(token)</span>
+<span class="fc" id="L43">            .build();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public ShopQrResponse getShopQrData(Long shopId, Long tenantId) {
+<span class="fc" id="L48">        Shop shop = shopRepository.findByIdAndTenantId(shopId, tenantId)</span>
+<span class="fc" id="L49">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Shop not found&quot;));</span>
+<span class="fc" id="L50">        return ShopQrResponse.builder()</span>
+<span class="fc" id="L51">            .shopId(shop.getId())</span>
+<span class="fc" id="L52">            .shopName(shop.getName())</span>
+<span class="fc" id="L53">            .tenantId(tenantId)</span>
+            // Use the UUID token. Fallback to legacy if token is somehow missing.
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">            .qrPayload(shop.getQrCodeToken() != null ? shop.getQrCodeToken() : &quot;SPICEFLOW:SHOP:&quot; + tenantId + &quot;:&quot; + shopId)</span>
+<span class="fc" id="L56">            .build();</span>
+    }
+
+    @Transactional
+    public ShopVisitResponse verifyVisit(QrVerifyRequest request, Long tenantId) {
+<span class="fc" id="L61">        Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="fc" id="L62">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
+
+<span class="fc" id="L64">        Shop shop = shopRepository.findByIdAndTenantId(request.shopId(), tenantId)</span>
+<span class="pc" id="L65">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Shop not found&quot;));</span>
+
+<span class="fc" id="L67">        Delivery delivery = null;</span>
+<span class="fc" id="L68">        Driver driver = null;</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (request.deliveryId() != null) {</span>
+<span class="nc" id="L70">            delivery = deliveryRepository.findByIdAndTenantId(request.deliveryId(), tenantId)</span>
+<span class="nc" id="L71">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Delivery not found&quot;));</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">            if (delivery.getLoadingSheet() != null) {</span>
+<span class="nc" id="L73">                driver = delivery.getLoadingSheet().getDriver();</span>
+            }
+        }
+
+<span class="fc" id="L77">        ShopVisit visit = ShopVisit.builder()</span>
+<span class="fc" id="L78">            .tenant(tenant)</span>
+<span class="fc" id="L79">            .delivery(delivery)</span>
+<span class="fc" id="L80">            .shop(shop)</span>
+<span class="fc" id="L81">            .driver(driver)</span>
+<span class="fc" id="L82">            .visitedAt(OffsetDateTime.now(java.time.ZoneId.systemDefault()))</span>
+<span class="fc" id="L83">            .qrScannedAt(OffsetDateTime.now(java.time.ZoneId.systemDefault()))</span>
+<span class="fc" id="L84">            .latitude(request.latitude())</span>
+<span class="fc" id="L85">            .longitude(request.longitude())</span>
+<span class="fc" id="L86">            .verified(true)</span>
+<span class="fc" id="L87">            .notes(request.notes())</span>
+<span class="fc" id="L88">            .build();</span>
+
+<span class="fc" id="L90">        ShopVisit saved = shopVisitRepository.save(visit);</span>
+<span class="fc" id="L91">        log.info(&quot;Shop visit verified: shop={}, delivery={}, tenant={}&quot;, request.shopId(), request.deliveryId(), tenantId);</span>
+
+<span class="fc" id="L93">        List&lt;RepOrderShopInfo&gt; orderDetails = List.of();</span>
+<span class="pc bpc" id="L94" title="3 of 4 branches missed.">        if (delivery != null &amp;&amp; delivery.getLoadingSheet() != null</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">            &amp;&amp; delivery.getLoadingSheet().getRepOrder() != null) {</span>
+<span class="nc" id="L96">            RepOrder repOrder = delivery.getLoadingSheet().getRepOrder();</span>
+<span class="nc" id="L97">            orderDetails = repOrder.getShops().stream()</span>
+<span class="nc" id="L98">                .filter(s -&gt; s.getShop().getId().equals(request.shopId()))</span>
+<span class="nc" id="L99">                .map(s -&gt; RepOrderShopInfo.builder()</span>
+<span class="nc" id="L100">                    .shopName(s.getShop().getName())</span>
+<span class="nc" id="L101">                    .items(s.getItems().stream().map(i -&gt; RepOrderItemInfo.builder()</span>
+<span class="nc" id="L102">                        .productId(i.getProduct().getId())</span>
+<span class="nc" id="L103">                        .productName(i.getProduct().getName())</span>
+<span class="nc" id="L104">                        .quantity(i.getQuantity())</span>
+<span class="nc" id="L105">                        .rate(i.getRate())</span>
+<span class="nc" id="L106">                        .unitType(i.getUnitType())</span>
+<span class="nc" id="L107">                        .build()).toList())</span>
+<span class="nc" id="L108">                    .build())</span>
+<span class="nc" id="L109">                .toList();</span>
+        }
+
+<span class="fc" id="L112">        return ShopVisitResponse.builder()</span>
+<span class="fc" id="L113">            .visitId(saved.getId())</span>
+<span class="fc" id="L114">            .shopId(shop.getId())</span>
+<span class="fc" id="L115">            .shopName(shop.getName())</span>
+<span class="fc" id="L116">            .visitedAt(saved.getVisitedAt())</span>
+<span class="fc" id="L117">            .qrScannedAt(saved.getQrScannedAt())</span>
+<span class="fc" id="L118">            .verified(saved.isVerified())</span>
+<span class="fc" id="L119">            .orderDetails(orderDetails)</span>
+<span class="fc" id="L120">            .build();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;LoadingSheetForShopResponse&gt; getLoadingSheetsForShopToday(Long shopId, Long tenantId) {
+<span class="fc" id="L125">        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.systemDefault());</span>
+<span class="fc" id="L126">        List&lt;Delivery&gt; todayDeliveries = deliveryRepository.findDeliveriesInDateRange(tenantId, today, today);</span>
+
+<span class="fc" id="L128">        List&lt;LoadingSheetForShopResponse&gt; result = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        for (Delivery delivery : todayDeliveries) {</span>
+<span class="pc bpc" id="L130" title="2 of 4 branches missed.">            if (delivery.getLoadingSheet() != null &amp;&amp; delivery.getLoadingSheet().getRepOrder() != null) {</span>
+<span class="fc" id="L131">                RepOrder repOrder = delivery.getLoadingSheet().getRepOrder();</span>
+<span class="fc" id="L132">                Optional&lt;RepOrderShop&gt; shopMatch = repOrder.getShops().stream()</span>
+<span class="fc" id="L133">                    .filter(s -&gt; s.getShop().getId().equals(shopId))</span>
+<span class="fc" id="L134">                    .findFirst();</span>
+
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">                if (shopMatch.isPresent()) {</span>
+<span class="fc" id="L137">                    RepOrderShop ros = shopMatch.get();</span>
+<span class="fc" id="L138">                    List&lt;RepOrderItemInfo&gt; items = ros.getItems().stream().map(i -&gt; RepOrderItemInfo.builder()</span>
+<span class="fc" id="L139">                            .productId(i.getProduct().getId())</span>
+<span class="fc" id="L140">                            .productName(i.getProduct().getName())</span>
+<span class="fc" id="L141">                            .quantity(i.getQuantity())</span>
+<span class="fc" id="L142">                            .rate(i.getRate())</span>
+<span class="fc" id="L143">                            .unitType(i.getUnitType())</span>
+<span class="fc" id="L144">                            .build()).toList();</span>
+
+<span class="fc" id="L146">                    result.add(LoadingSheetForShopResponse.builder()</span>
+<span class="fc" id="L147">                        .deliveryId(delivery.getId())</span>
+<span class="fc" id="L148">                        .loadingSheetId(delivery.getLoadingSheet().getId())</span>
+<span class="fc" id="L149">                        .sheetNumber(delivery.getLoadingSheet().getSheetNumber())</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">                        .driverName(delivery.getLoadingSheet().getDriver() != null ? delivery.getLoadingSheet().getDriver().getName() : &quot;&quot;)</span>
+<span class="fc" id="L151">                        .status(delivery.getStatus())</span>
+<span class="fc" id="L152">                        .items(items)</span>
+<span class="fc" id="L153">                        .build());</span>
+                }
+            }
+<span class="fc" id="L156">        }</span>
+<span class="fc" id="L157">        return result;</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;ShopVisitResponse&gt; getDeliveryVisits(Long deliveryId, Long tenantId) {
+<span class="fc" id="L162">        List&lt;ShopVisit&gt; visits = shopVisitRepository.findByDeliveryIdAndTenantId(deliveryId, tenantId);</span>
+
+<span class="fc" id="L164">        return visits.stream()</span>
+<span class="fc" id="L165">            .map(v -&gt; ShopVisitResponse.builder()</span>
+<span class="fc" id="L166">                .visitId(v.getId())</span>
+<span class="fc" id="L167">                .shopId(v.getShop().getId())</span>
+<span class="fc" id="L168">                .shopName(v.getShop().getName())</span>
+<span class="fc" id="L169">                .visitedAt(v.getVisitedAt())</span>
+<span class="fc" id="L170">                .qrScannedAt(v.getQrScannedAt())</span>
+<span class="fc" id="L171">                .verified(v.isVerified())</span>
+<span class="fc" id="L172">                .latitude(v.getLatitude())</span>
+<span class="fc" id="L173">                .longitude(v.getLongitude())</span>
+<span class="fc" id="L174">                .orderDetails(List.of())</span>
+<span class="fc" id="L175">                .build())</span>
+<span class="fc" id="L176">            .toList();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

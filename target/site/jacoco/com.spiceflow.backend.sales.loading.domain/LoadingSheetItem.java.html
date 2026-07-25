@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoadingSheetItem.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.loading.domain</a> &gt; <span class="el_source">LoadingSheetItem.java</span></div><h1>LoadingSheetItem.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.loading.domain;
+
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Immutable record representing a line item loaded onto a van in a Loading Sheet.
+ */
+public record LoadingSheetItem(
+        @Nullable Long id,
+        Long productId,
+        Integer quantityLoaded,
+        @Nullable String unitType
+) {
+<span class="fc" id="L14">    public LoadingSheetItem {</span>
+<span class="pc bpc" id="L15" title="1 of 2 branches missed.">        if (productId == null) throw new IllegalArgumentException(&quot;productId cannot be null&quot;);</span>
+<span class="pc bpc" id="L16" title="2 of 4 branches missed.">        if (quantityLoaded == null || quantityLoaded &lt; 0) throw new IllegalArgumentException(&quot;quantityLoaded cannot be negative&quot;);</span>
+<span class="fc" id="L17">    }</span>
+
+    public LoadingSheetItem(Long productId, Integer quantityLoaded, @Nullable String unitType) {
+<span class="fc" id="L20">        this(null, productId, quantityLoaded, unitType);</span>
+<span class="fc" id="L21">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RepOrderShop.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.order.domain</a> &gt; <span class="el_source">RepOrderShop.java</span></div><h1>RepOrderShop.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.order.domain;
+
+import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Immutable shop order record within a rep route order.
+ * Rule 15 compliant: defensive copying of line items and returns; immutable state.
+ */
+public record RepOrderShop(
+        @Nullable Long id,
+        Long shopId,
+        @Nullable BigDecimal grossOrderAmount,
+        @Nullable BigDecimal returnsValue,
+        @Nullable BigDecimal netAmount,
+        List&lt;RepOrderItem&gt; items,
+        List&lt;ShopReturnItem&gt; returns
+) {
+<span class="fc" id="L22">    public RepOrderShop {</span>
+<span class="fc" id="L23">        Objects.requireNonNull(shopId, &quot;shopId cannot be null&quot;);</span>
+<span class="pc bpc" id="L24" title="1 of 2 branches missed.">        items = items != null ? List.copyOf(items) : Collections.emptyList();</span>
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        returns = returns != null ? List.copyOf(returns) : Collections.emptyList();</span>
+
+<span class="fc" id="L27">        BigDecimal computedGross = items.stream()</span>
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">                .map(item -&gt; item.netAmount() != null ? item.netAmount() : BigDecimal.ZERO)</span>
+<span class="fc" id="L29">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+<span class="fc" id="L30">        BigDecimal computedReturns = returns.stream()</span>
+<span class="fc" id="L31">                .map(ShopReturnItem::creditValue)</span>
+<span class="fc" id="L32">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        grossOrderAmount = grossOrderAmount != null ? grossOrderAmount : computedGross;</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        returnsValue = returnsValue != null ? returnsValue : computedReturns;</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        netAmount = netAmount != null ? netAmount : grossOrderAmount.subtract(returnsValue);</span>
+<span class="fc" id="L37">    }</span>
+
+    public RepOrderShop(Long shopId, List&lt;RepOrderItem&gt; items, List&lt;ShopReturnItem&gt; returns) {
+<span class="fc" id="L40">        this(null, shopId, null, null, null, items, returns);</span>
+<span class="fc" id="L41">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

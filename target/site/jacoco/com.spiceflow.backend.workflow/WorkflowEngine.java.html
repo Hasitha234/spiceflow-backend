@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WorkflowEngine.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.workflow</a> &gt; <span class="el_source">WorkflowEngine.java</span></div><h1>WorkflowEngine.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.workflow;
+
+import com.spiceflow.backend.audit.AuditEntry;
+import com.spiceflow.backend.events.DomainEvent;
+import java.util.List;
+import org.springframework.stereotype.Component;
+
+/**
+ * Stateless execution engine for operational workflow state transitions.
+ * Pure execution logic without stateful orchestration, session holding, or transaction boundary entanglement.
+ */
+@Component
+<span class="fc" id="L13">public class WorkflowEngine {</span>
+
+    /**
+     * Executes a workflow command against a target aggregate within the provided context.
+     * Enforces Rule 15 copy-on-write immutability: returns a new aggregate instance without mutating input.
+     *
+     * @param command   The intention and prerequisites
+     * @param aggregate The target aggregate to transition
+     * @param context   The execution context (user, tenant, correlationId, timestamp)
+     * @param &lt;T&gt;       The aggregate type
+     * @param &lt;S&gt;       The workflow state type
+     * @return Immutable WorkflowResult containing updated aggregate, domain events, and audit entry
+     */
+    public &lt;T extends WorkflowAggregate&lt;T, S&gt;, S extends WorkflowState&gt; WorkflowResult&lt;T&gt; execute(
+            WorkflowCommand&lt;T, S&gt; command,
+            T aggregate,
+            WorkflowContext context) {
+
+        // 1. Validate intention and prerequisites against aggregate and context
+<span class="fc" id="L32">        command.validate(aggregate, context);</span>
+
+        // 2. Capture initial state
+<span class="fc" id="L35">        S fromState = aggregate.getWorkflowState();</span>
+<span class="fc" id="L36">        S toState = command.getTargetState();</span>
+
+        // 3. Perform transition on aggregate (returns copy-on-write updated aggregate and generated domain events)
+<span class="fc" id="L39">        WorkflowTransitionOutput&lt;T&gt; output = aggregate.transitionTo(toState, context);</span>
+<span class="fc" id="L40">        T updatedAggregate = output.updatedAggregate();</span>
+<span class="fc" id="L41">        List&lt;DomainEvent&gt; events = output.events();</span>
+
+        // 4. Create immutable audit timeline projection entry
+<span class="fc" id="L44">        AuditEntry auditEntry = AuditEntry.builder()</span>
+<span class="fc" id="L45">                .tenantId(context.tenantId())</span>
+<span class="fc" id="L46">                .userId(context.userId())</span>
+<span class="fc" id="L47">                .correlationId(context.correlationId())</span>
+<span class="fc" id="L48">                .aggregateId(aggregate.getAggregateId())</span>
+<span class="fc" id="L49">                .commandName(command.getCommandName())</span>
+<span class="fc" id="L50">                .fromState(fromState.name())</span>
+<span class="fc" id="L51">                .toState(toState.name())</span>
+<span class="fc" id="L52">                .comment(command.getComment())</span>
+<span class="fc" id="L53">                .timestamp(context.timestamp())</span>
+<span class="fc" id="L54">                .build();</span>
+
+        // 5. Return immutable result (events are emitted outside aggregate by service/engine caller)
+<span class="fc" id="L57">        return new WorkflowResult&lt;&gt;(updatedAggregate, events, auditEntry);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

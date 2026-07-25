@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RepOrderService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.service</a> &gt; <span class="el_source">RepOrderService.java</span></div><h1>RepOrderService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.service;
+
+import com.spiceflow.backend.auth.entity.Tenant;
+import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.inventory.entity.Product;
+import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.service.ProductService;
+import com.spiceflow.backend.inventory.service.WarehouseService;
+import com.spiceflow.backend.sales.dto.request.CreateRepOrderRequest;
+import com.spiceflow.backend.sales.dto.request.RepOrderItemRequest;
+import com.spiceflow.backend.sales.dto.request.RepOrderShopRequest;
+import com.spiceflow.backend.sales.dto.request.ShopReturnRequest;
+import com.spiceflow.backend.sales.dto.response.RepOrderResponse;
+import com.spiceflow.backend.sales.entity.Rep;
+import com.spiceflow.backend.sales.entity.RepOrder;
+import com.spiceflow.backend.sales.entity.RepOrderItem;
+import com.spiceflow.backend.sales.entity.RepOrderShop;
+import com.spiceflow.backend.sales.entity.Shop;
+import com.spiceflow.backend.sales.entity.ShopReturn;
+import com.spiceflow.backend.sales.mapper.RepOrderMapper;
+import com.spiceflow.backend.sales.repository.RepOrderRepository;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+<span class="fc" id="L34">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class RepOrderService {
+
+    private final RepOrderRepository repOrderRepository;
+    private final TenantRepository tenantRepository;
+    private final SalesMasterDataService salesMasterDataService;
+    private final ProductService productService;
+    private final WarehouseService warehouseService;
+    private final RepOrderMapper repOrderMapper;
+
+    @Transactional(rollbackFor = Exception.class)
+    public RepOrderResponse createRepOrder(Long tenantId, CreateRepOrderRequest request) {
+<span class="fc" id="L49">        log.debug(&quot;Creating rep order for repId: {} in tenantId: {}&quot;, request.repId(), tenantId);</span>
+
+<span class="fc" id="L51">        Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L52">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
+
+<span class="fc" id="L54">        Rep rep = salesMasterDataService.getRepEntity(request.repId(), tenantId);</span>
+
+<span class="fc" id="L56">        RepOrder repOrder = RepOrder.builder()</span>
+<span class="fc" id="L57">            .tenant(tenant)</span>
+<span class="fc" id="L58">            .rep(rep)</span>
+<span class="fc" id="L59">            .orderNumber(request.orderNumber())</span>
+<span class="fc" id="L60">            .orderDate(request.orderDate())</span>
+<span class="fc" id="L61">            .routeArea(request.routeArea())</span>
+<span class="fc" id="L62">            .loadingStatus(&quot;DRAFT&quot;)</span>
+<span class="fc" id="L63">            .status(&quot;DRAFT&quot;)</span>
+<span class="fc" id="L64">            .build();</span>
+
+<span class="fc" id="L66">        BigDecimal totalGrossAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L67">        BigDecimal totalReturnsValue = BigDecimal.ZERO;</span>
+        
+<span class="fc" id="L69">        List&lt;RepOrderShop&gt; shops = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        for (RepOrderShopRequest shopReq : request.shops()) {</span>
+<span class="fc" id="L72">            Shop shop = salesMasterDataService.getShopEntity(shopReq.shopId(), tenantId);</span>
+
+<span class="fc" id="L74">            Warehouse returnWarehouse = null;</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">            if (shopReq.returnWarehouseId() != null) {</span>
+<span class="nc" id="L76">                returnWarehouse = warehouseService.getWarehouseEntity(tenantId, shopReq.returnWarehouseId());</span>
+            }
+
+<span class="fc" id="L79">            RepOrderShop orderShop = RepOrderShop.builder()</span>
+<span class="fc" id="L80">                .tenant(tenant)</span>
+<span class="fc" id="L81">                .repOrder(repOrder)</span>
+<span class="fc" id="L82">                .shop(shop)</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">                .discountAmount(shopReq.discountAmount() != null ? shopReq.discountAmount() : BigDecimal.ZERO)</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">                .skuDiscountAmount(shopReq.skuDiscountAmount() != null ? shopReq.skuDiscountAmount() : BigDecimal.ZERO)</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">                .reverseGrts(shopReq.reverseGrts() != null ? shopReq.reverseGrts() : BigDecimal.ZERO)</span>
+<span class="fc" id="L86">                .returns(new ArrayList&lt;&gt;())</span>
+<span class="fc" id="L87">                .build();</span>
+            
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">            if (returnWarehouse != null) {</span>
+<span class="nc" id="L90">                orderShop.setReturnWarehouse(returnWarehouse);</span>
+            }
+<span class="fc" id="L92">            BigDecimal shopGross = BigDecimal.ZERO;</span>
+<span class="fc" id="L93">            BigDecimal shopReturns = BigDecimal.ZERO;</span>
+
+<span class="fc" id="L95">            List&lt;RepOrderItem&gt; items = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">            for (RepOrderItemRequest itemReq : shopReq.items()) {</span>
+<span class="fc" id="L97">                Product product = productService.getProductEntity(itemReq.productId(), tenantId);</span>
+
+<span class="fc" id="L99">                RepOrderItem item = RepOrderItem.builder()</span>
+<span class="fc" id="L100">                    .tenant(tenant)</span>
+<span class="fc" id="L101">                    .repOrderShop(orderShop)</span>
+<span class="fc" id="L102">                    .product(product)</span>
+<span class="fc" id="L103">                    .quantity(itemReq.quantity())</span>
+<span class="fc" id="L104">                    .unitType(itemReq.unitType())</span>
+<span class="fc" id="L105">                    .rate(itemReq.rate())</span>
+<span class="fc" id="L106">                    .grossAmount(itemReq.rate().multiply(BigDecimal.valueOf(itemReq.quantity())))</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">                    .isFreeItem(itemReq.isFreeItem() != null ? itemReq.isFreeItem() : false)</span>
+<span class="fc" id="L108">                    .boxesNeeded(itemReq.boxesNeeded())</span>
+<span class="fc" id="L109">                    .build();</span>
+                
+<span class="fc" id="L111">                item.setNetAmount(item.getGrossAmount());</span>
+                
+<span class="fc" id="L113">                shopGross = shopGross.add(item.getNetAmount());</span>
+<span class="fc" id="L114">                items.add(item);</span>
+<span class="fc" id="L115">            }</span>
+
+<span class="fc" id="L117">            List&lt;ShopReturn&gt; returns = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">            if (shopReq.returns() != null) {</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">                for (ShopReturnRequest returnReq : shopReq.returns()) {</span>
+<span class="nc" id="L120">                    Product product = productService.getProductEntity(returnReq.productId(), tenantId);</span>
+
+<span class="nc" id="L122">                    ShopReturn sr = ShopReturn.builder()</span>
+<span class="nc" id="L123">                        .tenant(tenant)</span>
+<span class="nc" id="L124">                        .repOrderShop(orderShop)</span>
+<span class="nc" id="L125">                        .product(product)</span>
+<span class="nc" id="L126">                        .quantity(returnReq.quantity())</span>
+<span class="nc" id="L127">                        .unitType(returnReq.unitType())</span>
+<span class="nc" id="L128">                        .creditValue(returnReq.creditValue())</span>
+<span class="nc" id="L129">                        .returnType(returnReq.returnType())</span>
+<span class="nc" id="L130">                        .status(&quot;PENDING&quot;)</span>
+<span class="nc" id="L131">                        .build();</span>
+
+<span class="nc" id="L133">                    shopReturns = shopReturns.add(sr.getCreditValue());</span>
+<span class="nc" id="L134">                    returns.add(sr);</span>
+<span class="nc" id="L135">                }</span>
+            }
+
+<span class="fc" id="L138">            orderShop.setGrossOrderAmount(shopGross);</span>
+<span class="fc" id="L139">            orderShop.setReturnsValue(shopReturns);</span>
+            // Net = Gross - (Returns - ReverseGrts) - Discount - SKU Discount
+<span class="fc" id="L141">            BigDecimal effectiveReturns = shopReturns.subtract(orderShop.getReverseGrts()).max(BigDecimal.ZERO);</span>
+<span class="fc" id="L142">            orderShop.setNetAmount(shopGross.subtract(effectiveReturns).subtract(orderShop.getDiscountAmount()).subtract(orderShop.getSkuDiscountAmount()));</span>
+            
+<span class="fc" id="L144">            orderShop.setItems(items);</span>
+<span class="fc" id="L145">            orderShop.setReturns(returns);</span>
+            
+<span class="fc" id="L147">            shops.add(orderShop);</span>
+            
+<span class="fc" id="L149">            totalGrossAmount = totalGrossAmount.add(shopGross);</span>
+<span class="fc" id="L150">            totalReturnsValue = totalReturnsValue.add(shopReturns);</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">            repOrder.setNetAmount(repOrder.getNetAmount() != null </span>
+<span class="fc" id="L152">                ? repOrder.getNetAmount().add(orderShop.getNetAmount()) </span>
+<span class="nc" id="L153">                : orderShop.getNetAmount());</span>
+<span class="fc" id="L154">        }</span>
+
+<span class="fc" id="L156">        repOrder.setTotalGrossAmount(totalGrossAmount);</span>
+<span class="fc" id="L157">        repOrder.setTotalReturnsValue(totalReturnsValue);</span>
+<span class="fc" id="L158">        repOrder.setShops(shops);</span>
+
+<span class="fc" id="L160">        RepOrder savedOrder = repOrderRepository.save(repOrder);</span>
+<span class="fc" id="L161">        return repOrderMapper.toResponse(savedOrder);</span>
+    }
+    
+    public Page&lt;RepOrderResponse&gt; getRepOrders(Long tenantId, Long repId, java.time.LocalDate date, Pageable pageable) {
+        Page&lt;RepOrder&gt; repOrders;
+<span class="pc bpc" id="L166" title="1 of 4 branches missed.">        if (repId != null &amp;&amp; date != null) {</span>
+<span class="nc" id="L167">            repOrders = repOrderRepository.findByTenantIdAndRepIdAndOrderDate(tenantId, repId, date, pageable);</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        } else if (date != null) {</span>
+<span class="nc" id="L169">            repOrders = repOrderRepository.findByTenantIdAndOrderDate(tenantId, date, pageable);</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        } else if (repId != null) {</span>
+<span class="fc" id="L171">            repOrders = repOrderRepository.findByTenantIdAndRepId(tenantId, repId, pageable);</span>
+        } else {
+<span class="fc" id="L173">            repOrders = repOrderRepository.findByTenantId(tenantId, pageable);</span>
+        }
+<span class="fc" id="L175">        return repOrders.map(repOrderMapper::toResponse);</span>
+    }
+
+    public RepOrderResponse getRepOrder(Long id, Long tenantId) {
+<span class="fc" id="L179">        RepOrder repOrder = repOrderRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="fc" id="L180">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;RepOrder not found&quot;));</span>
+<span class="fc" id="L181">        return repOrderMapper.toResponse(repOrder);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

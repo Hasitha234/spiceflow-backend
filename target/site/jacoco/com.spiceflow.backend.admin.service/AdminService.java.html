@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AdminService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.admin.service</a> &gt; <span class="el_source">AdminService.java</span></div><h1>AdminService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.admin.service;
+
+import com.spiceflow.backend.admin.dto.request.CreateTenantRequest;
+import com.spiceflow.backend.admin.dto.response.TenantResponse;
+import com.spiceflow.backend.auth.entity.Tenant;
+import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.admin.dto.request.UpdateTenantRequest;
+import com.spiceflow.backend.common.exception.ResourceConflictException;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import com.spiceflow.backend.common.dto.PageResponse;
+import com.spiceflow.backend.auth.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import com.spiceflow.backend.admin.entity.BusinessType;
+import com.spiceflow.backend.admin.repository.BusinessTypeRepository;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.stream.Collectors;
+import com.spiceflow.backend.auth.entity.Role;
+import com.spiceflow.backend.auth.repository.PermissionRepository;
+import com.spiceflow.backend.auth.repository.RoleRepository;
+import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.repository.WarehouseRepository;
+import java.util.HashSet;
+
+
+@Service
+@Transactional(readOnly = true)
+public class AdminService {
+
+<span class="fc" id="L38">    private static final Logger log = LoggerFactory.getLogger(AdminService.class);</span>
+
+    private final TenantRepository tenantRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final PermissionRepository permissionRepository;
+    private final RoleRepository roleRepository;
+    private final BusinessTypeRepository businessTypeRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository;
+
+    public AdminService(TenantRepository tenantRepository, UserRepository userRepository,
+        PasswordEncoder passwordEncoder, PermissionRepository permissionRepository,
+        RoleRepository roleRepository, BusinessTypeRepository businessTypeRepository,
+        WarehouseRepository warehouseRepository,
+<span class="fc" id="L53">        com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository) {</span>
+<span class="fc" id="L54">        this.tenantRepository = tenantRepository;</span>
+<span class="fc" id="L55">        this.userRepository = userRepository;</span>
+<span class="fc" id="L56">        this.passwordEncoder = passwordEncoder;</span>
+<span class="fc" id="L57">        this.permissionRepository = permissionRepository;</span>
+<span class="fc" id="L58">        this.roleRepository = roleRepository;</span>
+<span class="fc" id="L59">        this.businessTypeRepository = businessTypeRepository;</span>
+<span class="fc" id="L60">        this.warehouseRepository = warehouseRepository;</span>
+<span class="fc" id="L61">        this.businessOwnerTenantRepository = businessOwnerTenantRepository;</span>
+<span class="fc" id="L62">    }</span>
+
+
+    /**
+     * Atomically creates a new Tenant (business) and its Owner User account.
+     */
+        @Transactional(rollbackFor = Exception.class)
+    public TenantResponse createTenant(CreateTenantRequest request) {
+        
+        // 1. Validate that the email is not already used by another tenant or user
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (tenantRepository.findByEmailAndDeletedAtIsNull(request.ownerEmail()).isPresent()) {</span>
+<span class="fc" id="L73">            throw new ResourceConflictException(&quot;Email is already registered to a business&quot;);</span>
+        }
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        if (userRepository.findByEmailAndDeletedAtIsNull(request.ownerEmail()).isPresent()) {</span>
+<span class="nc" id="L76">            throw new ResourceConflictException(&quot;A user account with this email already exists&quot;);</span>
+        }
+
+<span class="fc" id="L79">        BusinessType businessType = businessTypeRepository.findById(request.businessTypeId())</span>
+<span class="pc" id="L80">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Business Type not found with id: &quot; + request.businessTypeId()));</span>
+
+        // 2. Create the Tenant
+<span class="fc" id="L83">        Tenant tenant = Tenant.builder()</span>
+<span class="fc" id="L84">            .businessName(request.businessName())</span>
+<span class="fc" id="L85">            .businessType(businessType)</span>
+<span class="fc" id="L86">            .email(request.ownerEmail())</span>
+<span class="fc" id="L87">            .status(&quot;ACTIVE&quot;)</span>
+<span class="fc" id="L88">            .plan(&quot;BASIC&quot;)</span>
+<span class="fc" id="L89">            .build();</span>
+            
+<span class="fc" id="L91">        tenant = tenantRepository.save(tenant);</span>
+
+        // 3. Create the default &quot;Owner&quot; role with ALL permissions
+<span class="fc" id="L94">        Role ownerRole = Role.builder()</span>
+<span class="fc" id="L95">            .tenant(tenant)</span>
+<span class="fc" id="L96">            .name(&quot;Owner&quot;)</span>
+<span class="fc" id="L97">            .description(&quot;Full access to all modules — auto-created by system&quot;)</span>
+<span class="fc" id="L98">            .isSystemRole(true)</span>
+<span class="fc" id="L99">            .permissions(new HashSet&lt;&gt;(permissionRepository.findAll()))</span>
+<span class="fc" id="L100">            .build();</span>
+        
+<span class="fc" id="L102">        ownerRole = roleRepository.save(ownerRole);</span>
+
+        // 4. Create the Tenant Owner User with the multi-agency multi-tenant structure
+<span class="fc" id="L105">        User owner = User.builder()</span>
+            // Do NOT link directly via tenant_id
+<span class="fc" id="L107">            .name(request.businessName() + &quot; Owner&quot;)</span>
+<span class="fc" id="L108">            .email(request.ownerEmail())</span>
+<span class="fc" id="L109">            .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.ownerPassword()), &quot;Password hash cannot be null&quot;))</span>
+<span class="fc" id="L110">            .userType(&quot;TENANT_OWNER&quot;)</span>
+<span class="fc" id="L111">            .assignedRole(ownerRole)</span>
+<span class="fc" id="L112">            .build();</span>
+<span class="fc" id="L113">        owner = userRepository.save(owner);</span>
+        
+        // Map the new user to the tenant via the join table
+<span class="fc" id="L116">        com.spiceflow.backend.auth.entity.BusinessOwnerTenant bot = com.spiceflow.backend.auth.entity.BusinessOwnerTenant.builder()</span>
+<span class="fc" id="L117">            .user(owner)</span>
+<span class="fc" id="L118">            .tenant(tenant)</span>
+<span class="fc" id="L119">            .build();</span>
+<span class="fc" id="L120">        businessOwnerTenantRepository.save(bot);</span>
+
+        // 4.5. Seed default System Stores
+<span class="fc" id="L123">        List&lt;Warehouse&gt; defaultStores = List.of(</span>
+<span class="fc" id="L124">            Warehouse.builder().tenant(tenant).name(&quot;Main Store&quot;).storeType(&quot;MAIN&quot;).isSystemStore(true).description(&quot;Default primary store&quot;).build(),</span>
+<span class="fc" id="L125">            Warehouse.builder().tenant(tenant).name(&quot;Second Store&quot;).storeType(&quot;SECONDARY&quot;).isSystemStore(true).description(&quot;Default secondary store for excess&quot;).build(),</span>
+<span class="fc" id="L126">            Warehouse.builder().tenant(tenant).name(&quot;Closed-Shop Returns&quot;).storeType(&quot;CLOSED_SHOP_RETURNS&quot;).isSystemStore(true).description(&quot;Store for items returned from closed shops&quot;).build(),</span>
+<span class="fc" id="L127">            Warehouse.builder().tenant(tenant).name(&quot;Expired Returns&quot;).storeType(&quot;EXPIRED_RETURNS&quot;).isSystemStore(true).description(&quot;Store for expired/damaged items&quot;).build()</span>
+        );
+<span class="fc" id="L129">        warehouseRepository.saveAll(defaultStores);</span>
+
+<span class="fc" id="L131">        log.info(&quot;Platform Admin created new {} business: {} with owner {}&quot;, </span>
+<span class="fc" id="L132">            businessType.getName(), request.businessName(), request.ownerEmail());</span>
+
+        // 5. Map the newly created tenant back to a safe Response DTO
+<span class="fc" id="L135">        return new TenantResponse(</span>
+<span class="fc" id="L136">            tenant.getId(),</span>
+<span class="fc" id="L137">            tenant.getBusinessName(),</span>
+<span class="fc" id="L138">            tenant.getBusinessType().getId(),</span>
+<span class="fc" id="L139">            tenant.getBusinessType().getName(),</span>
+<span class="fc" id="L140">            tenant.getEmail(),</span>
+<span class="fc" id="L141">            tenant.getStatus(),</span>
+<span class="fc" id="L142">            tenant.getPlan(),</span>
+<span class="fc" id="L143">            tenant.getCreatedAt()</span>
+        );
+    }
+
+
+  /** Returns a list of all active (non-deleted) tenants with pagination. */
+  @Transactional(readOnly = true)
+  public PageResponse&lt;TenantResponse&gt; getAllTenants(Pageable pageable) {
+<span class="fc" id="L151">    Page&lt;Tenant&gt; tenants = tenantRepository.findAllByDeletedAtIsNull(pageable);</span>
+    
+<span class="fc" id="L153">    log.debug(&quot;Fetched {} active tenants from database&quot;, tenants.getNumberOfElements());</span>
+    
+<span class="fc" id="L155">    Page&lt;TenantResponse&gt; responsePage = tenants.map(t -&gt; new TenantResponse(</span>
+<span class="fc" id="L156">            t.getId(),</span>
+<span class="fc" id="L157">            t.getBusinessName(),</span>
+<span class="fc" id="L158">            t.getBusinessType().getId(),</span>
+<span class="fc" id="L159">            t.getBusinessType().getName(),</span>
+<span class="fc" id="L160">            t.getEmail(),</span>
+<span class="fc" id="L161">            t.getStatus(),</span>
+<span class="fc" id="L162">            t.getPlan(),</span>
+<span class="fc" id="L163">            t.getCreatedAt()</span>
+        ));
+            
+<span class="fc" id="L166">    return PageResponse.of(responsePage);</span>
+  }
+
+
+  /** Returns a single tenant by ID, or throws 404 if not found or deleted. */
+  @Transactional(readOnly = true)
+  public TenantResponse getTenantById(Long id) {
+<span class="fc" id="L173">    Tenant tenant = tenantRepository.findById(id)</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        .filter(t -&gt; t.getDeletedAt() == null)</span>
+<span class="fc" id="L175">        .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found with id: &quot; + id));</span>
+
+<span class="fc" id="L177">    log.debug(&quot;Fetched tenant id={} from database&quot;, tenant.getId());</span>
+    
+<span class="fc" id="L179">    return new TenantResponse(</span>
+<span class="fc" id="L180">        tenant.getId(),</span>
+<span class="fc" id="L181">        tenant.getBusinessName(),</span>
+<span class="fc" id="L182">        tenant.getBusinessType().getId(),</span>
+<span class="fc" id="L183">        tenant.getBusinessType().getName(),</span>
+<span class="fc" id="L184">        tenant.getEmail(),</span>
+<span class="fc" id="L185">        tenant.getStatus(),</span>
+<span class="fc" id="L186">        tenant.getPlan(),</span>
+<span class="fc" id="L187">        tenant.getCreatedAt()</span>
+    );
+  }
+
+  /** Updates a tenant's business details. Email cannot be changed. */
+  @Transactional(rollbackFor = Exception.class)
+  public TenantResponse updateTenant(Long id, UpdateTenantRequest request) {
+<span class="fc" id="L194">    Tenant tenant = tenantRepository.findById(id)</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        .filter(t -&gt; t.getDeletedAt() == null)</span>
+<span class="pc" id="L196">        .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found with id: &quot; + id));</span>
+
+<span class="fc" id="L198">    BusinessType businessType = businessTypeRepository.findById(request.businessTypeId())</span>
+<span class="pc" id="L199">        .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Business Type not found with id: &quot; + request.businessTypeId()));</span>
+
+<span class="fc" id="L201">    tenant.setBusinessName(request.businessName());</span>
+<span class="fc" id="L202">    tenant.setBusinessType(businessType);</span>
+<span class="fc" id="L203">    tenant.setStatus(request.status());</span>
+<span class="fc" id="L204">    tenant.setPlan(request.plan());</span>
+<span class="fc" id="L205">    tenantRepository.save(tenant);</span>
+
+<span class="fc" id="L207">    log.info(&quot;Platform Admin updated tenant id={}, name={}&quot;, tenant.getId(), tenant.getBusinessName());</span>
+
+<span class="fc" id="L209">    return new TenantResponse(</span>
+<span class="fc" id="L210">        tenant.getId(),</span>
+<span class="fc" id="L211">        tenant.getBusinessName(),</span>
+<span class="fc" id="L212">        tenant.getBusinessType().getId(),</span>
+<span class="fc" id="L213">        tenant.getBusinessType().getName(),</span>
+<span class="fc" id="L214">        tenant.getEmail(),</span>
+<span class="fc" id="L215">        tenant.getStatus(),</span>
+<span class="fc" id="L216">        tenant.getPlan(),</span>
+<span class="fc" id="L217">        tenant.getCreatedAt()</span>
+    );
+  }
+
+  /** Soft-deletes a tenant — sets deleted_at timestamp, never removes the database record. */
+  @Transactional(rollbackFor = Exception.class)
+  public void deleteTenant(Long id) {
+<span class="fc" id="L224">    Tenant tenant = tenantRepository.findById(id)</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">        .filter(t -&gt; t.getDeletedAt() == null)</span>
+<span class="pc" id="L226">        .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found with id: &quot; + id));</span>
+
+<span class="fc" id="L228">    tenant.setDeletedAt(OffsetDateTime.now(java.time.ZoneId.systemDefault()));</span>
+<span class="fc" id="L229">    tenantRepository.save(tenant);</span>
+<span class="fc" id="L230">    log.info(&quot;Platform Admin soft-deleted tenant id={}, name={}&quot;, tenant.getId(), tenant.getBusinessName());</span>
+<span class="fc" id="L231">  }</span>
+
+  @Transactional(rollbackFor = Exception.class)
+  public TenantResponse updateTenantStatus(Long id, com.spiceflow.backend.admin.dto.request.UpdateTenantStatusRequest request) {
+<span class="nc" id="L235">    Tenant tenant = tenantRepository.findById(id)</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">        .filter(t -&gt; t.getDeletedAt() == null)</span>
+<span class="nc" id="L237">        .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found with id: &quot; + id));</span>
+
+<span class="nc" id="L239">    tenant.setStatus(request.status());</span>
+<span class="nc" id="L240">    tenantRepository.save(tenant);</span>
+
+<span class="nc" id="L242">    return new TenantResponse(</span>
+<span class="nc" id="L243">        tenant.getId(),</span>
+<span class="nc" id="L244">        tenant.getBusinessName(),</span>
+<span class="nc" id="L245">        tenant.getBusinessType().getId(),</span>
+<span class="nc" id="L246">        tenant.getBusinessType().getName(),</span>
+<span class="nc" id="L247">        tenant.getEmail(),</span>
+<span class="nc" id="L248">        tenant.getStatus(),</span>
+<span class="nc" id="L249">        tenant.getPlan(),</span>
+<span class="nc" id="L250">        tenant.getCreatedAt()</span>
+    );
+  }
+
+  // --- USER MANAGEMENT ---
+
+  @Transactional(rollbackFor = Exception.class)
+  public com.spiceflow.backend.admin.dto.response.UserResponse createUser(com.spiceflow.backend.admin.dto.request.CreateUserRequest request) {
+<span class="nc bnc" id="L258" title="All 2 branches missed.">      if (userRepository.existsByEmailIncludingDeleted(request.email())) {</span>
+<span class="nc" id="L259">          throw new ResourceConflictException(&quot;Email is already registered&quot;);</span>
+      }
+
+<span class="nc" id="L262">      User user = User.builder()</span>
+<span class="nc" id="L263">          .name(request.name())</span>
+<span class="nc" id="L264">          .email(request.email())</span>
+<span class="nc" id="L265">          .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.password()), &quot;Password hash cannot be null&quot;))</span>
+<span class="nc" id="L266">          .userType(request.userType())</span>
+<span class="nc" id="L267">          .build();</span>
+
+<span class="nc bnc" id="L269" title="All 2 branches missed.">      if (&quot;TENANT_OWNER&quot;.equals(request.userType())) {</span>
+          // No single tenantId, will have join records
+<span class="nc" id="L271">          userRepository.save(user);</span>
+<span class="nc bnc" id="L272" title="All 2 branches missed.">          if (request.tenantIds() != null) {</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">              for (Long tId : request.tenantIds()) {</span>
+<span class="nc" id="L274">                  assignTenantToOwner(user.getId(), tId);</span>
+<span class="nc" id="L275">              }</span>
+          }
+      } else {
+          // DATA_ENTRY or DRIVER need a specific tenant
+<span class="nc bnc" id="L279" title="All 2 branches missed.">          if (request.tenantId() == null) {</span>
+<span class="nc" id="L280">              throw new IllegalArgumentException(&quot;Tenant ID is required for user type: &quot; + request.userType());</span>
+          }
+<span class="nc" id="L282">          Tenant tenant = tenantRepository.findById(request.tenantId())</span>
+<span class="nc" id="L283">              .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
+          
+<span class="nc" id="L285">          user.setTenant(tenant);</span>
+<span class="nc" id="L286">          user.setAssignedRole(getOrCreateSystemRole(tenant, request.userType()));</span>
+<span class="nc" id="L287">          userRepository.save(user);</span>
+      }
+
+<span class="nc" id="L290">      return mapToUserResponse(user);</span>
+  }
+
+  @Transactional(readOnly = true)
+  public PageResponse&lt;com.spiceflow.backend.admin.dto.response.UserResponse&gt; getAllUsers(Pageable pageable) {
+<span class="nc" id="L295">      Page&lt;User&gt; users = userRepository.findAllByDeletedAtIsNull(pageable);</span>
+<span class="nc" id="L296">      return PageResponse.of(users.map(this::mapToUserResponse));</span>
+  }
+
+  @Transactional(readOnly = true)
+  public com.spiceflow.backend.admin.dto.response.UserResponse getUserById(Long id) {
+<span class="nc" id="L301">      User user = userRepository.findById(id)</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">          .filter(u -&gt; u.getDeletedAt() == null)</span>
+<span class="nc" id="L303">          .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;User not found&quot;));</span>
+<span class="nc" id="L304">      return mapToUserResponse(user);</span>
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public com.spiceflow.backend.admin.dto.response.UserResponse updateUser(Long id, com.spiceflow.backend.admin.dto.request.UpdateUserRequest request) {
+<span class="nc" id="L309">      User user = userRepository.findById(id)</span>
+<span class="nc bnc" id="L310" title="All 2 branches missed.">          .filter(u -&gt; u.getDeletedAt() == null)</span>
+<span class="nc" id="L311">          .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;User not found&quot;));</span>
+      
+      // Update basic details if present...
+      // E.g., re-assigning tenants, changing userType. Simplified for now.
+      
+<span class="nc bnc" id="L316" title="All 4 branches missed.">      if (&quot;TENANT_OWNER&quot;.equals(request.userType()) &amp;&amp; request.tenantIds() != null) {</span>
+          // simple replacement strategy: delete all, add new
+<span class="nc" id="L318">          List&lt;com.spiceflow.backend.auth.entity.BusinessOwnerTenant&gt; existing = businessOwnerTenantRepository.findByUserId(id);</span>
+<span class="nc" id="L319">          businessOwnerTenantRepository.deleteAll(existing);</span>
+          
+<span class="nc bnc" id="L321" title="All 2 branches missed.">          for (Long tId : request.tenantIds()) {</span>
+<span class="nc" id="L322">              assignTenantToOwner(id, tId);</span>
+<span class="nc" id="L323">          }</span>
+      }
+      
+<span class="nc" id="L326">      return mapToUserResponse(userRepository.save(user));</span>
+  }
+
+  @Transactional(rollbackFor = Exception.class)
+  public void deleteUser(Long id) {
+<span class="nc" id="L331">      User user = userRepository.findById(id)</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">          .filter(u -&gt; u.getDeletedAt() == null)</span>
+<span class="nc" id="L333">          .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;User not found&quot;));</span>
+<span class="nc" id="L334">      user.setDeletedAt(OffsetDateTime.now(ZoneId.systemDefault()));</span>
+<span class="nc" id="L335">      userRepository.save(user);</span>
+<span class="nc" id="L336">  }</span>
+
+  @Transactional(rollbackFor = Exception.class)
+  public void assignTenantToOwner(Long userId, Long tenantId) {
+<span class="nc" id="L340">      User user = userRepository.findById(userId).orElseThrow();</span>
+<span class="nc" id="L341">      Tenant tenant = tenantRepository.findById(tenantId).orElseThrow();</span>
+<span class="nc" id="L342">      com.spiceflow.backend.auth.entity.BusinessOwnerTenant bot = com.spiceflow.backend.auth.entity.BusinessOwnerTenant.builder()</span>
+<span class="nc" id="L343">          .user(user)</span>
+<span class="nc" id="L344">          .tenant(tenant)</span>
+<span class="nc" id="L345">          .build();</span>
+<span class="nc" id="L346">      businessOwnerTenantRepository.save(bot);</span>
+<span class="nc" id="L347">  }</span>
+
+  @Transactional(rollbackFor = Exception.class)
+  public void removeTenantFromOwner(Long userId, Long tenantId) {
+<span class="nc" id="L351">      businessOwnerTenantRepository.deleteByUserIdAndTenantId(userId, tenantId);</span>
+<span class="nc" id="L352">  }</span>
+
+  private Role getOrCreateSystemRole(Tenant tenant, String userType) {
+<span class="nc bnc" id="L355" title="All 2 branches missed.">      String roleName = &quot;DATA_ENTRY&quot;.equals(userType) ? &quot;Data Entry&quot; : &quot;Driver&quot;;</span>
+<span class="nc" id="L356">      return roleRepository.findByTenantId(tenant.getId()).stream()</span>
+<span class="nc" id="L357">          .filter(r -&gt; roleName.equals(r.getName()))</span>
+<span class="nc" id="L358">          .findFirst()</span>
+<span class="nc" id="L359">          .orElseGet(() -&gt; {</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">              java.util.Set&lt;String&gt; permCodes = &quot;DATA_ENTRY&quot;.equals(userType)</span>
+<span class="nc" id="L361">                  ? java.util.Set.of(&quot;INVENTORY_VIEW&quot;, &quot;INVENTORY_TRANSFER&quot;, &quot;PURCHASE_VIEW&quot;, &quot;PURCHASE_CREATE&quot;, &quot;PURCHASE_UPDATE&quot;, &quot;ORDER_VIEW&quot;, &quot;ORDER_CREATE&quot;, &quot;ORDER_UPDATE&quot;, &quot;LOADING_VIEW&quot;, &quot;LOADING_CREATE&quot;, &quot;LOADING_CONFIRM&quot;, &quot;DELIVERY_VIEW&quot;, &quot;DELIVERY_CREATE&quot;, &quot;DELIVERY_UPDATE&quot;, &quot;SETTINGS_PRODUCTS&quot;, &quot;SETTINGS_SHOPS&quot;, &quot;SETTINGS_REPS&quot;, &quot;SETTINGS_DRIVERS&quot;, &quot;SETTINGS_SUPPLIERS&quot;, &quot;STORE_VIEW&quot;)</span>
+<span class="nc" id="L362">                  : java.util.Set.of(&quot;LOADING_VIEW&quot;, &quot;DELIVERY_VIEW&quot;, &quot;DELIVERY_CREATE&quot;, &quot;DELIVERY_UPDATE&quot;);</span>
+                  
+<span class="nc" id="L364">              List&lt;com.spiceflow.backend.auth.entity.Permission&gt; perms = permissionRepository.findAll().stream()</span>
+<span class="nc" id="L365">                  .filter(p -&gt; permCodes.contains(p.getCode()))</span>
+<span class="nc" id="L366">                  .collect(Collectors.toList());</span>
+              
+<span class="nc" id="L368">              Role role = Role.builder()</span>
+<span class="nc" id="L369">                  .tenant(tenant)</span>
+<span class="nc" id="L370">                  .name(roleName)</span>
+<span class="nc" id="L371">                  .description(&quot;Auto-created system role for &quot; + roleName)</span>
+<span class="nc" id="L372">                  .isSystemRole(true)</span>
+<span class="nc" id="L373">                  .permissions(new HashSet&lt;&gt;(perms))</span>
+<span class="nc" id="L374">                  .build();</span>
+<span class="nc" id="L375">              return roleRepository.save(role);</span>
+          });
+  }
+
+  private com.spiceflow.backend.admin.dto.response.UserResponse mapToUserResponse(User user) {
+<span class="nc" id="L380">      List&lt;com.spiceflow.backend.admin.dto.response.TenantAssignedResponse&gt; assigned = List.of();</span>
+<span class="nc bnc" id="L381" title="All 2 branches missed.">      if (&quot;TENANT_OWNER&quot;.equals(user.getUserType())) {</span>
+<span class="nc" id="L382">          assigned = businessOwnerTenantRepository.findByUserId(user.getId()).stream()</span>
+<span class="nc" id="L383">              .map(bt -&gt; new com.spiceflow.backend.admin.dto.response.TenantAssignedResponse(</span>
+<span class="nc" id="L384">                  bt.getTenant().getId(), bt.getTenant().getBusinessName(), bt.getTenant().getStatus()))</span>
+<span class="nc" id="L385">              .collect(Collectors.toList());</span>
+      }
+      
+<span class="nc" id="L388">      return new com.spiceflow.backend.admin.dto.response.UserResponse(</span>
+<span class="nc" id="L389">          user.getId(),</span>
+<span class="nc" id="L390">          user.getName(),</span>
+<span class="nc" id="L391">          user.getEmail(),</span>
+<span class="nc" id="L392">          user.getUserType(),</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">          user.getTenantId() != null ? user.getTenantId() : -1L,</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">          user.getTenant() != null ? user.getTenant().getBusinessName() : &quot;&quot;,</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">          user.getAssignedRole() != null ? user.getAssignedRole().getName() : &quot;&quot;,</span>
+          assigned,
+<span class="nc" id="L397">          user.getCreatedAt()</span>
+      );
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

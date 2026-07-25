@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InventoryItemService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.inventory.service</a> &gt; <span class="el_source">InventoryItemService.java</span></div><h1>InventoryItemService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.inventory.service;
+
+import com.spiceflow.backend.auth.entity.Tenant;
+import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.inventory.dto.request.InventoryItemRequest;
+import com.spiceflow.backend.inventory.dto.response.InventoryItemResponse;
+import com.spiceflow.backend.inventory.entity.InventoryItem;
+import com.spiceflow.backend.inventory.entity.Product;
+import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.entity.InventoryTransaction;
+import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
+import com.spiceflow.backend.inventory.repository.InventoryTransactionRepository;
+import com.spiceflow.backend.inventory.mapper.InventoryItemMapper;
+import com.spiceflow.backend.inventory.dto.request.InventoryTransferRequest;
+import com.spiceflow.backend.inventory.dto.request.InventoryMarkDamagedRequest;
+import com.spiceflow.backend.inventory.ledger.InventoryMovementType;
+import com.spiceflow.backend.inventory.ledger.service.InventoryLedgerService;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+<span class="fc" id="L30">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class InventoryItemService {
+
+    private final InventoryItemRepository inventoryItemRepository;
+    private final InventoryTransactionRepository inventoryTransactionRepository;
+    private final TenantRepository tenantRepository;
+    private final ProductService productService;
+    private final WarehouseService warehouseService;
+    private final InventoryItemMapper inventoryItemMapper;
+    private final InventoryLedgerService inventoryLedgerService;
+
+    @Transactional(rollbackFor = Exception.class)
+    public InventoryItemResponse createInventoryItem(Long tenantId, InventoryItemRequest request) {
+<span class="fc" id="L46">        log.debug(&quot;Creating inventory item for tenantId: {}, productId: {}, warehouseId: {}&quot;, </span>
+<span class="fc" id="L47">                 tenantId, request.productId(), request.warehouseId());</span>
+        try {
+<span class="fc" id="L49">            Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L50">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Tenant with ID &quot; + tenantId + &quot; not found&quot;));</span>
+            
+            // Check if product exists in this warehouse already
+<span class="fc" id="L53">            inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(</span>
+<span class="fc" id="L54">                    request.productId(), request.warehouseId(), tenantId)</span>
+<span class="fc" id="L55">                .ifPresent(i -&gt; {</span>
+<span class="fc" id="L56">                    throw new BusinessRuleViolationException(</span>
+<span class="fc" id="L57">                        &quot;Inventory item already exists for product &quot; + request.productId() + </span>
+<span class="fc" id="L58">                        &quot; in warehouse &quot; + request.warehouseId());</span>
+                });
+                
+<span class="fc" id="L61">            Product product = productService.getProductEntity(request.productId(), tenantId);</span>
+<span class="fc" id="L62">            Warehouse warehouse = warehouseService.getWarehouseEntity(tenantId, request.warehouseId());</span>
+            
+<span class="fc" id="L64">            InventoryItem item = InventoryItem.builder()</span>
+<span class="fc" id="L65">                .product(product)</span>
+<span class="fc" id="L66">                .warehouse(warehouse)</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">                .quantityAvailable(request.quantityAvailable() != null ? request.quantityAvailable() : 0)</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">                .quantityReserved(request.quantityReserved() != null ? request.quantityReserved() : 0)</span>
+<span class="fc" id="L69">                .batchNumber(request.batchNumber())</span>
+<span class="fc" id="L70">                .expirationDate(request.expirationDate())</span>
+<span class="fc" id="L71">                .tenant(tenant)</span>
+<span class="fc" id="L72">                .build();</span>
+                
+<span class="fc" id="L74">            InventoryItem savedItem = inventoryItemRepository.save(item);</span>
+<span class="fc" id="L75">            inventoryLedgerService.recordMovement(</span>
+                tenantId,
+<span class="fc" id="L77">                request.warehouseId(),</span>
+<span class="fc" id="L78">                request.productId(),</span>
+                InventoryMovementType.INITIAL_STOCK,
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">                BigDecimal.valueOf(savedItem.getQuantityAvailable() != null ? savedItem.getQuantityAvailable() : 0),</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">                product.getBasePrice() != null ? product.getBasePrice() : BigDecimal.ZERO,</span>
+<span class="fc" id="L82">                &quot;INITIAL-STOCK-&quot; + savedItem.getId(),</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">                request.batchNumber() != null ? request.batchNumber() : &quot;&quot;,</span>
+<span class="fc" id="L84">                request.expirationDate(),</span>
+<span class="fc" id="L85">                Instant.now(),</span>
+                &quot;system&quot;
+            );
+
+<span class="fc" id="L89">            InventoryTransaction tx = InventoryTransaction.builder()</span>
+<span class="fc" id="L90">                .inventoryItem(savedItem)</span>
+<span class="fc" id="L91">                .transactionType(&quot;INITIAL_STOCK&quot;)</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">                .quantity(savedItem.getQuantityAvailable() != null ? savedItem.getQuantityAvailable() : 0)</span>
+<span class="fc" id="L93">                .referenceId(&quot;INITIAL-STOCK-&quot; + savedItem.getId())</span>
+<span class="fc" id="L94">                .notes(&quot;Initial stock added directly to warehouse&quot;)</span>
+<span class="fc" id="L95">                .tenant(tenant)</span>
+<span class="fc" id="L96">                .build();</span>
+<span class="fc" id="L97">            inventoryTransactionRepository.save(tx);</span>
+
+<span class="fc" id="L99">            log.info(&quot;Successfully created inventory item with ID: {} for tenantId: {}&quot;, savedItem.getId(), tenantId);</span>
+<span class="fc" id="L100">            return inventoryItemMapper.toResponse(savedItem);</span>
+<span class="fc" id="L101">        } catch (BusinessRuleViolationException | ResourceNotFoundException e) {</span>
+<span class="fc" id="L102">            throw e;</span>
+<span class="nc" id="L103">        } catch (Exception e) {</span>
+<span class="nc" id="L104">            log.error(&quot;Failed to create inventory item for tenantId: {}&quot;, tenantId, e);</span>
+<span class="nc" id="L105">            throw new BusinessRuleViolationException(&quot;Failed to create inventory item: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    public Page&lt;InventoryItemResponse&gt; getInventoryItems(Long tenantId, Long warehouseId, Long productId, Pageable pageable) {
+<span class="fc" id="L110">        log.debug(&quot;Fetching inventory items for tenantId: {}, warehouseId: {}, productId: {}&quot;, </span>
+                 tenantId, warehouseId, productId);
+        try {
+            Page&lt;InventoryItem&gt; itemPage;
+<span class="pc bpc" id="L114" title="1 of 4 branches missed.">            if (warehouseId != null &amp;&amp; productId != null) {</span>
+<span class="fc" id="L115">                itemPage = inventoryItemRepository.findByWarehouseIdAndProductIdAndTenantId(warehouseId, productId, tenantId, pageable);</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">            } else if (warehouseId != null) {</span>
+<span class="nc" id="L117">                itemPage = inventoryItemRepository.findByWarehouseIdAndTenantId(warehouseId, tenantId, pageable);</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">            } else if (productId != null) {</span>
+<span class="nc" id="L119">                itemPage = inventoryItemRepository.findByProductIdAndTenantId(productId, tenantId, pageable);</span>
+            } else {
+<span class="fc" id="L121">                itemPage = inventoryItemRepository.findByTenantId(tenantId, pageable);</span>
+            }
+<span class="fc" id="L123">            return itemPage.map(inventoryItemMapper::toResponse);</span>
+<span class="nc" id="L124">        } catch (Exception e) {</span>
+<span class="nc" id="L125">            log.error(&quot;Failed to fetch inventory items for tenantId: {}&quot;, tenantId, e);</span>
+<span class="nc" id="L126">            throw new BusinessRuleViolationException(&quot;Failed to fetch inventory items&quot;);</span>
+        }
+    }
+    
+    public InventoryItemResponse getInventoryItem(Long id, Long tenantId) {
+<span class="nc" id="L131">        log.debug(&quot;Fetching inventory item with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="nc" id="L132">        return inventoryItemMapper.toResponse(getInventoryItemEntity(id, tenantId));</span>
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public InventoryItemResponse updateInventoryItem(Long id, Long tenantId, InventoryItemRequest request) {
+<span class="fc" id="L137">        log.debug(&quot;Updating inventory item with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+        try {
+<span class="fc" id="L139">            InventoryItem item = getInventoryItemEntity(id, tenantId);</span>
+            
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">            int oldAvailable = item.getQuantityAvailable() != null ? item.getQuantityAvailable() : 0;</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">            int newAvailable = request.quantityAvailable() != null ? request.quantityAvailable() : oldAvailable;</span>
+<span class="fc" id="L143">            int diff = newAvailable - oldAvailable;</span>
+            
+<span class="fc" id="L145">            item.setQuantityAvailable(newAvailable);</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">            item.setQuantityReserved(request.quantityReserved() != null ? request.quantityReserved() : item.getQuantityReserved());</span>
+<span class="fc" id="L147">            item.setBatchNumber(request.batchNumber());</span>
+<span class="fc" id="L148">            item.setExpirationDate(request.expirationDate());</span>
+            
+<span class="fc" id="L150">            InventoryItem updatedItem = inventoryItemRepository.save(item);</span>
+            
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">            if (diff != 0) {</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">                InventoryMovementType movementType = diff &gt; 0 ? InventoryMovementType.ADJUSTMENT_IN : InventoryMovementType.ADJUSTMENT_OUT;</span>
+<span class="fc" id="L154">                inventoryLedgerService.recordMovement(</span>
+                    tenantId,
+<span class="fc" id="L156">                    item.getWarehouse().getId(),</span>
+<span class="fc" id="L157">                    item.getProduct().getId(),</span>
+                    movementType,
+<span class="fc" id="L159">                    BigDecimal.valueOf(Math.abs(diff)),</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">                    item.getProduct().getBasePrice() != null ? item.getProduct().getBasePrice() : BigDecimal.ZERO,</span>
+<span class="fc" id="L161">                    &quot;ADJ-&quot; + updatedItem.getId() + &quot;-&quot; + Instant.now().toEpochMilli(),</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">                    request.batchNumber() != null ? request.batchNumber() : &quot;&quot;,</span>
+<span class="fc" id="L163">                    request.expirationDate(),</span>
+<span class="fc" id="L164">                    Instant.now(),</span>
+                    &quot;system&quot;
+                );
+
+<span class="fc" id="L168">                InventoryTransaction tx = InventoryTransaction.builder()</span>
+<span class="fc" id="L169">                    .inventoryItem(updatedItem)</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">                    .transactionType(diff &gt; 0 ? &quot;ADJUSTMENT_IN&quot; : &quot;ADJUSTMENT_OUT&quot;)</span>
+<span class="fc" id="L171">                    .quantity(diff)</span>
+<span class="fc" id="L172">                    .referenceId(&quot;ADJ-&quot; + updatedItem.getId() + &quot;-&quot; + Instant.now().toEpochMilli())</span>
+<span class="fc" id="L173">                    .notes(&quot;Stock adjustment via manual edit&quot;)</span>
+<span class="fc" id="L174">                    .tenant(item.getTenant())</span>
+<span class="fc" id="L175">                    .build();</span>
+<span class="fc" id="L176">                inventoryTransactionRepository.save(tx);</span>
+            }
+            
+<span class="fc" id="L179">            log.info(&quot;Successfully updated inventory item with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="fc" id="L180">            return inventoryItemMapper.toResponse(updatedItem);</span>
+<span class="nc" id="L181">        } catch (ResourceNotFoundException e) {</span>
+<span class="nc" id="L182">            throw e;</span>
+<span class="nc" id="L183">        } catch (Exception e) {</span>
+<span class="nc" id="L184">            log.error(&quot;Failed to update inventory item with ID: {} for tenantId: {}&quot;, id, tenantId, e);</span>
+<span class="nc" id="L185">            throw new BusinessRuleViolationException(&quot;Failed to update inventory item: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteInventoryItem(Long id, Long tenantId) {
+<span class="fc" id="L191">        log.debug(&quot;Deleting inventory item with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+        try {
+<span class="fc" id="L193">            InventoryItem item = getInventoryItemEntity(id, tenantId);</span>
+<span class="pc bpc" id="L194" title="1 of 4 branches missed.">            if (item.getQuantityAvailable() &gt; 0 || item.getQuantityReserved() &gt; 0) {</span>
+<span class="fc" id="L195">                throw new BusinessRuleViolationException(&quot;Cannot delete inventory item with non-zero quantities&quot;);</span>
+            }
+<span class="fc" id="L197">            inventoryItemRepository.delete(item);</span>
+<span class="fc" id="L198">            log.info(&quot;Successfully deleted inventory item with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="fc" id="L199">        } catch (BusinessRuleViolationException | ResourceNotFoundException e) {</span>
+<span class="fc" id="L200">            throw e;</span>
+<span class="nc" id="L201">        } catch (Exception e) {</span>
+<span class="nc" id="L202">            log.error(&quot;Failed to delete inventory item with ID: {} for tenantId: {}&quot;, id, tenantId, e);</span>
+<span class="nc" id="L203">            throw new BusinessRuleViolationException(&quot;Failed to delete inventory item due to existing dependencies&quot;);</span>
+<span class="fc" id="L204">        }</span>
+<span class="fc" id="L205">    }</span>
+    
+    @Transactional(rollbackFor = Exception.class)
+    public void transferInventory(Long tenantId, InventoryTransferRequest request) {
+<span class="fc" id="L209">        log.info(&quot;Transferring inventory product {} from warehouse {} to warehouse {}&quot;, request.productId(), request.fromWarehouseId(), request.toWarehouseId());</span>
+        
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">        if (request.fromWarehouseId().equals(request.toWarehouseId())) {</span>
+<span class="nc" id="L212">            throw new BusinessRuleViolationException(&quot;Source and destination warehouses cannot be the same&quot;);</span>
+        }
+        
+<span class="fc" id="L215">        Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L216">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
+
+<span class="fc" id="L218">        InventoryItem sourceItem = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(</span>
+<span class="fc" id="L219">            request.productId(), request.fromWarehouseId(), tenantId)</span>
+<span class="pc" id="L220">            .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;Product not found in source warehouse&quot;));</span>
+            
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">        if (sourceItem.getQuantityAvailable() &lt; request.quantity()) {</span>
+<span class="nc" id="L223">            throw new BusinessRuleViolationException(&quot;Insufficient quantity in source warehouse&quot;);</span>
+        }
+        
+        // Deduct from source
+<span class="fc" id="L227">        sourceItem.setQuantityAvailable(sourceItem.getQuantityAvailable() - request.quantity());</span>
+<span class="fc" id="L228">        inventoryItemRepository.save(sourceItem);</span>
+        
+        // Transaction OUT
+<span class="fc" id="L231">        InventoryTransaction outTx = InventoryTransaction.builder()</span>
+<span class="fc" id="L232">            .inventoryItem(sourceItem)</span>
+<span class="fc" id="L233">            .transactionType(&quot;TRANSFER_OUT&quot;)</span>
+<span class="fc" id="L234">            .quantity(-request.quantity())</span>
+<span class="fc" id="L235">            .referenceId(&quot;TO-&quot; + request.toWarehouseId())</span>
+<span class="fc" id="L236">            .notes(request.reason())</span>
+<span class="fc" id="L237">            .tenant(tenant)</span>
+<span class="fc" id="L238">            .build();</span>
+<span class="fc" id="L239">        inventoryTransactionRepository.save(outTx);</span>
+        
+        // Add to dest (create if not exists)
+<span class="fc" id="L242">        Optional&lt;InventoryItem&gt; destItemOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(</span>
+<span class="fc" id="L243">            request.productId(), request.toWarehouseId(), tenantId);</span>
+            
+        InventoryItem destItem;
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        if (destItemOpt.isPresent()) {</span>
+<span class="fc" id="L247">            destItem = destItemOpt.get();</span>
+<span class="fc" id="L248">            destItem.setQuantityAvailable(destItem.getQuantityAvailable() + request.quantity());</span>
+        } else {
+<span class="nc" id="L250">            Product product = productService.getProductEntity(request.productId(), tenantId);</span>
+<span class="nc" id="L251">            Warehouse destWarehouse = warehouseService.getWarehouseEntity(tenantId, request.toWarehouseId());</span>
+<span class="nc" id="L252">            destItem = InventoryItem.builder()</span>
+<span class="nc" id="L253">                .product(product)</span>
+<span class="nc" id="L254">                .warehouse(destWarehouse)</span>
+<span class="nc" id="L255">                .quantityAvailable(request.quantity())</span>
+<span class="nc" id="L256">                .tenant(tenant)</span>
+<span class="nc" id="L257">                .build();</span>
+        }
+<span class="fc" id="L259">        destItem = inventoryItemRepository.save(destItem);</span>
+        
+        // Transaction IN
+<span class="fc" id="L262">        InventoryTransaction inTx = InventoryTransaction.builder()</span>
+<span class="fc" id="L263">            .inventoryItem(destItem)</span>
+<span class="fc" id="L264">            .transactionType(&quot;TRANSFER_IN&quot;)</span>
+<span class="fc" id="L265">            .quantity(request.quantity())</span>
+<span class="fc" id="L266">            .referenceId(&quot;FROM-&quot; + request.fromWarehouseId())</span>
+<span class="fc" id="L267">            .notes(request.reason())</span>
+<span class="fc" id="L268">            .tenant(tenant)</span>
+<span class="fc" id="L269">            .build();</span>
+<span class="fc" id="L270">        inventoryTransactionRepository.save(inTx);</span>
+<span class="fc" id="L271">    }</span>
+    
+    @Transactional(rollbackFor = Exception.class)
+    public void markDamaged(Long tenantId, InventoryMarkDamagedRequest request) {
+<span class="fc" id="L275">        log.info(&quot;Marking {} of product {} as damaged in warehouse {}&quot;, request.quantity(), request.productId(), request.warehouseId());</span>
+        
+<span class="fc" id="L277">        Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L278">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
+
+<span class="fc" id="L280">        InventoryItem item = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(</span>
+<span class="fc" id="L281">            request.productId(), request.warehouseId(), tenantId)</span>
+<span class="pc" id="L282">            .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;Product not found in warehouse&quot;));</span>
+            
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">        if (item.getQuantityAvailable() &lt; request.quantity()) {</span>
+<span class="nc" id="L285">            throw new BusinessRuleViolationException(&quot;Insufficient quantity to mark as damaged&quot;);</span>
+        }
+        
+<span class="fc" id="L288">        item.setQuantityAvailable(item.getQuantityAvailable() - request.quantity());</span>
+<span class="fc" id="L289">        inventoryItemRepository.save(item);</span>
+        
+<span class="fc" id="L291">        InventoryTransaction tx = InventoryTransaction.builder()</span>
+<span class="fc" id="L292">            .inventoryItem(item)</span>
+<span class="fc" id="L293">            .transactionType(&quot;DAMAGED_OUT&quot;)</span>
+<span class="fc" id="L294">            .quantity(-request.quantity())</span>
+<span class="fc" id="L295">            .notes(request.notes())</span>
+<span class="fc" id="L296">            .tenant(tenant)</span>
+<span class="fc" id="L297">            .build();</span>
+<span class="fc" id="L298">        inventoryTransactionRepository.save(tx);</span>
+<span class="fc" id="L299">    }</span>
+    
+    public InventoryItem getInventoryItemEntity(Long id, Long tenantId) {
+<span class="fc" id="L302">        return inventoryItemRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="fc" id="L303">            .orElseThrow(() -&gt; {</span>
+<span class="nc" id="L304">                log.error(&quot;Inventory item not found with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="nc" id="L305">                return new ResourceNotFoundException(&quot;Inventory item not found with id: &quot; + id);</span>
+            });
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

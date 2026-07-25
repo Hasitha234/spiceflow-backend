@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtUtil.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.auth.util</a> &gt; <span class="el_source">JwtUtil.java</span></div><h1>JwtUtil.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.auth.util;
+
+import com.spiceflow.backend.admin.entity.PlatformAdmin;
+import com.spiceflow.backend.auth.entity.User;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.crypto.SecretKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+/** Utility for generating and validating JWTs. Stateless — no DB calls. */
+@SuppressWarnings(&quot;JavaUtilDate&quot;)
+@Component
+public class JwtUtil {
+
+<span class="fc" id="L25">  private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);</span>
+
+  private static final String CLAIM_TENANT_ID = &quot;tenantId&quot;;
+  private static final String CLAIM_USER_ID = &quot;userId&quot;;
+  private static final String CLAIM_ROLE = &quot;role&quot;;
+  private static final String CLAIM_ROLES = &quot;roles&quot;;
+  private static final String CLAIM_PERMISSIONS = &quot;permissions&quot;;
+
+  private final SecretKey secretKey;
+  private final long accessTokenExpiryMs;
+  private final long refreshTokenExpiryMs;
+  private static final String CLAIM_USER_TYPE = &quot;userType&quot;;
+
+
+  public JwtUtil(
+      @Value(&quot;${app.jwt.secret}&quot;) String secret,
+      @Value(&quot;${app.jwt.access-token-expiry}&quot;) long accessTokenExpiryMs,
+<span class="fc" id="L42">      @Value(&quot;${app.jwt.refresh-token-expiry}&quot;) long refreshTokenExpiryMs) {</span>
+<span class="fc" id="L43">    this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L44">    this.accessTokenExpiryMs = accessTokenExpiryMs;</span>
+<span class="fc" id="L45">    this.refreshTokenExpiryMs = refreshTokenExpiryMs;</span>
+<span class="fc" id="L46">  }</span>
+
+  /** Generates a signed access JWT for the given user. Embeds tenantId, userId, roles and permissions. */
+  public String generateAccessToken(User user, java.util.List&lt;Object&gt; assignedTenants) {
+<span class="fc" id="L50">    long now = System.currentTimeMillis();</span>
+    
+<span class="fc" id="L52">    List&lt;String&gt; roles = List.of();</span>
+<span class="fc" id="L53">    List&lt;String&gt; permissions = List.of();</span>
+    
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">    if (user.getAssignedRole() != null) {</span>
+<span class="fc" id="L56">      String roleName = user.getAssignedRole().getName().toUpperCase(java.util.Locale.ROOT).replace(&quot; &quot;, &quot;_&quot;);</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">      String roleAuth = roleName.startsWith(&quot;ROLE_&quot;) ? roleName : &quot;ROLE_&quot; + roleName;</span>
+<span class="fc" id="L58">      roles = List.of(roleAuth);</span>
+      
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">      if (user.getAssignedRole().getPermissions() != null) {</span>
+<span class="fc" id="L61">        permissions = user.getAssignedRole().getPermissions().stream()</span>
+<span class="fc" id="L62">            .map(com.spiceflow.backend.auth.entity.Permission::getCode)</span>
+<span class="fc" id="L63">            .collect(Collectors.toList());</span>
+      }
+    }
+
+<span class="fc" id="L67">    return Jwts.builder()</span>
+<span class="fc" id="L68">        .subject(user.getEmail())</span>
+<span class="fc" id="L69">        .claim(CLAIM_USER_TYPE, user.getUserType())</span>
+<span class="fc" id="L70">        .claim(CLAIM_TENANT_ID, user.getTenantId())</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        .claim(&quot;tenantStatus&quot;, user.getTenant() != null ? user.getTenant().getStatus() : null)</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        .claim(&quot;assignedTenants&quot;, assignedTenants != null ? assignedTenants : List.of())</span>
+<span class="fc" id="L73">        .claim(CLAIM_USER_ID, user.getId())</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        .claim(CLAIM_ROLE, user.getAssignedRole() != null ? user.getAssignedRole().getName() : null)</span>
+<span class="fc" id="L75">        .claim(CLAIM_ROLES, roles)</span>
+<span class="fc" id="L76">        .claim(CLAIM_PERMISSIONS, permissions)</span>
+<span class="fc" id="L77">        .issuedAt(new Date(now))</span>
+<span class="fc" id="L78">        .expiration(new Date(now + accessTokenExpiryMs))</span>
+<span class="fc" id="L79">        .signWith(secretKey)</span>
+<span class="fc" id="L80">        .compact();</span>
+  }
+
+  /** Backwards compatibility signature for tests/other callers */
+  public String generateAccessToken(User user) {
+<span class="fc" id="L85">      return generateAccessToken(user, List.of());</span>
+  }
+
+
+  /** Generates a signed access JWT for a platform admin. Has no tenantId. */
+  public String generateAdminToken(PlatformAdmin admin) {
+<span class="nc" id="L91">    long now = System.currentTimeMillis();</span>
+<span class="nc" id="L92">    return Jwts.builder()</span>
+<span class="nc" id="L93">        .subject(admin.getEmail())</span>
+<span class="nc" id="L94">        .claim(CLAIM_USER_TYPE, &quot;PLATFORM_ADMIN&quot;)</span>
+<span class="nc" id="L95">        .claim(CLAIM_USER_ID, admin.getId())</span>
+<span class="nc" id="L96">        .claim(CLAIM_ROLES, List.of(&quot;ROLE_SUPER_ADMIN&quot;))</span>
+<span class="nc" id="L97">        .claim(CLAIM_PERMISSIONS, List.of())</span>
+<span class="nc" id="L98">        .issuedAt(new Date(now))</span>
+<span class="nc" id="L99">        .expiration(new Date(now + accessTokenExpiryMs))</span>
+<span class="nc" id="L100">        .signWith(secretKey)</span>
+<span class="nc" id="L101">        .compact();</span>
+  }
+
+
+  /** Extracts the email (subject) from a JWT. Returns null if token is invalid. */
+  public @org.jspecify.annotations.Nullable String extractEmail(String token) {
+    try {
+<span class="fc" id="L108">      return parseClaims(token).getSubject();</span>
+<span class="nc" id="L109">        } catch (JwtException | IllegalArgumentException e) {</span>
+<span class="nc" id="L110">      log.warn(&quot;Could not extract email from token: {}&quot;, e.getMessage(), e);</span>
+<span class="nc" id="L111">      return null;</span>
+    }
+
+  }
+
+  /** Extracts the tenantId claim from a JWT. Returns null if token is invalid. */
+  public @org.jspecify.annotations.Nullable Long extractTenantId(String token) {
+    try {
+<span class="nc" id="L119">      Object tenantId = parseClaims(token).get(CLAIM_TENANT_ID);</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">      return tenantId != null ? Long.valueOf(tenantId.toString()) : null;</span>
+<span class="nc" id="L121">        } catch (JwtException | IllegalArgumentException e) {</span>
+<span class="nc" id="L122">      log.warn(&quot;Could not extract tenantId from token: {}&quot;, e.getMessage(), e);</span>
+<span class="nc" id="L123">      return null;</span>
+    }
+
+  }
+
+  /** Extracts the userType claim. Returns null if token is invalid. */
+public @org.jspecify.annotations.Nullable String extractUserType(String token) {
+  try {
+<span class="fc" id="L131">    Object userType = parseClaims(token).get(CLAIM_USER_TYPE);</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">    return userType != null ? userType.toString() : null;</span>
+<span class="nc" id="L133">      } catch (JwtException | IllegalArgumentException e) {</span>
+<span class="nc" id="L134">      log.warn(&quot;Could not extract userType from token: {}&quot;, e.getMessage(), e);</span>
+<span class="nc" id="L135">      return null;</span>
+    }
+
+}
+
+
+  /** Returns true if the token has a valid signature and is not expired. */
+  public boolean isTokenValid(String token) {
+    try {
+<span class="fc" id="L144">      parseClaims(token);</span>
+<span class="fc" id="L145">      return true;</span>
+<span class="nc" id="L146">        } catch (JwtException | IllegalArgumentException e) {</span>
+<span class="nc" id="L147">      log.warn(&quot;Token validation failed: {}&quot;, e.getMessage(), e);</span>
+<span class="nc" id="L148">      return false;</span>
+    }
+
+  }
+
+  /** Returns the remaining time in milliseconds before the token expires. */
+  public long getRemainingTimeInMillis(String token) {
+    try {
+<span class="fc" id="L156">      Date expiration = parseClaims(token).getExpiration();</span>
+<span class="fc" id="L157">      long remaining = expiration.getTime() - System.currentTimeMillis();</span>
+<span class="fc" id="L158">      return Math.max(0, remaining);</span>
+<span class="nc" id="L159">    } catch (JwtException | IllegalArgumentException e) {</span>
+<span class="nc" id="L160">      return 0;</span>
+    }
+  }
+
+  /** Returns the configured access token expiry in milliseconds. */
+  public long getAccessTokenExpiryMs() {
+<span class="fc" id="L166">    return accessTokenExpiryMs;</span>
+  }
+
+  public Claims parseClaims(String token) {
+<span class="fc" id="L170">    return Jwts.parser()</span>
+<span class="fc" id="L171">        .verifyWith(secretKey)</span>
+<span class="fc" id="L172">        .build()</span>
+<span class="fc" id="L173">        .parseSignedClaims(token)</span>
+<span class="fc" id="L174">        .getPayload();</span>
+  }
+
+  public long getRefreshTokenExpiryMs() {
+<span class="fc" id="L178">  return refreshTokenExpiryMs;</span>
+}
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

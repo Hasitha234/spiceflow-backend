@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CashCollectionWorkflowEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.collection.entity</a> &gt; <span class="el_source">CashCollectionWorkflowEntity.java</span></div><h1>CashCollectionWorkflowEntity.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.collection.entity;
+
+import com.spiceflow.backend.sales.collection.domain.CashCollectionState;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * JPA entity mapping the {@code cash_collections} table for the workflow execution layer.
+ * This entity is exclusively used by {@code CashCollectionPersistenceAdapter} and must
+ * never be exposed to or manipulated by services directly.
+ */
+@Entity
+@Table(name = &quot;cash_collections&quot;)
+public class CashCollectionWorkflowEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private @Nullable Long id;
+
+<span class="fc" id="L32">    @Column(name = &quot;collection_number&quot;, nullable = false, unique = true)</span>
+    private String collectionNumber = &quot;&quot;;
+
+<span class="fc" id="L35">    @Column(name = &quot;correlation_id&quot;, nullable = false)</span>
+    private String correlationId = &quot;&quot;;
+
+<span class="fc" id="L38">    @Column(name = &quot;tenant_id&quot;, nullable = false)</span>
+<span class="fc" id="L39">    private Long tenantId = 0L;</span>
+
+<span class="fc" id="L41">    @Column(name = &quot;shop_id&quot;, nullable = false)</span>
+<span class="fc" id="L42">    private Long shopId = 0L;</span>
+
+    @Column(name = &quot;rep_id&quot;)
+    private @Nullable Long repId;
+
+<span class="fc" id="L47">    @Column(name = &quot;collection_date&quot;, nullable = false)</span>
+<span class="fc" id="L48">    private LocalDate collectionDate = LocalDate.now(ZoneOffset.UTC);</span>
+
+<span class="fc" id="L50">    @Column(name = &quot;amount&quot;, nullable = false, precision = 19, scale = 2)</span>
+    private BigDecimal amount = BigDecimal.ZERO;
+
+<span class="fc" id="L53">    @Column(name = &quot;payment_method&quot;, nullable = false)</span>
+    private String paymentMethod = &quot;CASH&quot;;
+
+    @Column(name = &quot;cheque_no&quot;)
+    private @Nullable String chequeNo;
+
+    @Column(name = &quot;cheque_bank_name&quot;)
+    private @Nullable String chequeBankName;
+
+    @Column(name = &quot;cheque_date&quot;)
+    private @Nullable LocalDate chequeDate;
+
+    @Column(name = &quot;notes&quot;)
+    private @Nullable String notes;
+
+<span class="fc" id="L68">    @Enumerated(EnumType.STRING)</span>
+    @Column(name = &quot;status&quot;, nullable = false)
+    private CashCollectionState status = CashCollectionState.PENDING;
+
+<span class="fc" id="L72">    @Column(name = &quot;created_by&quot;, nullable = false)</span>
+    private String createdBy = &quot;&quot;;
+
+    @Column(name = &quot;confirmed_by&quot;)
+    private @Nullable String confirmedBy;
+
+    @Column(name = &quot;cancelled_by&quot;)
+    private @Nullable String cancelledBy;
+
+    @Version
+    private @Nullable Long version;
+
+<span class="fc" id="L84">    @Column(name = &quot;created_at&quot;, nullable = false)</span>
+    private Instant createdAt = Instant.EPOCH;
+
+<span class="fc" id="L87">    @Column(name = &quot;updated_at&quot;, nullable = false)</span>
+    private Instant updatedAt = Instant.EPOCH;
+
+    @Column(name = &quot;confirmed_at&quot;)
+    private @Nullable Instant confirmedAt;
+
+    @Column(name = &quot;cancelled_at&quot;)
+    private @Nullable Instant cancelledAt;
+
+<span class="fc" id="L96">    public CashCollectionWorkflowEntity() {</span>
+<span class="fc" id="L97">    }</span>
+
+<span class="fc" id="L99">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L100">    public void setId(@Nullable Long id) { this.id = id; }</span>
+
+<span class="fc" id="L102">    public String getCollectionNumber() { return collectionNumber; }</span>
+<span class="fc" id="L103">    public void setCollectionNumber(String collectionNumber) { this.collectionNumber = collectionNumber; }</span>
+
+<span class="fc" id="L105">    public String getCorrelationId() { return correlationId; }</span>
+<span class="fc" id="L106">    public void setCorrelationId(String correlationId) { this.correlationId = correlationId; }</span>
+
+<span class="fc" id="L108">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L109">    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }</span>
+
+<span class="fc" id="L111">    public Long getShopId() { return shopId; }</span>
+<span class="fc" id="L112">    public void setShopId(Long shopId) { this.shopId = shopId; }</span>
+
+<span class="fc" id="L114">    public @Nullable Long getRepId() { return repId; }</span>
+<span class="fc" id="L115">    public void setRepId(@Nullable Long repId) { this.repId = repId; }</span>
+
+<span class="fc" id="L117">    public LocalDate getCollectionDate() { return collectionDate; }</span>
+<span class="fc" id="L118">    public void setCollectionDate(LocalDate collectionDate) { this.collectionDate = collectionDate; }</span>
+
+<span class="fc" id="L120">    public BigDecimal getAmount() { return amount; }</span>
+<span class="fc" id="L121">    public void setAmount(BigDecimal amount) { this.amount = amount; }</span>
+
+<span class="fc" id="L123">    public String getPaymentMethod() { return paymentMethod; }</span>
+<span class="fc" id="L124">    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }</span>
+
+<span class="fc" id="L126">    public @Nullable String getChequeNo() { return chequeNo; }</span>
+<span class="fc" id="L127">    public void setChequeNo(@Nullable String chequeNo) { this.chequeNo = chequeNo; }</span>
+
+<span class="fc" id="L129">    public @Nullable String getChequeBankName() { return chequeBankName; }</span>
+<span class="fc" id="L130">    public void setChequeBankName(@Nullable String chequeBankName) { this.chequeBankName = chequeBankName; }</span>
+
+<span class="fc" id="L132">    public @Nullable LocalDate getChequeDate() { return chequeDate; }</span>
+<span class="fc" id="L133">    public void setChequeDate(@Nullable LocalDate chequeDate) { this.chequeDate = chequeDate; }</span>
+
+<span class="fc" id="L135">    public @Nullable String getNotes() { return notes; }</span>
+<span class="fc" id="L136">    public void setNotes(@Nullable String notes) { this.notes = notes; }</span>
+
+<span class="fc" id="L138">    public CashCollectionState getStatus() { return status; }</span>
+<span class="fc" id="L139">    public void setStatus(CashCollectionState status) { this.status = status; }</span>
+
+<span class="fc" id="L141">    public String getCreatedBy() { return createdBy; }</span>
+<span class="fc" id="L142">    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }</span>
+
+<span class="fc" id="L144">    public @Nullable String getConfirmedBy() { return confirmedBy; }</span>
+<span class="fc" id="L145">    public void setConfirmedBy(@Nullable String confirmedBy) { this.confirmedBy = confirmedBy; }</span>
+
+<span class="fc" id="L147">    public @Nullable String getCancelledBy() { return cancelledBy; }</span>
+<span class="fc" id="L148">    public void setCancelledBy(@Nullable String cancelledBy) { this.cancelledBy = cancelledBy; }</span>
+
+<span class="fc" id="L150">    public @Nullable Long getVersion() { return version; }</span>
+<span class="fc" id="L151">    public void setVersion(@Nullable Long version) { this.version = version; }</span>
+
+<span class="fc" id="L153">    public Instant getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L154">    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }</span>
+
+<span class="fc" id="L156">    public Instant getUpdatedAt() { return updatedAt; }</span>
+<span class="fc" id="L157">    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }</span>
+
+<span class="fc" id="L159">    public @Nullable Instant getConfirmedAt() { return confirmedAt; }</span>
+<span class="fc" id="L160">    public void setConfirmedAt(@Nullable Instant confirmedAt) { this.confirmedAt = confirmedAt; }</span>
+
+<span class="fc" id="L162">    public @Nullable Instant getCancelledAt() { return cancelledAt; }</span>
+<span class="fc" id="L163">    public void setCancelledAt(@Nullable Instant cancelledAt) { this.cancelledAt = cancelledAt; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

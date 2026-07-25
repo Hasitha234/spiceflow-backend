@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WarehouseTransferStateMachine.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.inventory.transfer.workflow</a> &gt; <span class="el_source">WarehouseTransferStateMachine.java</span></div><h1>WarehouseTransferStateMachine.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.inventory.transfer.workflow;
+
+import com.spiceflow.backend.inventory.transfer.domain.WarehouseTransferState;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
+
+public final class WarehouseTransferStateMachine {
+
+    private static final Map&lt;WarehouseTransferState, Set&lt;WarehouseTransferState&gt;&gt; TRANSITIONS;
+
+    static {
+<span class="fc" id="L14">        Map&lt;WarehouseTransferState, Set&lt;WarehouseTransferState&gt;&gt; map = new EnumMap&lt;&gt;(WarehouseTransferState.class);</span>
+
+<span class="fc" id="L16">        map.put(WarehouseTransferState.DRAFT, Set.of(</span>
+                WarehouseTransferState.REQUESTED,
+                WarehouseTransferState.CANCELLED
+        ));
+
+<span class="fc" id="L21">        map.put(WarehouseTransferState.REQUESTED, Set.of(</span>
+                WarehouseTransferState.APPROVED,
+                WarehouseTransferState.CANCELLED
+        ));
+
+<span class="fc" id="L26">        map.put(WarehouseTransferState.APPROVED, Set.of(</span>
+                WarehouseTransferState.SHIPPED,
+                WarehouseTransferState.CANCELLED
+        ));
+
+<span class="fc" id="L31">        map.put(WarehouseTransferState.SHIPPED, Set.of(</span>
+                WarehouseTransferState.RECEIVED
+        ));
+
+<span class="fc" id="L35">        map.put(WarehouseTransferState.RECEIVED, Set.of());</span>
+<span class="fc" id="L36">        map.put(WarehouseTransferState.CANCELLED, Set.of());</span>
+
+<span class="fc" id="L38">        TRANSITIONS = Collections.unmodifiableMap(map);</span>
+<span class="fc" id="L39">    }</span>
+
+    public static boolean canTransition(WarehouseTransferState from, WarehouseTransferState to) {
+<span class="fc" id="L42">        return TRANSITIONS.getOrDefault(from, Set.of()).contains(to);</span>
+    }
+
+    public static Set&lt;WarehouseTransferState&gt; allowedNext(WarehouseTransferState state) {
+<span class="nc" id="L46">        return TRANSITIONS.getOrDefault(state, Set.of());</span>
+    }
+
+    private WarehouseTransferStateMachine() {}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

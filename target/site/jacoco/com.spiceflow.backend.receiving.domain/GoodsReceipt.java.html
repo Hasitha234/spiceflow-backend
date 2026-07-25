@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GoodsReceipt.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.receiving.domain</a> &gt; <span class="el_source">GoodsReceipt.java</span></div><h1>GoodsReceipt.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.receiving.domain;
+
+import com.spiceflow.backend.events.DomainEventType;
+import com.spiceflow.backend.workflow.WorkflowAggregate;
+import com.spiceflow.backend.workflow.WorkflowContext;
+import com.spiceflow.backend.workflow.WorkflowTransitionOutput;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+public class GoodsReceipt implements WorkflowAggregate&lt;GoodsReceipt, GoodsReceiptState&gt; {
+
+    private @Nullable Long id;
+    private String receiptNumber;
+    private Long tenantId;
+    private @Nullable Long purchaseOrderId;
+    private String poNumber;
+    private Long supplierId;
+    private Long warehouseId;
+<span class="fc" id="L22">    private List&lt;GoodsReceiptLine&gt; lines = new ArrayList&lt;&gt;();</span>
+    private GoodsReceiptState state;
+    private Instant receiptDate;
+    private BigDecimal totalAcceptedValue;
+    private BigDecimal totalDamagedValue;
+    private String createdBy;
+    private @Nullable String verifiedBy;
+    private @Nullable String postedBy;
+    private @Nullable Long version;
+    private String correlationId;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private @Nullable Instant verifiedAt;
+    private @Nullable Instant postedAt;
+
+<span class="fc" id="L37">    protected GoodsReceipt() {</span>
+        // JPA only
+<span class="fc" id="L39">        this.receiptNumber = &quot;&quot;;</span>
+<span class="fc" id="L40">        this.tenantId = 0L;</span>
+<span class="fc" id="L41">        this.purchaseOrderId = null;</span>
+<span class="fc" id="L42">        this.poNumber = &quot;&quot;;</span>
+<span class="fc" id="L43">        this.supplierId = 0L;</span>
+<span class="fc" id="L44">        this.warehouseId = 0L;</span>
+<span class="fc" id="L45">        this.state = GoodsReceiptState.DRAFT;</span>
+<span class="fc" id="L46">        this.receiptDate = Instant.EPOCH;</span>
+<span class="fc" id="L47">        this.totalAcceptedValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L48">        this.totalDamagedValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L49">        this.createdBy = &quot;&quot;;</span>
+<span class="fc" id="L50">        this.verifiedBy = null;</span>
+<span class="fc" id="L51">        this.postedBy = null;</span>
+<span class="fc" id="L52">        this.correlationId = &quot;&quot;;</span>
+<span class="fc" id="L53">        this.createdAt = Instant.EPOCH;</span>
+<span class="fc" id="L54">        this.updatedAt = Instant.EPOCH;</span>
+<span class="fc" id="L55">        this.verifiedAt = null;</span>
+<span class="fc" id="L56">        this.postedAt = null;</span>
+<span class="fc" id="L57">    }</span>
+
+    // COPY-ON-WRITE constructor (Rule 15 compliant)
+    public GoodsReceipt(GoodsReceipt source,
+                        GoodsReceiptState newState,
+<span class="fc" id="L62">                        @Nullable List&lt;GoodsReceiptLine&gt; newLines) {</span>
+
+<span class="fc" id="L64">        this.id = source.id;</span>
+<span class="fc" id="L65">        this.receiptNumber = source.receiptNumber;</span>
+<span class="fc" id="L66">        this.tenantId = source.tenantId;</span>
+<span class="fc" id="L67">        this.purchaseOrderId = source.purchaseOrderId;</span>
+<span class="fc" id="L68">        this.poNumber = source.poNumber;</span>
+<span class="fc" id="L69">        this.supplierId = source.supplierId;</span>
+<span class="fc" id="L70">        this.warehouseId = source.warehouseId;</span>
+<span class="fc" id="L71">        this.receiptDate = source.receiptDate;</span>
+<span class="fc" id="L72">        this.createdBy = source.createdBy;</span>
+<span class="fc" id="L73">        this.verifiedBy = source.verifiedBy;</span>
+<span class="fc" id="L74">        this.postedBy = source.postedBy;</span>
+<span class="fc" id="L75">        this.createdAt = source.createdAt;</span>
+<span class="fc" id="L76">        this.updatedAt = Instant.now();</span>
+<span class="fc" id="L77">        this.verifiedAt = source.verifiedAt;</span>
+<span class="fc" id="L78">        this.postedAt = source.postedAt;</span>
+
+        // IMPORTANT: defensive copy (no shared references)
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">        this.lines = newLines != null</span>
+<span class="fc" id="L82">                ? new ArrayList&lt;&gt;(newLines)</span>
+<span class="pc" id="L83">                : new ArrayList&lt;&gt;(source.lines);</span>
+
+<span class="fc" id="L85">        this.totalAcceptedValue = this.lines.stream()</span>
+<span class="fc" id="L86">                .map(line -&gt; line.getAcceptedQty().multiply(line.getUnitPrice()))</span>
+<span class="fc" id="L87">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+
+<span class="fc" id="L89">        this.totalDamagedValue = this.lines.stream()</span>
+<span class="fc" id="L90">                .map(line -&gt; line.getDamagedQty().multiply(line.getUnitPrice()))</span>
+<span class="fc" id="L91">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+
+<span class="fc" id="L93">        this.state = newState;</span>
+<span class="fc" id="L94">        this.version = source.version;</span>
+<span class="fc" id="L95">        this.correlationId = source.correlationId;</span>
+<span class="fc" id="L96">    }</span>
+
+    // Full constructor for persistence adapter restoration
+    public GoodsReceipt(@Nullable Long id, String receiptNumber, Long tenantId, @Nullable Long purchaseOrderId,
+                        String poNumber, Long supplierId, Long warehouseId, GoodsReceiptState state,
+                        Instant receiptDate, BigDecimal totalAcceptedValue, BigDecimal totalDamagedValue,
+                        String createdBy, @Nullable String verifiedBy, @Nullable String postedBy,
+                        @Nullable Long version, String correlationId, Instant createdAt, Instant updatedAt,
+<span class="fc" id="L104">                        @Nullable Instant verifiedAt, @Nullable Instant postedAt, List&lt;GoodsReceiptLine&gt; lines) {</span>
+<span class="fc" id="L105">        this.id = id;</span>
+<span class="fc" id="L106">        this.receiptNumber = receiptNumber;</span>
+<span class="fc" id="L107">        this.tenantId = tenantId;</span>
+<span class="fc" id="L108">        this.purchaseOrderId = purchaseOrderId;</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">        this.poNumber = poNumber != null ? poNumber : &quot;&quot;;</span>
+<span class="fc" id="L110">        this.supplierId = supplierId;</span>
+<span class="fc" id="L111">        this.warehouseId = warehouseId;</span>
+<span class="fc" id="L112">        this.state = state;</span>
+<span class="fc" id="L113">        this.receiptDate = receiptDate;</span>
+<span class="fc" id="L114">        this.totalAcceptedValue = totalAcceptedValue;</span>
+<span class="fc" id="L115">        this.totalDamagedValue = totalDamagedValue;</span>
+<span class="fc" id="L116">        this.createdBy = createdBy;</span>
+<span class="fc" id="L117">        this.verifiedBy = verifiedBy;</span>
+<span class="fc" id="L118">        this.postedBy = postedBy;</span>
+<span class="fc" id="L119">        this.version = version;</span>
+<span class="fc" id="L120">        this.correlationId = correlationId;</span>
+<span class="fc" id="L121">        this.createdAt = createdAt;</span>
+<span class="fc" id="L122">        this.updatedAt = updatedAt;</span>
+<span class="fc" id="L123">        this.verifiedAt = verifiedAt;</span>
+<span class="fc" id="L124">        this.postedAt = postedAt;</span>
+<span class="fc" id="L125">        this.lines = new ArrayList&lt;&gt;(lines);</span>
+<span class="fc" id="L126">    }</span>
+
+    public static GoodsReceipt create(String receiptNumber, Long tenantId, @Nullable Long purchaseOrderId,
+                                      String poNumber, Long supplierId, Long warehouseId, String createdBy) {
+<span class="fc" id="L130">        GoodsReceipt gr = new GoodsReceipt();</span>
+<span class="fc" id="L131">        gr.receiptNumber = receiptNumber;</span>
+<span class="fc" id="L132">        gr.tenantId = tenantId;</span>
+<span class="fc" id="L133">        gr.purchaseOrderId = purchaseOrderId;</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">        gr.poNumber = poNumber != null ? poNumber : &quot;&quot;;</span>
+<span class="fc" id="L135">        gr.supplierId = supplierId;</span>
+<span class="fc" id="L136">        gr.warehouseId = warehouseId;</span>
+<span class="fc" id="L137">        gr.state = GoodsReceiptState.DRAFT;</span>
+<span class="fc" id="L138">        gr.receiptDate = Instant.now();</span>
+<span class="fc" id="L139">        gr.totalAcceptedValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L140">        gr.totalDamagedValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L141">        gr.createdBy = createdBy;</span>
+<span class="fc" id="L142">        gr.lines = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L143">        gr.correlationId = receiptNumber;</span>
+<span class="fc" id="L144">        gr.createdAt = Instant.now();</span>
+<span class="fc" id="L145">        gr.updatedAt = Instant.now();</span>
+<span class="fc" id="L146">        return gr;</span>
+    }
+
+    @Override
+    public String getAggregateId() {
+<span class="fc" id="L151">        return receiptNumber;</span>
+    }
+
+    @Override
+    public GoodsReceiptState getWorkflowState() {
+<span class="fc" id="L156">        return state;</span>
+    }
+
+    @Override
+    public WorkflowTransitionOutput&lt;GoodsReceipt&gt; transitionTo(GoodsReceiptState targetState, WorkflowContext context) {
+<span class="fc" id="L161">        GoodsReceipt copy = new GoodsReceipt(this, targetState, this.lines);</span>
+<span class="pc bpc" id="L162" title="1 of 4 branches missed.">        if (targetState == GoodsReceiptState.VERIFIED &amp;&amp; copy.verifiedAt == null) {</span>
+<span class="fc" id="L163">            copy.verifiedAt = context.timestamp();</span>
+<span class="fc" id="L164">            copy.verifiedBy = String.valueOf(context.userId());</span>
+        }
+<span class="pc bpc" id="L166" title="3 of 4 branches missed.">        if (targetState == GoodsReceiptState.POSTED &amp;&amp; copy.postedAt == null) {</span>
+<span class="nc" id="L167">            copy.postedAt = context.timestamp();</span>
+<span class="nc" id="L168">            copy.postedBy = String.valueOf(context.userId());</span>
+        }
+<span class="pc bpc" id="L170" title="2 of 4 branches missed.">        DomainEventType eventType = switch (targetState) {</span>
+<span class="fc" id="L171">            case DRAFT, INSPECTING -&gt; DomainEventType.GOODS_RECEIPT_CREATED;</span>
+<span class="fc" id="L172">            case VERIFIED -&gt; DomainEventType.GOODS_RECEIPT_VERIFIED;</span>
+<span class="nc" id="L173">            case POSTED -&gt; DomainEventType.GOODS_RECEIPT_POSTED;</span>
+<span class="pc" id="L174">            case CANCELLED -&gt; DomainEventType.GOODS_RECEIPT_CANCELLED;</span>
+        };
+<span class="fc" id="L176">        GoodsReceiptEvent event = new GoodsReceiptEvent(</span>
+                this.receiptNumber,
+                eventType,
+<span class="fc" id="L179">                context.correlationId(),</span>
+<span class="fc" id="L180">                context.timestamp(),</span>
+<span class="fc" id="L181">                context.tenantId()</span>
+        );
+<span class="fc" id="L183">        return new WorkflowTransitionOutput&lt;&gt;(copy, List.of(event));</span>
+    }
+
+    // GETTERS ONLY (NO SETTERS — STRICT RULE 15)
+<span class="fc" id="L187">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L188">    public String getReceiptNumber() { return receiptNumber; }</span>
+<span class="fc" id="L189">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L190">    public @Nullable Long getPurchaseOrderId() { return purchaseOrderId; }</span>
+<span class="fc" id="L191">    public String getPoNumber() { return poNumber; }</span>
+<span class="fc" id="L192">    public Long getSupplierId() { return supplierId; }</span>
+<span class="fc" id="L193">    public Long getWarehouseId() { return warehouseId; }</span>
+<span class="fc" id="L194">    public List&lt;GoodsReceiptLine&gt; getLines() { return lines; }</span>
+<span class="fc" id="L195">    public GoodsReceiptState getState() { return state; }</span>
+<span class="fc" id="L196">    public Instant getReceiptDate() { return receiptDate; }</span>
+<span class="fc" id="L197">    public BigDecimal getTotalAcceptedValue() { return totalAcceptedValue; }</span>
+<span class="fc" id="L198">    public BigDecimal getTotalDamagedValue() { return totalDamagedValue; }</span>
+<span class="fc" id="L199">    public String getCreatedBy() { return createdBy; }</span>
+<span class="fc" id="L200">    public @Nullable String getVerifiedBy() { return verifiedBy; }</span>
+<span class="fc" id="L201">    public @Nullable String getPostedBy() { return postedBy; }</span>
+<span class="fc" id="L202">    public @Nullable Long getVersion() { return version; }</span>
+<span class="nc" id="L203">    public String getCorrelationId() { return correlationId; }</span>
+<span class="fc" id="L204">    public Instant getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L205">    public Instant getUpdatedAt() { return updatedAt; }</span>
+<span class="fc" id="L206">    public @Nullable Instant getVerifiedAt() { return verifiedAt; }</span>
+<span class="fc" id="L207">    public @Nullable Instant getPostedAt() { return postedAt; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

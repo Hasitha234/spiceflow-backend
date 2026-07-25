@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RepOrderPersistenceAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.order.adapter</a> &gt; <span class="el_source">RepOrderPersistenceAdapter.java</span></div><h1>RepOrderPersistenceAdapter.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.order.adapter;
+
+import com.spiceflow.backend.sales.order.domain.RepOrder;
+import com.spiceflow.backend.sales.order.domain.RepOrderItem;
+import com.spiceflow.backend.sales.order.domain.RepOrderShop;
+import com.spiceflow.backend.sales.order.domain.ShopReturnItem;
+import com.spiceflow.backend.sales.order.entity.RepOrderItemWorkflowEntity;
+import com.spiceflow.backend.sales.order.entity.RepOrderShopWorkflowEntity;
+import com.spiceflow.backend.sales.order.entity.RepOrderWorkflowEntity;
+import com.spiceflow.backend.sales.order.entity.ShopReturnWorkflowEntity;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.stereotype.Component;
+
+/**
+ * Pure mapping adapter converting between immutable domain aggregates and JPA persistence entities.
+ * Contains zero business logic, validation, or state transition rules.
+ */
+@Component
+<span class="fc" id="L21">public class RepOrderPersistenceAdapter {</span>
+
+    public RepOrderWorkflowEntity toEntity(RepOrder aggregate) {
+<span class="fc" id="L24">        RepOrderWorkflowEntity entity = new RepOrderWorkflowEntity();</span>
+<span class="fc" id="L25">        entity.setId(aggregate.getId());</span>
+<span class="fc" id="L26">        entity.setOrderNumber(aggregate.getOrderNumber());</span>
+<span class="fc" id="L27">        entity.setTenantId(aggregate.getTenantId());</span>
+<span class="fc" id="L28">        entity.setRepId(aggregate.getRepId());</span>
+<span class="fc" id="L29">        entity.setOrderDate(aggregate.getOrderDate());</span>
+<span class="fc" id="L30">        entity.setRouteArea(aggregate.getRouteArea());</span>
+<span class="fc" id="L31">        entity.setStatus(aggregate.getState());</span>
+<span class="fc" id="L32">        entity.setTotalGrossAmount(aggregate.getTotalGrossAmount());</span>
+<span class="fc" id="L33">        entity.setTotalReturnsValue(aggregate.getTotalReturnsValue());</span>
+<span class="fc" id="L34">        entity.setNetAmount(aggregate.getNetAmount());</span>
+<span class="fc" id="L35">        entity.setLoadingStatus(aggregate.getState().name());</span>
+<span class="fc" id="L36">        entity.setCreatedBy(aggregate.getCreatedBy());</span>
+<span class="fc" id="L37">        entity.setApprovedBy(aggregate.getApprovedBy());</span>
+<span class="fc" id="L38">        entity.setLoadedBy(aggregate.getLoadedBy());</span>
+<span class="fc" id="L39">        entity.setDeliveredBy(aggregate.getDeliveredBy());</span>
+<span class="fc" id="L40">        entity.setVersion(aggregate.getVersion());</span>
+<span class="fc" id="L41">        entity.setCreatedAt(aggregate.getCreatedAt());</span>
+<span class="fc" id="L42">        entity.setUpdatedAt(aggregate.getUpdatedAt());</span>
+<span class="fc" id="L43">        entity.setApprovedAt(aggregate.getApprovedAt());</span>
+<span class="fc" id="L44">        entity.setLoadedAt(aggregate.getLoadedAt());</span>
+<span class="fc" id="L45">        entity.setDeliveredAt(aggregate.getDeliveredAt());</span>
+
+<span class="fc" id="L47">        List&lt;RepOrderShopWorkflowEntity&gt; shopEntities = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (RepOrderShop shop : aggregate.getShops()) {</span>
+<span class="fc" id="L49">            RepOrderShopWorkflowEntity shopEntity = new RepOrderShopWorkflowEntity();</span>
+<span class="fc" id="L50">            shopEntity.setId(shop.id());</span>
+<span class="fc" id="L51">            shopEntity.setTenantId(aggregate.getTenantId());</span>
+<span class="fc" id="L52">            shopEntity.setShopId(shop.shopId());</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">            shopEntity.setGrossOrderAmount(shop.grossOrderAmount() != null ? shop.grossOrderAmount() : BigDecimal.ZERO);</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">            shopEntity.setReturnsValue(shop.returnsValue() != null ? shop.returnsValue() : BigDecimal.ZERO);</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">            shopEntity.setNetAmount(shop.netAmount() != null ? shop.netAmount() : BigDecimal.ZERO);</span>
+<span class="fc" id="L56">            shopEntity.setCreatedAt(aggregate.getCreatedAt());</span>
+
+<span class="fc" id="L58">            List&lt;RepOrderItemWorkflowEntity&gt; itemEntities = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">            for (RepOrderItem item : shop.items()) {</span>
+<span class="fc" id="L60">                RepOrderItemWorkflowEntity itemEntity = new RepOrderItemWorkflowEntity();</span>
+<span class="fc" id="L61">                itemEntity.setId(item.id());</span>
+<span class="fc" id="L62">                itemEntity.setTenantId(aggregate.getTenantId());</span>
+<span class="fc" id="L63">                itemEntity.setProductId(item.productId());</span>
+<span class="fc" id="L64">                itemEntity.setQuantity(item.quantity());</span>
+<span class="fc" id="L65">                itemEntity.setUnitType(item.unitType());</span>
+<span class="fc" id="L66">                itemEntity.setRate(item.rate());</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">                itemEntity.setGrossAmount(item.grossAmount() != null ? item.grossAmount() : BigDecimal.ZERO);</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">                itemEntity.setNetAmount(item.netAmount() != null ? item.netAmount() : BigDecimal.ZERO);</span>
+<span class="fc" id="L69">                itemEntity.setIsFreeItem(item.isFreeItem());</span>
+<span class="fc" id="L70">                itemEntity.setBoxesNeeded(item.boxesNeeded());</span>
+<span class="fc" id="L71">                itemEntity.setCreatedAt(aggregate.getCreatedAt());</span>
+<span class="fc" id="L72">                itemEntities.add(itemEntity);</span>
+<span class="fc" id="L73">            }</span>
+<span class="fc" id="L74">            shopEntity.setItems(itemEntities);</span>
+
+<span class="fc" id="L76">            List&lt;ShopReturnWorkflowEntity&gt; returnEntities = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            for (ShopReturnItem r : shop.returns()) {</span>
+<span class="fc" id="L78">                ShopReturnWorkflowEntity returnEntity = new ShopReturnWorkflowEntity();</span>
+<span class="fc" id="L79">                returnEntity.setId(r.id());</span>
+<span class="fc" id="L80">                returnEntity.setTenantId(aggregate.getTenantId());</span>
+<span class="fc" id="L81">                returnEntity.setProductId(r.productId());</span>
+<span class="fc" id="L82">                returnEntity.setQuantity(r.quantity());</span>
+<span class="fc" id="L83">                returnEntity.setUnitType(r.unitType());</span>
+<span class="fc" id="L84">                returnEntity.setCreditValue(r.creditValue());</span>
+<span class="fc" id="L85">                returnEntity.setReturnType(r.returnType());</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">                returnEntity.setStatus(r.status() != null ? r.status() : &quot;PENDING&quot;);</span>
+<span class="fc" id="L87">                returnEntity.setCreatedAt(aggregate.getCreatedAt());</span>
+<span class="fc" id="L88">                returnEntities.add(returnEntity);</span>
+<span class="fc" id="L89">            }</span>
+<span class="fc" id="L90">            shopEntity.setReturns(returnEntities);</span>
+
+<span class="fc" id="L92">            shopEntities.add(shopEntity);</span>
+<span class="fc" id="L93">        }</span>
+<span class="fc" id="L94">        entity.setShops(shopEntities);</span>
+<span class="fc" id="L95">        return entity;</span>
+    }
+
+    public RepOrder toDomain(RepOrderWorkflowEntity entity) {
+<span class="fc" id="L99">        List&lt;RepOrderShop&gt; shops = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        for (RepOrderShopWorkflowEntity shopEntity : entity.getShops()) {</span>
+<span class="fc" id="L101">            List&lt;RepOrderItem&gt; items = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            for (RepOrderItemWorkflowEntity itemEntity : shopEntity.getItems()) {</span>
+<span class="fc" id="L103">                items.add(new RepOrderItem(</span>
+<span class="fc" id="L104">                    itemEntity.getId(),</span>
+<span class="fc" id="L105">                    itemEntity.getProductId(),</span>
+<span class="fc" id="L106">                    itemEntity.getQuantity(),</span>
+<span class="fc" id="L107">                    itemEntity.getUnitType(),</span>
+<span class="fc" id="L108">                    itemEntity.getRate(),</span>
+<span class="fc" id="L109">                    itemEntity.getGrossAmount(),</span>
+<span class="fc" id="L110">                    itemEntity.getNetAmount(),</span>
+<span class="fc" id="L111">                    itemEntity.getIsFreeItem(),</span>
+<span class="fc" id="L112">                    itemEntity.getBoxesNeeded()</span>
+                ));
+<span class="fc" id="L114">            }</span>
+
+<span class="fc" id="L116">            List&lt;ShopReturnItem&gt; returns = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            for (ShopReturnWorkflowEntity returnEntity : shopEntity.getReturns()) {</span>
+<span class="fc" id="L118">                returns.add(new ShopReturnItem(</span>
+<span class="fc" id="L119">                    returnEntity.getId(),</span>
+<span class="fc" id="L120">                    returnEntity.getProductId(),</span>
+<span class="fc" id="L121">                    returnEntity.getQuantity(),</span>
+<span class="fc" id="L122">                    returnEntity.getUnitType(),</span>
+<span class="fc" id="L123">                    returnEntity.getCreditValue(),</span>
+<span class="fc" id="L124">                    returnEntity.getReturnType(),</span>
+<span class="fc" id="L125">                    returnEntity.getStatus()</span>
+                ));
+<span class="fc" id="L127">            }</span>
+
+<span class="fc" id="L129">            shops.add(new RepOrderShop(</span>
+<span class="fc" id="L130">                shopEntity.getId(),</span>
+<span class="fc" id="L131">                shopEntity.getShopId(),</span>
+<span class="fc" id="L132">                shopEntity.getGrossOrderAmount(),</span>
+<span class="fc" id="L133">                shopEntity.getReturnsValue(),</span>
+<span class="fc" id="L134">                shopEntity.getNetAmount(),</span>
+                items,
+                returns
+            ));
+<span class="fc" id="L138">        }</span>
+
+<span class="fc" id="L140">        return new RepOrder(</span>
+<span class="fc" id="L141">            entity.getId(),</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">            entity.getOrderNumber() != null ? entity.getOrderNumber() : &quot;&quot;,</span>
+<span class="fc" id="L143">            entity.getTenantId(),</span>
+<span class="fc" id="L144">            entity.getRepId(),</span>
+<span class="fc" id="L145">            entity.getOrderDate(),</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">            entity.getRouteArea() != null ? entity.getRouteArea() : &quot;&quot;,</span>
+<span class="fc" id="L147">            entity.getStatus(),</span>
+<span class="fc" id="L148">            entity.getTotalGrossAmount(),</span>
+<span class="fc" id="L149">            entity.getTotalReturnsValue(),</span>
+<span class="fc" id="L150">            entity.getNetAmount(),</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">            entity.getCreatedBy() != null ? entity.getCreatedBy() : &quot;&quot;,</span>
+<span class="fc" id="L152">            entity.getApprovedBy(),</span>
+<span class="fc" id="L153">            entity.getLoadedBy(),</span>
+<span class="fc" id="L154">            entity.getDeliveredBy(),</span>
+<span class="fc" id="L155">            entity.getVersion(),</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">            entity.getOrderNumber() != null ? entity.getOrderNumber() : &quot;&quot;,</span>
+<span class="fc" id="L157">            entity.getCreatedAt(),</span>
+<span class="fc" id="L158">            entity.getUpdatedAt(),</span>
+<span class="fc" id="L159">            entity.getApprovedAt(),</span>
+<span class="fc" id="L160">            entity.getLoadedAt(),</span>
+<span class="fc" id="L161">            entity.getDeliveredAt(),</span>
+            shops
+        );
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

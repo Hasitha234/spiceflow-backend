@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DeliveryShopWorkflowEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.delivery.entity</a> &gt; <span class="el_source">DeliveryShopWorkflowEntity.java</span></div><h1>DeliveryShopWorkflowEntity.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.delivery.entity;
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+@Entity
+@Table(name = &quot;delivery_shops&quot;)
+public class DeliveryShopWorkflowEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private @Nullable Long id;
+
+    @Column(name = &quot;tenant_id&quot;, nullable = false)
+    private Long tenantId;
+
+    @ManyToOne
+    @NotFound(action = NotFoundAction.IGNORE)
+    @JoinColumn(name = &quot;delivery_id&quot;, nullable = false)
+    private DeliveryWorkflowEntity delivery;
+
+    @Column(name = &quot;shop_id&quot;, nullable = false)
+    private Long shopId;
+
+    @Column(name = &quot;gross_bill_amount&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal grossBillAmount;
+
+    @Column(name = &quot;total_discount&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal totalDiscount;
+
+    @Column(name = &quot;returns_deducted&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal returnsDeducted;
+
+    @Column(name = &quot;net_payable&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal netPayable;
+
+    @Column(name = &quot;paid_amount&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal paidAmount;
+
+    @Column(name = &quot;credit_amount&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal creditAmount;
+
+<span class="fc" id="L58">    @OneToMany(mappedBy = &quot;deliveryShop&quot;, cascade = CascadeType.ALL, orphanRemoval = true)</span>
+    private List&lt;DeliveryShopItemWorkflowEntity&gt; items = new ArrayList&lt;&gt;();
+
+<span class="fc" id="L61">    @OneToMany(mappedBy = &quot;deliveryShop&quot;, cascade = CascadeType.ALL, orphanRemoval = true)</span>
+    private List&lt;DeliveryShopReturnWorkflowEntity&gt; returns = new ArrayList&lt;&gt;();
+
+<span class="fc" id="L64">    @OneToMany(mappedBy = &quot;deliveryShop&quot;, cascade = CascadeType.ALL, orphanRemoval = true)</span>
+    private List&lt;DeliveryPaymentWorkflowEntity&gt; payments = new ArrayList&lt;&gt;();
+
+<span class="fc" id="L67">    public DeliveryShopWorkflowEntity() {</span>
+<span class="fc" id="L68">        this.tenantId = 0L;</span>
+<span class="fc" id="L69">        this.shopId = 0L;</span>
+<span class="fc" id="L70">        this.grossBillAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L71">        this.totalDiscount = BigDecimal.ZERO;</span>
+<span class="fc" id="L72">        this.returnsDeducted = BigDecimal.ZERO;</span>
+<span class="fc" id="L73">        this.netPayable = BigDecimal.ZERO;</span>
+<span class="fc" id="L74">        this.paidAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L75">        this.creditAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L76">        this.delivery = new DeliveryWorkflowEntity();</span>
+<span class="fc" id="L77">    }</span>
+
+<span class="fc" id="L79">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L80">    public void setId(@Nullable Long id) { this.id = id; }</span>
+<span class="nc" id="L81">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L82">    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }</span>
+<span class="nc" id="L83">    public DeliveryWorkflowEntity getDelivery() { return delivery; }</span>
+<span class="fc" id="L84">    public void setDelivery(DeliveryWorkflowEntity delivery) { this.delivery = delivery; }</span>
+<span class="fc" id="L85">    public Long getShopId() { return shopId; }</span>
+<span class="fc" id="L86">    public void setShopId(Long shopId) { this.shopId = shopId; }</span>
+<span class="fc" id="L87">    public BigDecimal getGrossBillAmount() { return grossBillAmount; }</span>
+<span class="fc" id="L88">    public void setGrossBillAmount(BigDecimal v) { this.grossBillAmount = v; }</span>
+<span class="fc" id="L89">    public BigDecimal getTotalDiscount() { return totalDiscount; }</span>
+<span class="fc" id="L90">    public void setTotalDiscount(BigDecimal v) { this.totalDiscount = v; }</span>
+<span class="fc" id="L91">    public BigDecimal getReturnsDeducted() { return returnsDeducted; }</span>
+<span class="fc" id="L92">    public void setReturnsDeducted(BigDecimal v) { this.returnsDeducted = v; }</span>
+<span class="fc" id="L93">    public BigDecimal getNetPayable() { return netPayable; }</span>
+<span class="fc" id="L94">    public void setNetPayable(BigDecimal v) { this.netPayable = v; }</span>
+<span class="fc" id="L95">    public BigDecimal getPaidAmount() { return paidAmount; }</span>
+<span class="fc" id="L96">    public void setPaidAmount(BigDecimal v) { this.paidAmount = v; }</span>
+<span class="fc" id="L97">    public BigDecimal getCreditAmount() { return creditAmount; }</span>
+<span class="fc" id="L98">    public void setCreditAmount(BigDecimal v) { this.creditAmount = v; }</span>
+<span class="fc" id="L99">    public List&lt;DeliveryShopItemWorkflowEntity&gt; getItems() { return items; }</span>
+<span class="fc" id="L100">    public void setItems(List&lt;DeliveryShopItemWorkflowEntity&gt; items) { this.items = items; }</span>
+<span class="fc" id="L101">    public List&lt;DeliveryShopReturnWorkflowEntity&gt; getReturns() { return returns; }</span>
+<span class="fc" id="L102">    public void setReturns(List&lt;DeliveryShopReturnWorkflowEntity&gt; returns) { this.returns = returns; }</span>
+<span class="fc" id="L103">    public List&lt;DeliveryPaymentWorkflowEntity&gt; getPayments() { return payments; }</span>
+<span class="fc" id="L104">    public void setPayments(List&lt;DeliveryPaymentWorkflowEntity&gt; payments) { this.payments = payments; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

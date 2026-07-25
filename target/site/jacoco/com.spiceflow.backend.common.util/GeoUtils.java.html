@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeoUtils.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.common.util</a> &gt; <span class="el_source">GeoUtils.java</span></div><h1>GeoUtils.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.common.util;
+
+public final class GeoUtils {
+    private static final double EARTH_RADIUS_METERS = 6371000.0;
+
+    private GeoUtils() {}
+
+    public static double haversineDistance(double lat1, double lon1, double lat2, double lon2) {
+<span class="nc" id="L9">        double dLat = Math.toRadians(lat2 - lat1);</span>
+<span class="nc" id="L10">        double dLon = Math.toRadians(lon2 - lon1);</span>
+        
+<span class="nc" id="L12">        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)</span>
+<span class="nc" id="L13">                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))</span>
+<span class="nc" id="L14">                 * Math.sin(dLon / 2) * Math.sin(dLon / 2);</span>
+                 
+<span class="nc" id="L16">        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));</span>
+<span class="nc" id="L17">        return EARTH_RADIUS_METERS * c;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

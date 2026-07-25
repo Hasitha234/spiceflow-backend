@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DeliveryService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.service</a> &gt; <span class="el_source">DeliveryService.java</span></div><h1>DeliveryService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.service;
+
+import com.spiceflow.backend.auth.entity.Tenant;
+import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.inventory.entity.Product;
+import com.spiceflow.backend.inventory.entity.InventoryItem;
+import com.spiceflow.backend.inventory.entity.InventoryTransaction;
+import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
+import com.spiceflow.backend.inventory.repository.InventoryTransactionRepository;
+import com.spiceflow.backend.inventory.repository.WarehouseRepository;
+import com.spiceflow.backend.inventory.service.ProductService;
+import com.spiceflow.backend.sales.dto.request.CreateDeliveryRequest;
+import com.spiceflow.backend.sales.dto.request.DeliveryPaymentRequest;
+import com.spiceflow.backend.sales.dto.request.DeliveryShopItemRequest;
+import com.spiceflow.backend.sales.dto.request.DeliveryShopReturnRequest;
+import com.spiceflow.backend.sales.dto.request.RecordShopDeliveryRequest;
+import com.spiceflow.backend.sales.dto.response.DeliveryResponse;
+import com.spiceflow.backend.sales.dto.response.DeliveryShopResponse;
+import com.spiceflow.backend.sales.entity.Delivery;
+import com.spiceflow.backend.sales.entity.DeliveryPayment;
+import com.spiceflow.backend.sales.entity.DeliveryShop;
+import com.spiceflow.backend.sales.entity.DeliveryShopItem;
+import com.spiceflow.backend.sales.entity.DeliveryShopReturn;
+import com.spiceflow.backend.sales.entity.LoadingSheet;
+import com.spiceflow.backend.sales.entity.Shop;
+import com.spiceflow.backend.sales.mapper.DeliveryMapper;
+import com.spiceflow.backend.sales.repository.DeliveryRepository;
+import com.spiceflow.backend.sales.repository.DeliveryShopRepository;
+import com.spiceflow.backend.sales.repository.LoadingSheetRepository;
+import com.spiceflow.backend.sales.repository.ShopRepository;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.spiceflow.backend.common.util.GeoUtils;
+
+<span class="fc" id="L47">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class DeliveryService {
+
+    @Value(&quot;${app.delivery.max-radius-meters:500}&quot;)
+    private double maxDeliveryRadiusMeters;
+
+    private final DeliveryRepository deliveryRepository;
+    private final DeliveryShopRepository deliveryShopRepository;
+    private final LoadingSheetRepository loadingSheetRepository;
+    private final ShopRepository shopRepository;
+    private final TenantRepository tenantRepository;
+    private final ProductService productService;
+    private final DeliveryMapper deliveryMapper;
+    private final WarehouseRepository warehouseRepository;
+    private final InventoryItemRepository inventoryItemRepository;
+    private final InventoryTransactionRepository inventoryTransactionRepository;
+    
+    @Transactional(rollbackFor = Exception.class)
+    public DeliveryResponse createDelivery(Long tenantId, CreateDeliveryRequest request) {
+<span class="fc" id="L69">        log.info(&quot;Creating delivery for loadingSheetId: {}&quot;, request.loadingSheetId());</span>
+        
+<span class="fc" id="L71">        Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L72">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
+            
+<span class="fc" id="L74">        LoadingSheet loadingSheet = loadingSheetRepository.findByIdAndTenantId(request.loadingSheetId(), tenantId)</span>
+<span class="pc" id="L75">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Loading sheet not found&quot;));</span>
+            
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (!&quot;CONFIRMED&quot;.equals(loadingSheet.getStatus())) {</span>
+<span class="fc" id="L78">            log.error(&quot;Failed to create delivery: Loading sheet {} is not CONFIRMED&quot;, request.loadingSheetId());</span>
+<span class="fc" id="L79">            throw new BusinessRuleViolationException(&quot;Only CONFIRMED loading sheets can be delivered&quot;);</span>
+        }
+        
+<span class="fc" id="L82">        deliveryRepository.findByLoadingSheetIdAndTenantId(request.loadingSheetId(), tenantId)</span>
+<span class="fc" id="L83">            .ifPresent(d -&gt; {</span>
+<span class="nc" id="L84">                throw new BusinessRuleViolationException(&quot;A delivery already exists for this loading sheet&quot;);</span>
+            });
+        
+<span class="fc" id="L87">        Delivery delivery = Delivery.builder()</span>
+<span class="fc" id="L88">            .tenant(tenant)</span>
+<span class="fc" id="L89">            .loadingSheet(loadingSheet)</span>
+<span class="fc" id="L90">            .deliveryDate(request.deliveryDate())</span>
+<span class="fc" id="L91">            .status(&quot;IN_PROGRESS&quot;)</span>
+<span class="fc" id="L92">            .build();</span>
+            
+<span class="fc" id="L94">        Delivery savedDelivery = deliveryRepository.save(delivery);</span>
+<span class="fc" id="L95">        log.debug(&quot;Successfully created delivery {} for tenant {}&quot;, savedDelivery.getId(), tenantId);</span>
+<span class="fc" id="L96">        return deliveryMapper.toResponse(savedDelivery);</span>
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public DeliveryShopResponse recordShopDelivery(Long tenantId, Long deliveryId, Long shopId, RecordShopDeliveryRequest request) {
+<span class="fc" id="L101">        log.info(&quot;Recording delivery for deliveryId: {}, shopId: {}&quot;, deliveryId, shopId);</span>
+        
+<span class="fc" id="L103">        Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L104">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
+            
+<span class="fc" id="L106">        Delivery delivery = deliveryRepository.findByIdAndTenantId(deliveryId, tenantId)</span>
+<span class="pc" id="L107">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Delivery not found&quot;));</span>
+            
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">        if (!&quot;IN_PROGRESS&quot;.equals(delivery.getStatus())) {</span>
+<span class="nc" id="L110">            throw new BusinessRuleViolationException(&quot;Cannot record shop delivery for a non in-progress delivery&quot;);</span>
+        }
+        
+<span class="fc" id="L113">        Shop shop = shopRepository.findByIdAndTenantId(shopId, tenantId)</span>
+<span class="pc" id="L114">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Shop not found&quot;));</span>
+            
+        // Check if already recorded
+<span class="fc" id="L117">        deliveryShopRepository.findByDeliveryIdAndShopIdAndTenantId(deliveryId, shopId, tenantId)</span>
+<span class="fc" id="L118">            .ifPresent(ds -&gt; {</span>
+<span class="nc" id="L119">                throw new BusinessRuleViolationException(&quot;Delivery already recorded for this shop&quot;);</span>
+            });
+            
+<span class="fc" id="L122">        DeliveryShop deliveryShop = DeliveryShop.builder()</span>
+<span class="fc" id="L123">            .tenant(tenant)</span>
+<span class="fc" id="L124">            .delivery(delivery)</span>
+<span class="fc" id="L125">            .shop(shop)</span>
+<span class="fc" id="L126">            .build();</span>
+            
+<span class="fc" id="L128">        deliveryShop.setLatitude(request.latitude());</span>
+<span class="fc" id="L129">        deliveryShop.setLongitude(request.longitude());</span>
+<span class="fc" id="L130">        deliveryShop.setLocationAccuracy(request.locationAccuracy());</span>
+<span class="fc" id="L131">        deliveryShop.setNotes(request.notes());</span>
+
+<span class="pc bpc" id="L133" title="3 of 4 branches missed.">        if (request.latitude() != null &amp;&amp; request.longitude() != null</span>
+<span class="nc bnc" id="L134" title="All 4 branches missed.">            &amp;&amp; shop.getLatitude() != null &amp;&amp; shop.getLongitude() != null) {</span>
+<span class="nc" id="L135">            double distance = GeoUtils.haversineDistance(</span>
+<span class="nc" id="L136">                request.latitude(), request.longitude(),</span>
+<span class="nc" id="L137">                shop.getLatitude().doubleValue(), shop.getLongitude().doubleValue()</span>
+            );
+<span class="nc" id="L139">            deliveryShop.setDistanceFromShop(distance);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">            deliveryShop.setLocationVerified(distance &lt;= maxDeliveryRadiusMeters);</span>
+<span class="nc" id="L141">        } else {</span>
+<span class="fc" id="L142">            deliveryShop.setLocationVerified(false);</span>
+        }
+            
+<span class="fc" id="L145">        BigDecimal grossBillAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L146">        BigDecimal totalDiscount = BigDecimal.ZERO;</span>
+        
+<span class="fc" id="L148">        List&lt;DeliveryShopItem&gt; items = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">        for (DeliveryShopItemRequest itemReq : request.items()) {</span>
+<span class="fc" id="L150">            Product product = productService.getProductEntity(itemReq.productId(), tenantId);</span>
+            
+<span class="fc" id="L152">            DeliveryShopItem item = DeliveryShopItem.builder()</span>
+<span class="fc" id="L153">                .tenant(tenant)</span>
+<span class="fc" id="L154">                .deliveryShop(deliveryShop)</span>
+<span class="fc" id="L155">                .product(product)</span>
+<span class="fc" id="L156">                .quantityDelivered(itemReq.quantityDelivered())</span>
+<span class="fc" id="L157">                .unitType(itemReq.unitType())</span>
+<span class="fc" id="L158">                .rate(itemReq.rate())</span>
+<span class="fc" id="L159">                .grossAmount(itemReq.rate().multiply(BigDecimal.valueOf(itemReq.quantityDelivered())))</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">                .discountAmount(itemReq.discountAmount() != null ? itemReq.discountAmount() : BigDecimal.ZERO)</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">                .isFreeItem(itemReq.isFreeItem() != null ? itemReq.isFreeItem() : false)</span>
+<span class="fc" id="L162">                .build();</span>
+                
+<span class="fc" id="L164">            item.setNetAmount(item.getGrossAmount().subtract(item.getDiscountAmount()));</span>
+            
+<span class="fc" id="L166">            grossBillAmount = grossBillAmount.add(item.getGrossAmount());</span>
+<span class="fc" id="L167">            totalDiscount = totalDiscount.add(item.getDiscountAmount());</span>
+<span class="fc" id="L168">            items.add(item);</span>
+<span class="fc" id="L169">        }</span>
+        
+<span class="fc" id="L171">        BigDecimal returnsDeducted = BigDecimal.ZERO;</span>
+<span class="fc" id="L172">        List&lt;DeliveryShopReturn&gt; returns = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">        if (request.returns() != null) {</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            for (DeliveryShopReturnRequest retReq : request.returns()) {</span>
+<span class="fc" id="L175">                Product product = productService.getProductEntity(retReq.productId(), tenantId);</span>
+                
+<span class="fc" id="L177">                DeliveryShopReturn ret = DeliveryShopReturn.builder()</span>
+<span class="fc" id="L178">                    .tenant(tenant)</span>
+<span class="fc" id="L179">                    .deliveryShop(deliveryShop)</span>
+<span class="fc" id="L180">                    .product(product)</span>
+<span class="fc" id="L181">                    .quantityReturned(retReq.quantityReturned())</span>
+<span class="fc" id="L182">                    .unitType(retReq.unitType())</span>
+<span class="fc" id="L183">                    .creditValue(retReq.creditValue())</span>
+<span class="fc" id="L184">                    .returnType(retReq.returnType())</span>
+<span class="fc" id="L185">                    .build();</span>
+                    
+<span class="fc" id="L187">                returnsDeducted = returnsDeducted.add(ret.getCreditValue());</span>
+<span class="fc" id="L188">                returns.add(ret);</span>
+<span class="fc" id="L189">            }</span>
+        }
+        
+<span class="fc" id="L192">        BigDecimal netPayable = grossBillAmount.subtract(totalDiscount).subtract(returnsDeducted);</span>
+        
+<span class="fc" id="L194">        BigDecimal paidAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L195">        List&lt;DeliveryPayment&gt; payments = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">        if (request.payments() != null) {</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">            for (DeliveryPaymentRequest payReq : request.payments()) {</span>
+<span class="fc" id="L198">                DeliveryPayment payment = DeliveryPayment.builder()</span>
+<span class="fc" id="L199">                    .tenant(tenant)</span>
+<span class="fc" id="L200">                    .deliveryShop(deliveryShop)</span>
+<span class="fc" id="L201">                    .paymentMethod(payReq.paymentMethod())</span>
+<span class="fc" id="L202">                    .amount(payReq.amount())</span>
+<span class="fc" id="L203">                    .chequeNo(payReq.chequeNo())</span>
+<span class="fc" id="L204">                    .chequeBankName(payReq.chequeBankName())</span>
+<span class="fc" id="L205">                    .chequeDate(payReq.chequeDate())</span>
+<span class="fc" id="L206">                    .build();</span>
+                    
+<span class="fc" id="L208">                paidAmount = paidAmount.add(payment.getAmount());</span>
+<span class="fc" id="L209">                payments.add(payment);</span>
+<span class="fc" id="L210">            }</span>
+        }
+        
+<span class="fc" id="L213">        BigDecimal creditAmount = netPayable.subtract(paidAmount);</span>
+        
+        // Update Shop's outstanding loan if credit is given
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">        if (creditAmount.compareTo(BigDecimal.ZERO) &gt; 0) {</span>
+<span class="fc" id="L217">            log.debug(&quot;Adding credit amount {} to shop {}&quot;, creditAmount, shopId);</span>
+<span class="fc" id="L218">            shop.setOutstandingLoan(shop.getOutstandingLoan().add(creditAmount));</span>
+<span class="fc" id="L219">            shopRepository.save(shop);</span>
+        }
+        
+<span class="fc" id="L222">        deliveryShop.setGrossBillAmount(grossBillAmount);</span>
+<span class="fc" id="L223">        deliveryShop.setTotalDiscount(totalDiscount);</span>
+<span class="fc" id="L224">        deliveryShop.setReturnsDeducted(returnsDeducted);</span>
+<span class="fc" id="L225">        deliveryShop.setNetPayable(netPayable);</span>
+<span class="fc" id="L226">        deliveryShop.setPaidAmount(paidAmount);</span>
+<span class="fc" id="L227">        deliveryShop.setCreditAmount(creditAmount);</span>
+        
+<span class="fc" id="L229">        deliveryShop.setItems(items);</span>
+<span class="fc" id="L230">        deliveryShop.setReturns(returns);</span>
+<span class="fc" id="L231">        deliveryShop.setPayments(payments);</span>
+        
+<span class="fc" id="L233">        delivery.getShops().add(deliveryShop);</span>
+        
+<span class="fc" id="L235">        DeliveryShop savedDeliveryShop = deliveryShopRepository.save(deliveryShop);</span>
+<span class="fc" id="L236">        log.debug(&quot;Successfully recorded delivery {} for shop {}. Net Payable: {}, Paid: {}&quot;, </span>
+            deliveryId, shopId, netPayable, paidAmount);
+            
+<span class="fc" id="L239">        return deliveryMapper.toShopResponse(savedDeliveryShop);</span>
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public DeliveryResponse completeDelivery(Long tenantId, Long deliveryId) {
+<span class="fc" id="L244">        log.info(&quot;Completing delivery for deliveryId: {}&quot;, deliveryId);</span>
+        
+<span class="fc" id="L246">        Delivery delivery = deliveryRepository.findByIdAndTenantId(deliveryId, tenantId)</span>
+<span class="pc" id="L247">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Delivery not found&quot;));</span>
+            
+<span class="fc" id="L249">        BigDecimal totalSalesValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L250">        BigDecimal totalReturnsValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L251">        BigDecimal totalCollectedAmount = BigDecimal.ZERO;</span>
+        
+<span class="fc bfc" id="L253" title="All 2 branches covered.">        for (DeliveryShop shop : delivery.getShops()) {</span>
+<span class="fc" id="L254">            totalSalesValue = totalSalesValue.add(shop.getGrossBillAmount().subtract(shop.getTotalDiscount()));</span>
+<span class="fc" id="L255">            totalReturnsValue = totalReturnsValue.add(shop.getReturnsDeducted());</span>
+<span class="fc" id="L256">            totalCollectedAmount = totalCollectedAmount.add(shop.getPaidAmount());</span>
+<span class="fc" id="L257">        }</span>
+        
+<span class="fc" id="L259">        delivery.setTotalSalesValue(totalSalesValue);</span>
+<span class="fc" id="L260">        delivery.setTotalReturnsValue(totalReturnsValue);</span>
+<span class="fc" id="L261">        delivery.setTotalCollectedAmount(totalCollectedAmount);</span>
+<span class="fc" id="L262">        delivery.setStatus(&quot;COMPLETED&quot;);</span>
+        
+        // Deduct delivered items from vehicle store and add returned items to MAIN store
+<span class="pc bpc" id="L265" title="2 of 4 branches missed.">        String driverName = (delivery.getLoadingSheet() != null &amp;&amp; delivery.getLoadingSheet().getDriver() != null) </span>
+<span class="pc" id="L266">            ? delivery.getLoadingSheet().getDriver().getName() : &quot;Unknown&quot;;</span>
+<span class="fc" id="L267">        String vehicleStoreName = &quot;Vehicle - &quot; + driverName;</span>
+<span class="fc" id="L268">        Optional&lt;Warehouse&gt; vehicleStoreOpt = warehouseRepository.findAllByTenantId(tenantId).stream()</span>
+<span class="pc bnc" id="L269" title="All 4 branches missed.">            .filter(w -&gt; &quot;CUSTOM&quot;.equals(w.getStoreType()) &amp;&amp; w.getName().equals(vehicleStoreName))</span>
+<span class="fc" id="L270">            .findFirst();</span>
+<span class="fc" id="L271">        Optional&lt;Warehouse&gt; mainStoreOpt = warehouseRepository.findAllByTenantId(tenantId).stream()</span>
+<span class="pc" id="L272">            .filter(w -&gt; &quot;MAIN&quot;.equals(w.getStoreType()))</span>
+<span class="fc" id="L273">            .findFirst();</span>
+
+<span class="fc bfc" id="L275" title="All 2 branches covered.">        for (DeliveryShop shop : delivery.getShops()) {</span>
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">            if (vehicleStoreOpt.isPresent()) {</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">                for (DeliveryShopItem item : shop.getItems()) {</span>
+<span class="nc bnc" id="L278" title="All 4 branches missed.">                    if (item.getQuantityDelivered() != null &amp;&amp; item.getQuantityDelivered() &gt; 0) {</span>
+<span class="nc" id="L279">                        inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(</span>
+<span class="nc" id="L280">                                item.getProduct().getId(), vehicleStoreOpt.get().getId(), tenantId)</span>
+<span class="nc" id="L281">                            .ifPresent(invItem -&gt; {</span>
+<span class="nc" id="L282">                                int newQty = Math.max(0, invItem.getQuantityAvailable() - item.getQuantityDelivered());</span>
+<span class="nc" id="L283">                                int deducted = invItem.getQuantityAvailable() - newQty;</span>
+<span class="nc" id="L284">                                invItem.setQuantityAvailable(newQty);</span>
+<span class="nc" id="L285">                                inventoryItemRepository.save(invItem);</span>
+
+<span class="nc" id="L287">                                InventoryTransaction outTx = InventoryTransaction.builder()</span>
+<span class="nc" id="L288">                                    .inventoryItem(invItem)</span>
+<span class="nc" id="L289">                                    .transactionType(&quot;DELIVERY_SALE&quot;)</span>
+<span class="nc" id="L290">                                    .quantity(-deducted)</span>
+<span class="nc" id="L291">                                    .referenceId(&quot;DEL-&quot; + deliveryId)</span>
+<span class="nc" id="L292">                                    .notes(&quot;Delivery sale at &quot; + shop.getShop().getName())</span>
+<span class="nc" id="L293">                                    .tenant(invItem.getTenant())</span>
+<span class="nc" id="L294">                                    .build();</span>
+<span class="nc" id="L295">                                inventoryTransactionRepository.save(outTx);</span>
+<span class="nc" id="L296">                            });</span>
+                    }
+<span class="nc" id="L298">                }</span>
+            }
+
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">            if (mainStoreOpt.isPresent()) {</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">                for (DeliveryShopReturn returnItem : shop.getReturns()) {</span>
+<span class="nc bnc" id="L303" title="All 4 branches missed.">                    if (returnItem.getQuantityReturned() != null &amp;&amp; returnItem.getQuantityReturned() &gt; 0) {</span>
+<span class="nc" id="L304">                        InventoryItem invItem = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(</span>
+<span class="nc" id="L305">                                returnItem.getProduct().getId(), mainStoreOpt.get().getId(), tenantId)</span>
+<span class="nc" id="L306">                            .orElseGet(() -&gt; {</span>
+<span class="nc" id="L307">                                InventoryItem newItem = InventoryItem.builder()</span>
+<span class="nc" id="L308">                                    .product(returnItem.getProduct())</span>
+<span class="nc" id="L309">                                    .warehouse(mainStoreOpt.get())</span>
+<span class="nc" id="L310">                                    .quantityAvailable(0)</span>
+<span class="nc" id="L311">                                    .tenant(returnItem.getTenant())</span>
+<span class="nc" id="L312">                                    .build();</span>
+<span class="nc" id="L313">                                return inventoryItemRepository.save(newItem);</span>
+                            });
+
+<span class="nc" id="L316">                        invItem.setQuantityAvailable(invItem.getQuantityAvailable() + returnItem.getQuantityReturned());</span>
+<span class="nc" id="L317">                        inventoryItemRepository.save(invItem);</span>
+
+<span class="nc" id="L319">                        InventoryTransaction inTx = InventoryTransaction.builder()</span>
+<span class="nc" id="L320">                            .inventoryItem(invItem)</span>
+<span class="nc" id="L321">                            .transactionType(&quot;DELIVERY_RETURN&quot;)</span>
+<span class="nc" id="L322">                            .quantity(returnItem.getQuantityReturned())</span>
+<span class="nc" id="L323">                            .referenceId(&quot;DEL-&quot; + deliveryId)</span>
+<span class="nc" id="L324">                            .notes(&quot;Return from shop &quot; + shop.getShop().getName())</span>
+<span class="nc" id="L325">                            .tenant(invItem.getTenant())</span>
+<span class="nc" id="L326">                            .build();</span>
+<span class="nc" id="L327">                        inventoryTransactionRepository.save(inTx);</span>
+                    }
+<span class="nc" id="L329">                }</span>
+            }
+<span class="fc" id="L331">        }</span>
+        
+<span class="fc" id="L333">        Delivery savedDelivery = deliveryRepository.save(delivery);</span>
+<span class="fc" id="L334">        log.debug(&quot;Successfully completed delivery {}. Total Sales: {}, Total Collected: {}&quot;, </span>
+            deliveryId, totalSalesValue, totalCollectedAmount);
+            
+<span class="fc" id="L337">        return deliveryMapper.toResponse(savedDelivery);</span>
+    }
+    
+    public Page&lt;DeliveryResponse&gt; getDeliveries(Long tenantId, java.time.LocalDate date, Pageable pageable) {
+<span class="fc bfc" id="L341" title="All 2 branches covered.">        if (date != null) {</span>
+<span class="fc" id="L342">            return deliveryRepository.findByTenantIdAndDeliveryDate(tenantId, date, pageable)</span>
+<span class="fc" id="L343">                .map(deliveryMapper::toResponse);</span>
+        }
+<span class="fc" id="L345">        return deliveryRepository.findByTenantId(tenantId, pageable)</span>
+<span class="fc" id="L346">            .map(deliveryMapper::toResponse);</span>
+    }
+    
+    public DeliveryResponse getDelivery(Long id, Long tenantId) {
+<span class="fc" id="L350">        Delivery delivery = deliveryRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="pc" id="L351">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Delivery not found&quot;));</span>
+<span class="fc" id="L352">        return deliveryMapper.toResponse(delivery);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

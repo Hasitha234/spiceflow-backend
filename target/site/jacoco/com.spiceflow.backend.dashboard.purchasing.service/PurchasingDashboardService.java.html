@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PurchasingDashboardService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.dashboard.purchasing.service</a> &gt; <span class="el_source">PurchasingDashboardService.java</span></div><h1>PurchasingDashboardService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.dashboard.purchasing.service;
+
+import com.spiceflow.backend.dashboard.purchasing.dto.AgingBucketDto;
+import com.spiceflow.backend.dashboard.purchasing.dto.OpenPurchaseOrderProjection;
+import com.spiceflow.backend.dashboard.purchasing.dto.PurchasingDashboardResponse;
+import com.spiceflow.backend.dashboard.purchasing.dto.SupplierLeadTimeDto;
+import com.spiceflow.backend.dashboard.purchasing.repository.PurchasingDashboardRepository;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Pure CQRS Read Model service orchestrating queries for the Purchasing Dashboard.
+ * Operates strictly read-only without transaction boundary entanglement or entity mutation.
+ */
+<span class="fc" id="L21">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class PurchasingDashboardService {
+
+    private final PurchasingDashboardRepository repository;
+
+    public PurchasingDashboardResponse getDashboard(Long tenantId, int limit) {
+<span class="nc" id="L30">        log.debug(&quot;Fetching purchasing dashboard projection for tenantId={}, limit={}&quot;, tenantId, limit);</span>
+<span class="nc" id="L31">        Instant startOfMonth = ZonedDateTime.now(ZoneId.systemDefault())</span>
+<span class="nc" id="L32">            .withDayOfMonth(1)</span>
+<span class="nc" id="L33">            .toLocalDate()</span>
+<span class="nc" id="L34">            .atStartOfDay(ZoneId.systemDefault())</span>
+<span class="nc" id="L35">            .toInstant();</span>
+
+<span class="nc" id="L37">        PurchasingDashboardRepository.SummaryMetrics metrics = repository.getSummaryMetrics(tenantId, startOfMonth);</span>
+<span class="nc" id="L38">        List&lt;AgingBucketDto&gt; agingBuckets = repository.getAgingBuckets(tenantId);</span>
+<span class="nc" id="L39">        List&lt;SupplierLeadTimeDto&gt; supplierLeadTimes = repository.getSupplierLeadTimes(tenantId);</span>
+<span class="nc" id="L40">        List&lt;OpenPurchaseOrderProjection&gt; recentOpenOrders = repository.getRecentOpenOrders(tenantId, limit);</span>
+
+<span class="nc" id="L42">        return new PurchasingDashboardResponse(</span>
+<span class="nc" id="L43">            metrics.totalOpenOrders(),</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">            metrics.totalOpenOrderValue() != null ? metrics.totalOpenOrderValue() : java.math.BigDecimal.ZERO,</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">            metrics.totalReceivedMonthValue() != null ? metrics.totalReceivedMonthValue() : java.math.BigDecimal.ZERO,</span>
+<span class="nc" id="L46">            metrics.averageSupplierLeadTimeDays(),</span>
+            agingBuckets,
+            supplierLeadTimes,
+            recentOpenOrders
+        );
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

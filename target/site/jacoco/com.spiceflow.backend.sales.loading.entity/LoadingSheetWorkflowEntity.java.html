@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoadingSheetWorkflowEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.loading.entity</a> &gt; <span class="el_source">LoadingSheetWorkflowEntity.java</span></div><h1>LoadingSheetWorkflowEntity.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.loading.entity;
+
+import com.spiceflow.backend.sales.loading.domain.LoadingSheetState;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+@Entity
+@Table(name = &quot;loading_sheets&quot;)
+public class LoadingSheetWorkflowEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private @Nullable Long id;
+
+    @Column(name = &quot;sheet_number&quot;, unique = true)
+    private @Nullable String sheetNumber;
+
+    @Column(name = &quot;tenant_id&quot;, nullable = false)
+    private Long tenantId;
+
+    @Column(name = &quot;rep_order_id&quot;, nullable = false)
+    private Long repOrderId;
+
+    @Column(name = &quot;driver_id&quot;, nullable = false)
+    private Long driverId;
+
+    @Column(name = &quot;loading_date&quot;, nullable = false)
+    private LocalDate loadingDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;status&quot;, nullable = false)
+    private LoadingSheetState status;
+
+    @Column(name = &quot;created_by&quot;)
+    private @Nullable String createdBy;
+
+    @Column(name = &quot;confirmed_by&quot;)
+    private @Nullable String confirmedBy;
+
+    @Column(name = &quot;cancelled_by&quot;)
+    private @Nullable String cancelledBy;
+
+    @Version
+    private @Nullable Long version;
+
+    @Column(name = &quot;created_at&quot;, nullable = false)
+    private Instant createdAt;
+
+    @Column(name = &quot;updated_at&quot;, nullable = false)
+    private Instant updatedAt;
+
+    @Column(name = &quot;confirmed_at&quot;)
+    private @Nullable Instant confirmedAt;
+
+    @Column(name = &quot;cancelled_at&quot;)
+    private @Nullable Instant cancelledAt;
+
+<span class="fc" id="L72">    @OneToMany(</span>
+        mappedBy = &quot;loadingSheet&quot;,
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
+    private List&lt;LoadingSheetItemWorkflowEntity&gt; items = new ArrayList&lt;&gt;();
+
+<span class="fc" id="L79">    @OneToMany(</span>
+        mappedBy = &quot;loadingSheet&quot;,
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
+    private List&lt;LoadingSheetReturnWorkflowEntity&gt; returns = new ArrayList&lt;&gt;();
+
+<span class="fc" id="L86">    public LoadingSheetWorkflowEntity() {</span>
+<span class="fc" id="L87">        this.tenantId = 0L;</span>
+<span class="fc" id="L88">        this.repOrderId = 0L;</span>
+<span class="fc" id="L89">        this.driverId = 0L;</span>
+<span class="fc" id="L90">        this.loadingDate = LocalDate.now(java.time.ZoneId.systemDefault());</span>
+<span class="fc" id="L91">        this.status = LoadingSheetState.DRAFT;</span>
+<span class="fc" id="L92">        this.createdAt = Instant.EPOCH;</span>
+<span class="fc" id="L93">        this.updatedAt = Instant.EPOCH;</span>
+<span class="fc" id="L94">    }</span>
+
+<span class="fc" id="L96">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L97">    public void setId(@Nullable Long id) { this.id = id; }</span>
+
+<span class="fc" id="L99">    public @Nullable String getSheetNumber() { return sheetNumber; }</span>
+<span class="fc" id="L100">    public void setSheetNumber(@Nullable String sheetNumber) { this.sheetNumber = sheetNumber; }</span>
+
+<span class="fc" id="L102">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L103">    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }</span>
+
+<span class="fc" id="L105">    public Long getRepOrderId() { return repOrderId; }</span>
+<span class="fc" id="L106">    public void setRepOrderId(Long repOrderId) { this.repOrderId = repOrderId; }</span>
+
+<span class="fc" id="L108">    public Long getDriverId() { return driverId; }</span>
+<span class="fc" id="L109">    public void setDriverId(Long driverId) { this.driverId = driverId; }</span>
+
+<span class="fc" id="L111">    public LocalDate getLoadingDate() { return loadingDate; }</span>
+<span class="fc" id="L112">    public void setLoadingDate(LocalDate loadingDate) { this.loadingDate = loadingDate; }</span>
+
+<span class="fc" id="L114">    public LoadingSheetState getStatus() { return status; }</span>
+<span class="fc" id="L115">    public void setStatus(LoadingSheetState status) { this.status = status; }</span>
+
+<span class="fc" id="L117">    public @Nullable String getCreatedBy() { return createdBy; }</span>
+<span class="fc" id="L118">    public void setCreatedBy(@Nullable String createdBy) { this.createdBy = createdBy; }</span>
+
+<span class="fc" id="L120">    public @Nullable String getConfirmedBy() { return confirmedBy; }</span>
+<span class="fc" id="L121">    public void setConfirmedBy(@Nullable String confirmedBy) { this.confirmedBy = confirmedBy; }</span>
+
+<span class="fc" id="L123">    public @Nullable String getCancelledBy() { return cancelledBy; }</span>
+<span class="fc" id="L124">    public void setCancelledBy(@Nullable String cancelledBy) { this.cancelledBy = cancelledBy; }</span>
+
+<span class="fc" id="L126">    public @Nullable Long getVersion() { return version; }</span>
+<span class="fc" id="L127">    public void setVersion(@Nullable Long version) { this.version = version; }</span>
+
+<span class="fc" id="L129">    public Instant getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L130">    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }</span>
+
+<span class="fc" id="L132">    public Instant getUpdatedAt() { return updatedAt; }</span>
+<span class="fc" id="L133">    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }</span>
+
+<span class="fc" id="L135">    public @Nullable Instant getConfirmedAt() { return confirmedAt; }</span>
+<span class="fc" id="L136">    public void setConfirmedAt(@Nullable Instant confirmedAt) { this.confirmedAt = confirmedAt; }</span>
+
+<span class="fc" id="L138">    public @Nullable Instant getCancelledAt() { return cancelledAt; }</span>
+<span class="fc" id="L139">    public void setCancelledAt(@Nullable Instant cancelledAt) { this.cancelledAt = cancelledAt; }</span>
+
+<span class="fc" id="L141">    public List&lt;LoadingSheetItemWorkflowEntity&gt; getItems() { return items; }</span>
+<span class="fc" id="L142">    public void setItems(List&lt;LoadingSheetItemWorkflowEntity&gt; items) { this.items = items; }</span>
+
+<span class="fc" id="L144">    public List&lt;LoadingSheetReturnWorkflowEntity&gt; getReturns() { return returns; }</span>
+<span class="fc" id="L145">    public void setReturns(List&lt;LoadingSheetReturnWorkflowEntity&gt; returns) { this.returns = returns; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

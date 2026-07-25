@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SupplierService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.inventory.service</a> &gt; <span class="el_source">SupplierService.java</span></div><h1>SupplierService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.inventory.service;
+
+import com.spiceflow.backend.auth.entity.Tenant;
+import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.inventory.dto.request.SupplierRequest;
+import com.spiceflow.backend.inventory.dto.response.SupplierResponse;
+import com.spiceflow.backend.inventory.entity.Supplier;
+import com.spiceflow.backend.inventory.repository.SupplierRepository;
+import com.spiceflow.backend.inventory.mapper.SupplierMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+<span class="fc" id="L19">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class SupplierService {
+
+    private final SupplierRepository supplierRepository;
+    private final TenantRepository tenantRepository;
+    private final SupplierMapper supplierMapper;
+
+    @Transactional(rollbackFor = Exception.class)
+    public SupplierResponse createSupplier(Long tenantId, SupplierRequest request) {
+<span class="fc" id="L31">        log.debug(&quot;Creating supplier for tenantId: {}, name: {}&quot;, tenantId, request.name());</span>
+        try {
+<span class="fc" id="L33">            Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L34">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Tenant with ID &quot; + tenantId + &quot; not found&quot;));</span>
+            
+<span class="fc" id="L36">            Supplier supplier = Supplier.builder()</span>
+<span class="fc" id="L37">                .name(request.name())</span>
+<span class="fc" id="L38">                .contactEmail(request.contactEmail())</span>
+<span class="fc" id="L39">                .contactPhone(request.contactPhone())</span>
+<span class="fc" id="L40">                .address(request.address())</span>
+<span class="fc" id="L41">                .taxId(request.taxId())</span>
+<span class="fc" id="L42">                .tenant(tenant)</span>
+<span class="fc" id="L43">                .build();</span>
+                
+<span class="fc" id="L45">            Supplier savedSupplier = supplierRepository.save(supplier);</span>
+<span class="fc" id="L46">            log.info(&quot;Successfully created supplier with ID: {} for tenantId: {}&quot;, savedSupplier.getId(), tenantId);</span>
+<span class="fc" id="L47">            return supplierMapper.toResponse(savedSupplier);</span>
+<span class="nc" id="L48">        } catch (Exception e) {</span>
+<span class="nc" id="L49">            log.error(&quot;Failed to create supplier for tenantId: {}&quot;, tenantId, e);</span>
+<span class="nc" id="L50">            throw new BusinessRuleViolationException(&quot;Failed to create supplier: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    public Page&lt;SupplierResponse&gt; getSuppliers(Long tenantId, String search, Pageable pageable) {
+<span class="fc" id="L55">        log.debug(&quot;Fetching suppliers for tenantId: {}, search: {}&quot;, tenantId, search);</span>
+        try {
+            Page&lt;Supplier&gt; supplierPage;
+<span class="pc bpc" id="L58" title="1 of 4 branches missed.">            if (search != null &amp;&amp; !search.trim().isEmpty()) {</span>
+<span class="fc" id="L59">                supplierPage = supplierRepository.findByTenantIdAndNameContainingIgnoreCase(tenantId, search.trim(), pageable);</span>
+            } else {
+<span class="fc" id="L61">                supplierPage = supplierRepository.findByTenantId(tenantId, pageable);</span>
+            }
+<span class="fc" id="L63">            return supplierPage.map(supplierMapper::toResponse);</span>
+<span class="nc" id="L64">        } catch (Exception e) {</span>
+<span class="nc" id="L65">            log.error(&quot;Failed to fetch suppliers for tenantId: {}&quot;, tenantId, e);</span>
+<span class="nc" id="L66">            throw new BusinessRuleViolationException(&quot;Failed to fetch suppliers&quot;);</span>
+        }
+    }
+    
+    public SupplierResponse getSupplier(Long tenantId, Long id) {
+<span class="fc" id="L71">        log.debug(&quot;Fetching supplier with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="fc" id="L72">        return supplierMapper.toResponse(getSupplierEntity(tenantId, id));</span>
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public SupplierResponse updateSupplier(Long tenantId, Long id, SupplierRequest request) {
+<span class="fc" id="L77">        log.debug(&quot;Updating supplier with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+        try {
+<span class="fc" id="L79">            Supplier supplier = getSupplierEntity(tenantId, id);</span>
+            
+<span class="fc" id="L81">            supplier.setName(request.name());</span>
+<span class="fc" id="L82">            supplier.setContactEmail(request.contactEmail());</span>
+<span class="fc" id="L83">            supplier.setContactPhone(request.contactPhone());</span>
+<span class="fc" id="L84">            supplier.setAddress(request.address());</span>
+<span class="fc" id="L85">            supplier.setTaxId(request.taxId());</span>
+            
+<span class="fc" id="L87">            Supplier updatedSupplier = supplierRepository.save(supplier);</span>
+<span class="fc" id="L88">            log.info(&quot;Successfully updated supplier with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="fc" id="L89">            return supplierMapper.toResponse(updatedSupplier);</span>
+<span class="nc" id="L90">        } catch (ResourceNotFoundException e) {</span>
+<span class="nc" id="L91">            throw e;</span>
+<span class="nc" id="L92">        } catch (Exception e) {</span>
+<span class="nc" id="L93">            log.error(&quot;Failed to update supplier with ID: {} for tenantId: {}&quot;, id, tenantId, e);</span>
+<span class="nc" id="L94">            throw new BusinessRuleViolationException(&quot;Failed to update supplier: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteSupplier(Long tenantId, Long id) {
+<span class="fc" id="L100">        log.debug(&quot;Deleting supplier with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+        try {
+<span class="fc" id="L102">            Supplier supplier = getSupplierEntity(tenantId, id);</span>
+<span class="fc" id="L103">            supplierRepository.delete(supplier);</span>
+<span class="fc" id="L104">            log.info(&quot;Successfully deleted supplier with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="nc" id="L105">        } catch (ResourceNotFoundException e) {</span>
+<span class="nc" id="L106">            throw e;</span>
+<span class="nc" id="L107">        } catch (Exception e) {</span>
+<span class="nc" id="L108">            log.error(&quot;Failed to delete supplier with ID: {} for tenantId: {}&quot;, id, tenantId, e);</span>
+<span class="nc" id="L109">            throw new BusinessRuleViolationException(&quot;Failed to delete supplier due to existing dependencies&quot;);</span>
+<span class="fc" id="L110">        }</span>
+<span class="fc" id="L111">    }</span>
+    
+    public Supplier getSupplierEntity(Long tenantId, Long id) {
+<span class="fc" id="L114">        return supplierRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="fc" id="L115">            .orElseThrow(() -&gt; {</span>
+<span class="fc" id="L116">                log.error(&quot;Supplier not found with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="fc" id="L117">                return new ResourceNotFoundException(&quot;Supplier not found with id: &quot; + id);</span>
+            });
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RepOrderStateMachine.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.order.workflow</a> &gt; <span class="el_source">RepOrderStateMachine.java</span></div><h1>RepOrderStateMachine.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.order.workflow;
+
+import com.spiceflow.backend.sales.order.domain.RepOrderState;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Finite State Machine transition registry for Rep Orders.
+ * Eliminates scattered if-else lifecycle checks across services.
+ */
+public final class RepOrderStateMachine {
+
+    private static final Map&lt;RepOrderState, Set&lt;RepOrderState&gt;&gt; TRANSITIONS;
+
+    static {
+<span class="fc" id="L18">        Map&lt;RepOrderState, Set&lt;RepOrderState&gt;&gt; map = new EnumMap&lt;&gt;(RepOrderState.class);</span>
+
+<span class="fc" id="L20">        map.put(RepOrderState.DRAFT, Set.of(</span>
+                RepOrderState.SUBMITTED,
+                RepOrderState.CANCELLED
+        ));
+
+<span class="fc" id="L25">        map.put(RepOrderState.SUBMITTED, Set.of(</span>
+                RepOrderState.APPROVED,
+                RepOrderState.CANCELLED
+        ));
+
+<span class="fc" id="L30">        map.put(RepOrderState.APPROVED, Set.of(</span>
+                RepOrderState.LOADED,
+                RepOrderState.CANCELLED
+        ));
+
+<span class="fc" id="L35">        map.put(RepOrderState.LOADED, Set.of(</span>
+                RepOrderState.DELIVERED
+        ));
+
+<span class="fc" id="L39">        map.put(RepOrderState.DELIVERED, Set.of());</span>
+<span class="fc" id="L40">        map.put(RepOrderState.CANCELLED, Set.of());</span>
+
+<span class="fc" id="L42">        TRANSITIONS = Collections.unmodifiableMap(map);</span>
+<span class="fc" id="L43">    }</span>
+
+    public static boolean canTransition(RepOrderState from, RepOrderState to) {
+<span class="fc" id="L46">        return TRANSITIONS.getOrDefault(from, Set.of()).contains(to);</span>
+    }
+
+    public static Set&lt;RepOrderState&gt; allowedNext(RepOrderState state) {
+<span class="nc" id="L50">        return TRANSITIONS.getOrDefault(state, Set.of());</span>
+    }
+
+    private RepOrderStateMachine() {}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

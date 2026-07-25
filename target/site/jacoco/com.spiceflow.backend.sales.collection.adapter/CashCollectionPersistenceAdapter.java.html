@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CashCollectionPersistenceAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.collection.adapter</a> &gt; <span class="el_source">CashCollectionPersistenceAdapter.java</span></div><h1>CashCollectionPersistenceAdapter.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.collection.adapter;
+
+import com.spiceflow.backend.sales.collection.domain.CashCollection;
+import com.spiceflow.backend.sales.collection.entity.CashCollectionWorkflowEntity;
+import org.springframework.stereotype.Component;
+
+/**
+ * Pure mapping adapter converting between immutable CashCollection domain aggregates
+ * and JPA persistence entities.
+ * Contains zero business logic, validation, or state transition rules.
+ */
+@Component
+<span class="fc" id="L13">public class CashCollectionPersistenceAdapter {</span>
+
+    public CashCollectionWorkflowEntity toEntity(CashCollection aggregate) {
+<span class="fc" id="L16">        CashCollectionWorkflowEntity entity = new CashCollectionWorkflowEntity();</span>
+<span class="fc" id="L17">        entity.setId(aggregate.getId());</span>
+<span class="fc" id="L18">        entity.setCollectionNumber(aggregate.getCollectionNumber());</span>
+<span class="fc" id="L19">        entity.setCorrelationId(aggregate.getCorrelationId());</span>
+<span class="fc" id="L20">        entity.setTenantId(aggregate.getTenantId());</span>
+<span class="fc" id="L21">        entity.setShopId(aggregate.getShopId());</span>
+<span class="fc" id="L22">        entity.setRepId(aggregate.getRepId());</span>
+<span class="fc" id="L23">        entity.setCollectionDate(aggregate.getCollectionDate());</span>
+<span class="fc" id="L24">        entity.setAmount(aggregate.getAmount());</span>
+<span class="fc" id="L25">        entity.setPaymentMethod(aggregate.getPaymentMethod());</span>
+<span class="fc" id="L26">        entity.setChequeNo(aggregate.getChequeNo());</span>
+<span class="fc" id="L27">        entity.setChequeBankName(aggregate.getChequeBankName());</span>
+<span class="fc" id="L28">        entity.setChequeDate(aggregate.getChequeDate());</span>
+<span class="fc" id="L29">        entity.setNotes(aggregate.getNotes());</span>
+<span class="fc" id="L30">        entity.setStatus(aggregate.getState());</span>
+<span class="fc" id="L31">        entity.setCreatedBy(aggregate.getCreatedBy());</span>
+<span class="fc" id="L32">        entity.setConfirmedBy(aggregate.getConfirmedBy());</span>
+<span class="fc" id="L33">        entity.setCancelledBy(aggregate.getCancelledBy());</span>
+<span class="fc" id="L34">        entity.setVersion(aggregate.getVersion());</span>
+<span class="fc" id="L35">        entity.setCreatedAt(aggregate.getCreatedAt());</span>
+<span class="fc" id="L36">        entity.setUpdatedAt(aggregate.getUpdatedAt());</span>
+<span class="fc" id="L37">        entity.setConfirmedAt(aggregate.getConfirmedAt());</span>
+<span class="fc" id="L38">        entity.setCancelledAt(aggregate.getCancelledAt());</span>
+<span class="fc" id="L39">        return entity;</span>
+    }
+
+    public CashCollection toAggregate(CashCollectionWorkflowEntity entity) {
+<span class="fc" id="L43">        return new CashCollection(</span>
+<span class="fc" id="L44">                entity.getId(),</span>
+<span class="fc" id="L45">                entity.getCollectionNumber(),</span>
+<span class="fc" id="L46">                entity.getTenantId(),</span>
+<span class="fc" id="L47">                entity.getShopId(),</span>
+<span class="fc" id="L48">                entity.getRepId(),</span>
+<span class="fc" id="L49">                entity.getCollectionDate(),</span>
+<span class="fc" id="L50">                entity.getAmount(),</span>
+<span class="fc" id="L51">                entity.getPaymentMethod(),</span>
+<span class="fc" id="L52">                entity.getChequeNo(),</span>
+<span class="fc" id="L53">                entity.getChequeBankName(),</span>
+<span class="fc" id="L54">                entity.getChequeDate(),</span>
+<span class="fc" id="L55">                entity.getNotes(),</span>
+<span class="fc" id="L56">                entity.getStatus(),</span>
+<span class="fc" id="L57">                entity.getCreatedBy(),</span>
+<span class="fc" id="L58">                entity.getConfirmedBy(),</span>
+<span class="fc" id="L59">                entity.getCancelledBy(),</span>
+<span class="fc" id="L60">                entity.getVersion(),</span>
+<span class="fc" id="L61">                entity.getCorrelationId(),</span>
+<span class="fc" id="L62">                entity.getCreatedAt(),</span>
+<span class="fc" id="L63">                entity.getUpdatedAt(),</span>
+<span class="fc" id="L64">                entity.getConfirmedAt(),</span>
+<span class="fc" id="L65">                entity.getCancelledAt()</span>
+        );
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WarehouseTransfer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.inventory.transfer.domain</a> &gt; <span class="el_source">WarehouseTransfer.java</span></div><h1>WarehouseTransfer.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.inventory.transfer.domain;
+
+import com.spiceflow.backend.events.DomainEventType;
+import com.spiceflow.backend.workflow.WorkflowAggregate;
+import com.spiceflow.backend.workflow.WorkflowContext;
+import com.spiceflow.backend.workflow.WorkflowTransitionOutput;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+public class WarehouseTransfer implements WorkflowAggregate&lt;WarehouseTransfer, WarehouseTransferState&gt; {
+
+    private @Nullable Long id;
+    private String transferNumber;
+    private Long tenantId;
+    private Long fromWarehouseId;
+    private Long toWarehouseId;
+<span class="fc" id="L20">    private List&lt;WarehouseTransferLine&gt; lines = new ArrayList&lt;&gt;();</span>
+    private WarehouseTransferState state;
+    private Instant requestDate;
+    private BigDecimal totalTransferValue;
+    private String createdBy;
+    private @Nullable String approvedBy;
+    private @Nullable String shippedBy;
+    private @Nullable String receivedBy;
+    private @Nullable Long version;
+    private String correlationId;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private @Nullable Instant approvedAt;
+    private @Nullable Instant shippedAt;
+    private @Nullable Instant receivedAt;
+
+<span class="fc" id="L36">    protected WarehouseTransfer() {</span>
+<span class="fc" id="L37">        this.transferNumber = &quot;&quot;;</span>
+<span class="fc" id="L38">        this.tenantId = 0L;</span>
+<span class="fc" id="L39">        this.fromWarehouseId = 0L;</span>
+<span class="fc" id="L40">        this.toWarehouseId = 0L;</span>
+<span class="fc" id="L41">        this.state = WarehouseTransferState.DRAFT;</span>
+<span class="fc" id="L42">        this.requestDate = Instant.EPOCH;</span>
+<span class="fc" id="L43">        this.totalTransferValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L44">        this.createdBy = &quot;&quot;;</span>
+<span class="fc" id="L45">        this.correlationId = &quot;&quot;;</span>
+<span class="fc" id="L46">        this.createdAt = Instant.EPOCH;</span>
+<span class="fc" id="L47">        this.updatedAt = Instant.EPOCH;</span>
+<span class="fc" id="L48">    }</span>
+
+    // COPY-ON-WRITE constructor (Rule 15 compliant)
+    public WarehouseTransfer(WarehouseTransfer source,
+                             WarehouseTransferState newState,
+<span class="fc" id="L53">                             @Nullable List&lt;WarehouseTransferLine&gt; newLines) {</span>
+<span class="fc" id="L54">        this.id = source.id;</span>
+<span class="fc" id="L55">        this.transferNumber = source.transferNumber;</span>
+<span class="fc" id="L56">        this.tenantId = source.tenantId;</span>
+<span class="fc" id="L57">        this.fromWarehouseId = source.fromWarehouseId;</span>
+<span class="fc" id="L58">        this.toWarehouseId = source.toWarehouseId;</span>
+<span class="fc" id="L59">        this.requestDate = source.requestDate;</span>
+<span class="fc" id="L60">        this.createdBy = source.createdBy;</span>
+<span class="fc" id="L61">        this.approvedBy = source.approvedBy;</span>
+<span class="fc" id="L62">        this.shippedBy = source.shippedBy;</span>
+<span class="fc" id="L63">        this.receivedBy = source.receivedBy;</span>
+<span class="fc" id="L64">        this.createdAt = source.createdAt;</span>
+<span class="fc" id="L65">        this.updatedAt = Instant.now();</span>
+<span class="fc" id="L66">        this.approvedAt = source.approvedAt;</span>
+<span class="fc" id="L67">        this.shippedAt = source.shippedAt;</span>
+<span class="fc" id="L68">        this.receivedAt = source.receivedAt;</span>
+
+        // Defensive copy (no shared references)
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        this.lines = newLines != null</span>
+<span class="fc" id="L72">                ? new ArrayList&lt;&gt;(newLines)</span>
+<span class="pc" id="L73">                : new ArrayList&lt;&gt;(source.lines);</span>
+
+<span class="fc" id="L75">        this.totalTransferValue = this.lines.stream()</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">                .map(line -&gt; line.getShippedQty().compareTo(BigDecimal.ZERO) &gt; 0</span>
+<span class="fc" id="L77">                        ? line.getShippedQty().multiply(line.getUnitCost())</span>
+<span class="fc" id="L78">                        : line.getRequestedQty().multiply(line.getUnitCost()))</span>
+<span class="fc" id="L79">                .reduce(BigDecimal.ZERO, BigDecimal::add);</span>
+
+<span class="fc" id="L81">        this.state = newState;</span>
+<span class="fc" id="L82">        this.version = source.version;</span>
+<span class="fc" id="L83">        this.correlationId = source.correlationId;</span>
+<span class="fc" id="L84">    }</span>
+
+    // Full constructor for persistence adapter restoration
+    public WarehouseTransfer(@Nullable Long id, String transferNumber, Long tenantId, Long fromWarehouseId,
+                             Long toWarehouseId, WarehouseTransferState state, Instant requestDate,
+                             BigDecimal totalTransferValue, String createdBy, @Nullable String approvedBy,
+                             @Nullable String shippedBy, @Nullable String receivedBy, @Nullable Long version,
+                             String correlationId, Instant createdAt, Instant updatedAt, @Nullable Instant approvedAt,
+<span class="fc" id="L92">                             @Nullable Instant shippedAt, @Nullable Instant receivedAt, List&lt;WarehouseTransferLine&gt; lines) {</span>
+<span class="fc" id="L93">        this.id = id;</span>
+<span class="fc" id="L94">        this.transferNumber = transferNumber;</span>
+<span class="fc" id="L95">        this.tenantId = tenantId;</span>
+<span class="fc" id="L96">        this.fromWarehouseId = fromWarehouseId;</span>
+<span class="fc" id="L97">        this.toWarehouseId = toWarehouseId;</span>
+<span class="fc" id="L98">        this.state = state;</span>
+<span class="fc" id="L99">        this.requestDate = requestDate;</span>
+<span class="fc" id="L100">        this.totalTransferValue = totalTransferValue;</span>
+<span class="fc" id="L101">        this.createdBy = createdBy;</span>
+<span class="fc" id="L102">        this.approvedBy = approvedBy;</span>
+<span class="fc" id="L103">        this.shippedBy = shippedBy;</span>
+<span class="fc" id="L104">        this.receivedBy = receivedBy;</span>
+<span class="fc" id="L105">        this.version = version;</span>
+<span class="fc" id="L106">        this.correlationId = correlationId;</span>
+<span class="fc" id="L107">        this.createdAt = createdAt;</span>
+<span class="fc" id="L108">        this.updatedAt = updatedAt;</span>
+<span class="fc" id="L109">        this.approvedAt = approvedAt;</span>
+<span class="fc" id="L110">        this.shippedAt = shippedAt;</span>
+<span class="fc" id="L111">        this.receivedAt = receivedAt;</span>
+<span class="fc" id="L112">        this.lines = new ArrayList&lt;&gt;(lines);</span>
+<span class="fc" id="L113">    }</span>
+
+    public static WarehouseTransfer create(String transferNumber, Long tenantId, Long fromWarehouseId,
+                                           Long toWarehouseId, String createdBy) {
+<span class="fc" id="L117">        WarehouseTransfer wt = new WarehouseTransfer();</span>
+<span class="fc" id="L118">        wt.transferNumber = transferNumber;</span>
+<span class="fc" id="L119">        wt.tenantId = tenantId;</span>
+<span class="fc" id="L120">        wt.fromWarehouseId = fromWarehouseId;</span>
+<span class="fc" id="L121">        wt.toWarehouseId = toWarehouseId;</span>
+<span class="fc" id="L122">        wt.state = WarehouseTransferState.DRAFT;</span>
+<span class="fc" id="L123">        wt.requestDate = Instant.now();</span>
+<span class="fc" id="L124">        wt.totalTransferValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L125">        wt.createdBy = createdBy;</span>
+<span class="fc" id="L126">        wt.lines = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L127">        wt.correlationId = transferNumber;</span>
+<span class="fc" id="L128">        wt.createdAt = Instant.now();</span>
+<span class="fc" id="L129">        wt.updatedAt = Instant.now();</span>
+<span class="fc" id="L130">        return wt;</span>
+    }
+
+    @Override
+    public String getAggregateId() {
+<span class="fc" id="L135">        return transferNumber;</span>
+    }
+
+    @Override
+    public WarehouseTransferState getWorkflowState() {
+<span class="fc" id="L140">        return state;</span>
+    }
+
+    @Override
+    public WorkflowTransitionOutput&lt;WarehouseTransfer&gt; transitionTo(WarehouseTransferState targetState, WorkflowContext context) {
+<span class="fc" id="L145">        WarehouseTransfer copy = new WarehouseTransfer(this, targetState, this.lines);</span>
+<span class="pc bpc" id="L146" title="1 of 4 branches missed.">        if (targetState == WarehouseTransferState.APPROVED &amp;&amp; copy.approvedAt == null) {</span>
+<span class="fc" id="L147">            copy.approvedAt = context.timestamp();</span>
+<span class="fc" id="L148">            copy.approvedBy = String.valueOf(context.userId());</span>
+        }
+<span class="pc bpc" id="L150" title="1 of 4 branches missed.">        if (targetState == WarehouseTransferState.SHIPPED &amp;&amp; copy.shippedAt == null) {</span>
+<span class="fc" id="L151">            copy.shippedAt = context.timestamp();</span>
+<span class="fc" id="L152">            copy.shippedBy = String.valueOf(context.userId());</span>
+        }
+<span class="pc bpc" id="L154" title="1 of 4 branches missed.">        if (targetState == WarehouseTransferState.RECEIVED &amp;&amp; copy.receivedAt == null) {</span>
+<span class="fc" id="L155">            copy.receivedAt = context.timestamp();</span>
+<span class="fc" id="L156">            copy.receivedBy = String.valueOf(context.userId());</span>
+        }
+
+<span class="fc bfc" id="L159" title="All 5 branches covered.">        DomainEventType eventType = switch (targetState) {</span>
+<span class="fc" id="L160">            case DRAFT, REQUESTED -&gt; DomainEventType.WAREHOUSE_TRANSFER_REQUESTED;</span>
+<span class="fc" id="L161">            case APPROVED -&gt; DomainEventType.WAREHOUSE_TRANSFER_APPROVED;</span>
+<span class="fc" id="L162">            case SHIPPED -&gt; DomainEventType.WAREHOUSE_TRANSFER_SHIPPED;</span>
+<span class="fc" id="L163">            case RECEIVED -&gt; DomainEventType.WAREHOUSE_TRANSFER_RECEIVED;</span>
+<span class="fc" id="L164">            case CANCELLED -&gt; DomainEventType.WAREHOUSE_TRANSFER_CANCELLED;</span>
+        };
+
+<span class="fc" id="L167">        WarehouseTransferEvent event = new WarehouseTransferEvent(</span>
+                this.transferNumber,
+                eventType,
+<span class="fc" id="L170">                context.correlationId(),</span>
+<span class="fc" id="L171">                context.timestamp(),</span>
+<span class="fc" id="L172">                context.tenantId()</span>
+        );
+<span class="fc" id="L174">        return new WorkflowTransitionOutput&lt;&gt;(copy, List.of(event));</span>
+    }
+
+    // GETTERS ONLY (NO SETTERS — STRICT RULE 15)
+<span class="fc" id="L178">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L179">    public String getTransferNumber() { return transferNumber; }</span>
+<span class="fc" id="L180">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L181">    public Long getFromWarehouseId() { return fromWarehouseId; }</span>
+<span class="fc" id="L182">    public Long getToWarehouseId() { return toWarehouseId; }</span>
+<span class="fc" id="L183">    public List&lt;WarehouseTransferLine&gt; getLines() { return lines; }</span>
+<span class="fc" id="L184">    public WarehouseTransferState getState() { return state; }</span>
+<span class="fc" id="L185">    public Instant getRequestDate() { return requestDate; }</span>
+<span class="fc" id="L186">    public BigDecimal getTotalTransferValue() { return totalTransferValue; }</span>
+<span class="fc" id="L187">    public String getCreatedBy() { return createdBy; }</span>
+<span class="fc" id="L188">    public @Nullable String getApprovedBy() { return approvedBy; }</span>
+<span class="fc" id="L189">    public @Nullable String getShippedBy() { return shippedBy; }</span>
+<span class="fc" id="L190">    public @Nullable String getReceivedBy() { return receivedBy; }</span>
+<span class="fc" id="L191">    public @Nullable Long getVersion() { return version; }</span>
+<span class="nc" id="L192">    public String getCorrelationId() { return correlationId; }</span>
+<span class="fc" id="L193">    public Instant getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L194">    public Instant getUpdatedAt() { return updatedAt; }</span>
+<span class="fc" id="L195">    public @Nullable Instant getApprovedAt() { return approvedAt; }</span>
+<span class="fc" id="L196">    public @Nullable Instant getShippedAt() { return shippedAt; }</span>
+<span class="fc" id="L197">    public @Nullable Instant getReceivedAt() { return receivedAt; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

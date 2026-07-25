@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DeliveryPersistenceAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.delivery.adapter</a> &gt; <span class="el_source">DeliveryPersistenceAdapter.java</span></div><h1>DeliveryPersistenceAdapter.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.delivery.adapter;
+
+import com.spiceflow.backend.sales.delivery.domain.Delivery;
+import com.spiceflow.backend.sales.delivery.domain.DeliveryPaymentRecord;
+import com.spiceflow.backend.sales.delivery.domain.DeliveryReturnItemRecord;
+import com.spiceflow.backend.sales.delivery.domain.DeliveryShopItemRecord;
+import com.spiceflow.backend.sales.delivery.domain.DeliveryShopRecord;
+import com.spiceflow.backend.sales.delivery.entity.DeliveryPaymentWorkflowEntity;
+import com.spiceflow.backend.sales.delivery.entity.DeliveryShopItemWorkflowEntity;
+import com.spiceflow.backend.sales.delivery.entity.DeliveryShopReturnWorkflowEntity;
+import com.spiceflow.backend.sales.delivery.entity.DeliveryShopWorkflowEntity;
+import com.spiceflow.backend.sales.delivery.entity.DeliveryWorkflowEntity;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.stereotype.Component;
+
+/**
+ * Pure mapping adapter converting between immutable Delivery domain aggregates
+ * and JPA persistence entities.
+ * Contains zero business logic, validation, or state transition rules.
+ */
+@Component
+<span class="fc" id="L23">public class DeliveryPersistenceAdapter {</span>
+
+    public DeliveryWorkflowEntity toEntity(Delivery aggregate) {
+<span class="fc" id="L26">        DeliveryWorkflowEntity entity = new DeliveryWorkflowEntity();</span>
+<span class="fc" id="L27">        entity.setId(aggregate.getId());</span>
+<span class="fc" id="L28">        entity.setDeliveryNumber(aggregate.getDeliveryNumber());</span>
+<span class="fc" id="L29">        entity.setTenantId(aggregate.getTenantId());</span>
+<span class="fc" id="L30">        entity.setLoadingSheetId(aggregate.getLoadingSheetId());</span>
+<span class="fc" id="L31">        entity.setDeliveryDate(aggregate.getDeliveryDate());</span>
+<span class="fc" id="L32">        entity.setStatus(aggregate.getState());</span>
+<span class="fc" id="L33">        entity.setTotalSalesValue(aggregate.getTotalSalesValue());</span>
+<span class="fc" id="L34">        entity.setTotalReturnsValue(aggregate.getTotalReturnsValue());</span>
+<span class="fc" id="L35">        entity.setTotalCollectedAmount(aggregate.getTotalCollectedAmount());</span>
+<span class="fc" id="L36">        entity.setCreatedBy(aggregate.getCreatedBy());</span>
+<span class="fc" id="L37">        entity.setDispatchedBy(aggregate.getDispatchedBy());</span>
+<span class="fc" id="L38">        entity.setCompletedBy(aggregate.getCompletedBy());</span>
+<span class="fc" id="L39">        entity.setCancelledBy(aggregate.getCancelledBy());</span>
+<span class="fc" id="L40">        entity.setVersion(aggregate.getVersion());</span>
+<span class="fc" id="L41">        entity.setCreatedAt(aggregate.getCreatedAt());</span>
+<span class="fc" id="L42">        entity.setUpdatedAt(aggregate.getUpdatedAt());</span>
+<span class="fc" id="L43">        entity.setDispatchedAt(aggregate.getDispatchedAt());</span>
+<span class="fc" id="L44">        entity.setCompletedAt(aggregate.getCompletedAt());</span>
+<span class="fc" id="L45">        entity.setCancelledAt(aggregate.getCancelledAt());</span>
+
+<span class="fc" id="L47">        List&lt;DeliveryShopWorkflowEntity&gt; shopEntities = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (DeliveryShopRecord shop : aggregate.getShops()) {</span>
+<span class="fc" id="L49">            DeliveryShopWorkflowEntity shopEntity = new DeliveryShopWorkflowEntity();</span>
+<span class="fc" id="L50">            shopEntity.setId(shop.id());</span>
+<span class="fc" id="L51">            shopEntity.setDelivery(entity);</span>
+<span class="fc" id="L52">            shopEntity.setTenantId(aggregate.getTenantId());</span>
+<span class="fc" id="L53">            shopEntity.setShopId(shop.shopId());</span>
+<span class="fc" id="L54">            shopEntity.setGrossBillAmount(shop.grossBillAmount());</span>
+<span class="fc" id="L55">            shopEntity.setTotalDiscount(shop.totalDiscount());</span>
+<span class="fc" id="L56">            shopEntity.setReturnsDeducted(shop.returnsDeducted());</span>
+<span class="fc" id="L57">            shopEntity.setNetPayable(shop.netPayable());</span>
+<span class="fc" id="L58">            shopEntity.setPaidAmount(shop.paidAmount());</span>
+<span class="fc" id="L59">            shopEntity.setCreditAmount(shop.creditAmount());</span>
+
+            // Items
+<span class="fc" id="L62">            List&lt;DeliveryShopItemWorkflowEntity&gt; itemEntities = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">            for (DeliveryShopItemRecord item : shop.items()) {</span>
+<span class="fc" id="L64">                DeliveryShopItemWorkflowEntity itemEntity = new DeliveryShopItemWorkflowEntity();</span>
+<span class="fc" id="L65">                itemEntity.setId(item.id());</span>
+<span class="fc" id="L66">                itemEntity.setDeliveryShop(shopEntity);</span>
+<span class="fc" id="L67">                itemEntity.setTenantId(aggregate.getTenantId());</span>
+<span class="fc" id="L68">                itemEntity.setProductId(item.productId());</span>
+<span class="fc" id="L69">                itemEntity.setQuantityDelivered(item.quantityDelivered());</span>
+<span class="fc" id="L70">                itemEntity.setUnitType(item.unitType());</span>
+<span class="fc" id="L71">                itemEntity.setRate(item.rate());</span>
+<span class="fc" id="L72">                itemEntity.setGrossAmount(item.grossAmount());</span>
+<span class="fc" id="L73">                itemEntity.setDiscountAmount(item.discountAmount());</span>
+<span class="fc" id="L74">                itemEntity.setNetAmount(item.netAmount());</span>
+<span class="fc" id="L75">                itemEntity.setFreeItem(item.isFreeItem());</span>
+<span class="fc" id="L76">                itemEntities.add(itemEntity);</span>
+<span class="fc" id="L77">            }</span>
+<span class="fc" id="L78">            shopEntity.setItems(itemEntities);</span>
+
+            // Returns
+<span class="fc" id="L81">            List&lt;DeliveryShopReturnWorkflowEntity&gt; returnEntities = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            for (DeliveryReturnItemRecord ret : shop.returns()) {</span>
+<span class="fc" id="L83">                DeliveryShopReturnWorkflowEntity returnEntity = new DeliveryShopReturnWorkflowEntity();</span>
+<span class="fc" id="L84">                returnEntity.setId(ret.id());</span>
+<span class="fc" id="L85">                returnEntity.setDeliveryShop(shopEntity);</span>
+<span class="fc" id="L86">                returnEntity.setTenantId(aggregate.getTenantId());</span>
+<span class="fc" id="L87">                returnEntity.setProductId(ret.productId());</span>
+<span class="fc" id="L88">                returnEntity.setQuantityReturned(ret.quantityReturned());</span>
+<span class="fc" id="L89">                returnEntity.setUnitType(ret.unitType());</span>
+<span class="fc" id="L90">                returnEntity.setCreditValue(ret.creditValue());</span>
+<span class="fc" id="L91">                returnEntity.setReturnType(ret.returnType());</span>
+<span class="fc" id="L92">                returnEntities.add(returnEntity);</span>
+<span class="fc" id="L93">            }</span>
+<span class="fc" id="L94">            shopEntity.setReturns(returnEntities);</span>
+
+            // Payments
+<span class="fc" id="L97">            List&lt;DeliveryPaymentWorkflowEntity&gt; paymentEntities = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">            for (DeliveryPaymentRecord payment : shop.payments()) {</span>
+<span class="fc" id="L99">                DeliveryPaymentWorkflowEntity paymentEntity = new DeliveryPaymentWorkflowEntity();</span>
+<span class="fc" id="L100">                paymentEntity.setId(payment.id());</span>
+<span class="fc" id="L101">                paymentEntity.setDeliveryShop(shopEntity);</span>
+<span class="fc" id="L102">                paymentEntity.setTenantId(aggregate.getTenantId());</span>
+<span class="fc" id="L103">                paymentEntity.setPaymentMethod(payment.paymentMethod());</span>
+<span class="fc" id="L104">                paymentEntity.setAmount(payment.amount());</span>
+<span class="fc" id="L105">                paymentEntity.setChequeNo(payment.chequeNo());</span>
+<span class="fc" id="L106">                paymentEntity.setChequeBankName(payment.chequeBankName());</span>
+<span class="fc" id="L107">                paymentEntity.setChequeDate(payment.chequeDate());</span>
+<span class="fc" id="L108">                paymentEntities.add(paymentEntity);</span>
+<span class="fc" id="L109">            }</span>
+<span class="fc" id="L110">            shopEntity.setPayments(paymentEntities);</span>
+
+<span class="fc" id="L112">            shopEntities.add(shopEntity);</span>
+<span class="fc" id="L113">        }</span>
+<span class="fc" id="L114">        entity.setShops(shopEntities);</span>
+
+<span class="fc" id="L116">        return entity;</span>
+    }
+
+    public Delivery toDomain(DeliveryWorkflowEntity entity) {
+<span class="fc" id="L120">        List&lt;DeliveryShopRecord&gt; shops = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        for (DeliveryShopWorkflowEntity shopEntity : entity.getShops()) {</span>
+<span class="fc" id="L122">            List&lt;DeliveryShopItemRecord&gt; items = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            for (DeliveryShopItemWorkflowEntity itemEntity : shopEntity.getItems()) {</span>
+<span class="fc" id="L124">                items.add(new DeliveryShopItemRecord(</span>
+<span class="fc" id="L125">                        itemEntity.getId(),</span>
+<span class="fc" id="L126">                        itemEntity.getProductId(),</span>
+<span class="fc" id="L127">                        itemEntity.getQuantityDelivered(),</span>
+<span class="fc" id="L128">                        itemEntity.getUnitType(),</span>
+<span class="fc" id="L129">                        itemEntity.getRate(),</span>
+<span class="fc" id="L130">                        itemEntity.getGrossAmount(),</span>
+<span class="fc" id="L131">                        itemEntity.getDiscountAmount(),</span>
+<span class="fc" id="L132">                        itemEntity.getNetAmount(),</span>
+<span class="fc" id="L133">                        itemEntity.isFreeItem()</span>
+                ));
+<span class="fc" id="L135">            }</span>
+
+<span class="fc" id="L137">            List&lt;DeliveryReturnItemRecord&gt; returns = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">            for (DeliveryShopReturnWorkflowEntity returnEntity : shopEntity.getReturns()) {</span>
+<span class="fc" id="L139">                returns.add(new DeliveryReturnItemRecord(</span>
+<span class="fc" id="L140">                        returnEntity.getId(),</span>
+<span class="fc" id="L141">                        returnEntity.getProductId(),</span>
+<span class="fc" id="L142">                        returnEntity.getQuantityReturned(),</span>
+<span class="fc" id="L143">                        returnEntity.getUnitType(),</span>
+<span class="fc" id="L144">                        returnEntity.getCreditValue(),</span>
+<span class="fc" id="L145">                        returnEntity.getReturnType()</span>
+                ));
+<span class="fc" id="L147">            }</span>
+
+<span class="fc" id="L149">            List&lt;DeliveryPaymentRecord&gt; payments = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            for (DeliveryPaymentWorkflowEntity paymentEntity : shopEntity.getPayments()) {</span>
+<span class="fc" id="L151">                payments.add(new DeliveryPaymentRecord(</span>
+<span class="fc" id="L152">                        paymentEntity.getId(),</span>
+<span class="fc" id="L153">                        paymentEntity.getPaymentMethod(),</span>
+<span class="fc" id="L154">                        paymentEntity.getAmount(),</span>
+<span class="fc" id="L155">                        paymentEntity.getChequeNo(),</span>
+<span class="fc" id="L156">                        paymentEntity.getChequeBankName(),</span>
+<span class="fc" id="L157">                        paymentEntity.getChequeDate()</span>
+                ));
+<span class="fc" id="L159">            }</span>
+
+<span class="fc" id="L161">            shops.add(new DeliveryShopRecord(</span>
+<span class="fc" id="L162">                    shopEntity.getId(),</span>
+<span class="fc" id="L163">                    shopEntity.getShopId(),</span>
+<span class="fc" id="L164">                    shopEntity.getGrossBillAmount(),</span>
+<span class="fc" id="L165">                    shopEntity.getTotalDiscount(),</span>
+<span class="fc" id="L166">                    shopEntity.getReturnsDeducted(),</span>
+<span class="fc" id="L167">                    shopEntity.getNetPayable(),</span>
+<span class="fc" id="L168">                    shopEntity.getPaidAmount(),</span>
+<span class="fc" id="L169">                    shopEntity.getCreditAmount(),</span>
+                    items,
+                    returns,
+                    payments
+            ));
+<span class="fc" id="L174">        }</span>
+
+<span class="fc" id="L176">        return new Delivery(</span>
+<span class="fc" id="L177">                entity.getId(),</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">                entity.getDeliveryNumber() != null ? entity.getDeliveryNumber() : &quot;&quot;,</span>
+<span class="fc" id="L179">                entity.getTenantId(),</span>
+<span class="fc" id="L180">                entity.getLoadingSheetId(),</span>
+<span class="fc" id="L181">                entity.getDeliveryNumber(),</span>
+<span class="fc" id="L182">                entity.getDeliveryDate(),</span>
+<span class="fc" id="L183">                entity.getStatus(),</span>
+<span class="fc" id="L184">                entity.getTotalSalesValue(),</span>
+<span class="fc" id="L185">                entity.getTotalReturnsValue(),</span>
+<span class="fc" id="L186">                entity.getTotalCollectedAmount(),</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">                entity.getCreatedBy() != null ? entity.getCreatedBy() : &quot;&quot;,</span>
+<span class="fc" id="L188">                entity.getDispatchedBy(),</span>
+<span class="fc" id="L189">                entity.getCompletedBy(),</span>
+<span class="fc" id="L190">                entity.getCancelledBy(),</span>
+<span class="fc" id="L191">                entity.getVersion(),</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">                entity.getDeliveryNumber() != null ? entity.getDeliveryNumber() : &quot;&quot;,</span>
+<span class="fc" id="L193">                entity.getCreatedAt(),</span>
+<span class="fc" id="L194">                entity.getUpdatedAt(),</span>
+<span class="fc" id="L195">                entity.getDispatchedAt(),</span>
+<span class="fc" id="L196">                entity.getCompletedAt(),</span>
+<span class="fc" id="L197">                entity.getCancelledAt(),</span>
+                shops
+        );
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

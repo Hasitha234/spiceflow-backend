@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DeliveryWorkflowEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.delivery.entity</a> &gt; <span class="el_source">DeliveryWorkflowEntity.java</span></div><h1>DeliveryWorkflowEntity.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.delivery.entity;
+
+import com.spiceflow.backend.sales.delivery.domain.DeliveryState;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * JPA entity mapping the {@code deliveries} table for the workflow execution layer.
+ * This entity is exclusively used by {@code DeliveryPersistenceAdapter} and must
+ * never be exposed to or manipulated by services directly.
+ */
+@Entity
+@Table(name = &quot;deliveries&quot;)
+public class DeliveryWorkflowEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private @Nullable Long id;
+
+    @Column(name = &quot;delivery_number&quot;)
+    private @Nullable String deliveryNumber;
+
+    @Column(name = &quot;tenant_id&quot;, nullable = false)
+    private Long tenantId;
+
+    @Column(name = &quot;loading_sheet_id&quot;, nullable = false)
+    private Long loadingSheetId;
+
+    @Column(name = &quot;delivery_date&quot;, nullable = false)
+    private LocalDate deliveryDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;status&quot;, nullable = false)
+    private DeliveryState status;
+
+    @Column(name = &quot;total_sales_value&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal totalSalesValue;
+
+    @Column(name = &quot;total_returns_value&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal totalReturnsValue;
+
+    @Column(name = &quot;total_collected_amount&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal totalCollectedAmount;
+
+    @Column(name = &quot;created_by&quot;)
+    private @Nullable String createdBy;
+
+    @Column(name = &quot;dispatched_by&quot;)
+    private @Nullable String dispatchedBy;
+
+    @Column(name = &quot;completed_by&quot;)
+    private @Nullable String completedBy;
+
+    @Column(name = &quot;cancelled_by&quot;)
+    private @Nullable String cancelledBy;
+
+    @Version
+    private @Nullable Long version;
+
+    @Column(name = &quot;created_at&quot;, nullable = false)
+    private Instant createdAt;
+
+    @Column(name = &quot;updated_at&quot;, nullable = false)
+    private Instant updatedAt;
+
+    @Column(name = &quot;dispatched_at&quot;)
+    private @Nullable Instant dispatchedAt;
+
+    @Column(name = &quot;completed_at&quot;)
+    private @Nullable Instant completedAt;
+
+    @Column(name = &quot;cancelled_at&quot;)
+    private @Nullable Instant cancelledAt;
+
+<span class="fc" id="L91">    @OneToMany(mappedBy = &quot;delivery&quot;, cascade = CascadeType.ALL, orphanRemoval = true)</span>
+    private List&lt;DeliveryShopWorkflowEntity&gt; shops = new ArrayList&lt;&gt;();
+
+<span class="fc" id="L94">    public DeliveryWorkflowEntity() {</span>
+<span class="fc" id="L95">        this.tenantId = 0L;</span>
+<span class="fc" id="L96">        this.loadingSheetId = 0L;</span>
+<span class="fc" id="L97">        this.deliveryDate = LocalDate.now(ZoneOffset.UTC);</span>
+<span class="fc" id="L98">        this.status = DeliveryState.IN_PROGRESS;</span>
+<span class="fc" id="L99">        this.totalSalesValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L100">        this.totalReturnsValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L101">        this.totalCollectedAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L102">        this.createdAt = Instant.EPOCH;</span>
+<span class="fc" id="L103">        this.updatedAt = Instant.EPOCH;</span>
+<span class="fc" id="L104">    }</span>
+
+<span class="fc" id="L106">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L107">    public void setId(@Nullable Long id) { this.id = id; }</span>
+
+<span class="fc" id="L109">    public @Nullable String getDeliveryNumber() { return deliveryNumber; }</span>
+<span class="fc" id="L110">    public void setDeliveryNumber(@Nullable String deliveryNumber) { this.deliveryNumber = deliveryNumber; }</span>
+
+<span class="fc" id="L112">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L113">    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }</span>
+
+<span class="fc" id="L115">    public Long getLoadingSheetId() { return loadingSheetId; }</span>
+<span class="fc" id="L116">    public void setLoadingSheetId(Long loadingSheetId) { this.loadingSheetId = loadingSheetId; }</span>
+
+<span class="fc" id="L118">    public LocalDate getDeliveryDate() { return deliveryDate; }</span>
+<span class="fc" id="L119">    public void setDeliveryDate(LocalDate deliveryDate) { this.deliveryDate = deliveryDate; }</span>
+
+<span class="fc" id="L121">    public DeliveryState getStatus() { return status; }</span>
+<span class="fc" id="L122">    public void setStatus(DeliveryState status) { this.status = status; }</span>
+
+<span class="fc" id="L124">    public BigDecimal getTotalSalesValue() { return totalSalesValue; }</span>
+<span class="fc" id="L125">    public void setTotalSalesValue(BigDecimal totalSalesValue) { this.totalSalesValue = totalSalesValue; }</span>
+
+<span class="fc" id="L127">    public BigDecimal getTotalReturnsValue() { return totalReturnsValue; }</span>
+<span class="fc" id="L128">    public void setTotalReturnsValue(BigDecimal totalReturnsValue) { this.totalReturnsValue = totalReturnsValue; }</span>
+
+<span class="fc" id="L130">    public BigDecimal getTotalCollectedAmount() { return totalCollectedAmount; }</span>
+<span class="fc" id="L131">    public void setTotalCollectedAmount(BigDecimal totalCollectedAmount) { this.totalCollectedAmount = totalCollectedAmount; }</span>
+
+<span class="fc" id="L133">    public @Nullable String getCreatedBy() { return createdBy; }</span>
+<span class="fc" id="L134">    public void setCreatedBy(@Nullable String createdBy) { this.createdBy = createdBy; }</span>
+
+<span class="fc" id="L136">    public @Nullable String getDispatchedBy() { return dispatchedBy; }</span>
+<span class="fc" id="L137">    public void setDispatchedBy(@Nullable String dispatchedBy) { this.dispatchedBy = dispatchedBy; }</span>
+
+<span class="fc" id="L139">    public @Nullable String getCompletedBy() { return completedBy; }</span>
+<span class="fc" id="L140">    public void setCompletedBy(@Nullable String completedBy) { this.completedBy = completedBy; }</span>
+
+<span class="fc" id="L142">    public @Nullable String getCancelledBy() { return cancelledBy; }</span>
+<span class="fc" id="L143">    public void setCancelledBy(@Nullable String cancelledBy) { this.cancelledBy = cancelledBy; }</span>
+
+<span class="fc" id="L145">    public @Nullable Long getVersion() { return version; }</span>
+<span class="fc" id="L146">    public void setVersion(@Nullable Long version) { this.version = version; }</span>
+
+<span class="fc" id="L148">    public Instant getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L149">    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }</span>
+
+<span class="fc" id="L151">    public Instant getUpdatedAt() { return updatedAt; }</span>
+<span class="fc" id="L152">    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }</span>
+
+<span class="fc" id="L154">    public @Nullable Instant getDispatchedAt() { return dispatchedAt; }</span>
+<span class="fc" id="L155">    public void setDispatchedAt(@Nullable Instant dispatchedAt) { this.dispatchedAt = dispatchedAt; }</span>
+
+<span class="fc" id="L157">    public @Nullable Instant getCompletedAt() { return completedAt; }</span>
+<span class="fc" id="L158">    public void setCompletedAt(@Nullable Instant completedAt) { this.completedAt = completedAt; }</span>
+
+<span class="fc" id="L160">    public @Nullable Instant getCancelledAt() { return cancelledAt; }</span>
+<span class="fc" id="L161">    public void setCancelledAt(@Nullable Instant cancelledAt) { this.cancelledAt = cancelledAt; }</span>
+
+<span class="fc" id="L163">    public List&lt;DeliveryShopWorkflowEntity&gt; getShops() { return shops; }</span>
+<span class="fc" id="L164">    public void setShops(List&lt;DeliveryShopWorkflowEntity&gt; shops) { this.shops = shops; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

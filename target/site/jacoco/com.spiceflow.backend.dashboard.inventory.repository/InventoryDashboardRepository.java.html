@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InventoryDashboardRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.dashboard.inventory.repository</a> &gt; <span class="el_source">InventoryDashboardRepository.java</span></div><h1>InventoryDashboardRepository.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.dashboard.inventory.repository;
+
+import com.spiceflow.backend.dashboard.inventory.dto.LowStockItemDto;
+import com.spiceflow.backend.dashboard.inventory.dto.RecentMovementDto;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Pure CQRS Read Model repository for the Inventory Dashboard.
+ * Executes read-only SQL aggregations against inventory_items, products, warehouse_transfers,
+ * and inventory_ledger_entries without JPA entity dependencies.
+ */
+<span class="fc" id="L20">@Slf4j</span>
+@Repository
+@RequiredArgsConstructor
+public class InventoryDashboardRepository {
+
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+
+<span class="fc" id="L27">    public record SummaryMetrics(</span>
+        BigDecimal totalStockValue,
+        long totalItemsCount,
+        long lowStockCount,
+        long pendingTransfersCount
+    ) {}
+
+    public SummaryMetrics getSummaryMetrics(Long tenantId) {
+<span class="nc" id="L35">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                (SELECT COALESCE(SUM(i.quantity_available * COALESCE(p.base_price, 0)), 0.00)
+                 FROM inventory_items i
+                 JOIN products p ON i.product_id = p.id
+                 JOIN warehouses w ON i.warehouse_id = w.id
+                 WHERE i.tenant_id = :tenantId AND i.deleted_at IS NULL AND p.deleted_at IS NULL AND w.deleted_at IS NULL) AS total_val,
+                (SELECT COUNT(*)
+                 FROM products
+                 WHERE tenant_id = :tenantId AND deleted_at IS NULL) AS total_items,
+                (SELECT COUNT(*)
+                 FROM (
+                     SELECT p.id
+                     FROM products p
+                     LEFT JOIN inventory_items i ON p.id = i.product_id AND i.deleted_at IS NULL
+                     LEFT JOIN warehouses w ON i.warehouse_id = w.id
+                     WHERE p.tenant_id = :tenantId AND p.deleted_at IS NULL
+                     GROUP BY p.id
+                     HAVING COALESCE(SUM(CASE WHEN w.deleted_at IS NULL THEN i.quantity_available ELSE 0 END), 0) &lt; 10
+                 ) sub) AS low_stock,
+                (SELECT COUNT(*)
+                 FROM warehouse_transfers
+                 WHERE tenant_id = :tenantId AND status IN ('DRAFT', 'SUBMITTED', 'APPROVED', 'IN_TRANSIT')) AS pending_transfers
+            &quot;&quot;&quot;;
+<span class="nc" id="L59">        MapSqlParameterSource params = new MapSqlParameterSource(&quot;tenantId&quot;, tenantId);</span>
+
+<span class="nc" id="L61">        SummaryMetrics metrics = jdbcTemplate.queryForObject(sql, params, (rs, rowNum) -&gt; new SummaryMetrics(</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">            rs.getBigDecimal(&quot;total_val&quot;) != null ? rs.getBigDecimal(&quot;total_val&quot;) : BigDecimal.ZERO,</span>
+<span class="nc" id="L63">            rs.getLong(&quot;total_items&quot;),</span>
+<span class="nc" id="L64">            rs.getLong(&quot;low_stock&quot;),</span>
+<span class="nc" id="L65">            rs.getLong(&quot;pending_transfers&quot;)</span>
+        ));
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        return metrics != null ? metrics : new SummaryMetrics(BigDecimal.ZERO, 0L, 0L, 0L);</span>
+    }
+
+    public List&lt;LowStockItemDto&gt; getLowStockItems(Long tenantId, int limit) {
+<span class="nc" id="L71">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                p.id AS product_id,
+                p.sku,
+                p.name,
+                COALESCE(SUM(CASE WHEN w.deleted_at IS NULL THEN i.quantity_available ELSE 0 END), 0) AS total_qty,
+                COALESCE(p.unit_of_measure, 'PCS') AS uom,
+                COALESCE(p.base_price, 0.00) AS base_price
+            FROM products p
+            LEFT JOIN inventory_items i ON p.id = i.product_id AND i.deleted_at IS NULL
+            LEFT JOIN warehouses w ON i.warehouse_id = w.id
+            WHERE p.tenant_id = :tenantId AND p.deleted_at IS NULL
+            GROUP BY p.id, p.sku, p.name, p.unit_of_measure, p.base_price
+            HAVING COALESCE(SUM(CASE WHEN w.deleted_at IS NULL THEN i.quantity_available ELSE 0 END), 0) &lt; 10
+            ORDER BY total_qty ASC
+            LIMIT :limit
+            &quot;&quot;&quot;;
+<span class="nc" id="L88">        MapSqlParameterSource params = new MapSqlParameterSource()</span>
+<span class="nc" id="L89">            .addValue(&quot;tenantId&quot;, tenantId)</span>
+<span class="nc" id="L90">            .addValue(&quot;limit&quot;, limit);</span>
+
+<span class="nc" id="L92">        List&lt;LowStockItemDto&gt; results = jdbcTemplate.query(sql, params, (rs, rowNum) -&gt; new LowStockItemDto(</span>
+<span class="nc" id="L93">            rs.getLong(&quot;product_id&quot;),</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">            rs.getString(&quot;sku&quot;) != null ? rs.getString(&quot;sku&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">            rs.getString(&quot;name&quot;) != null ? rs.getString(&quot;name&quot;) : &quot;&quot;,</span>
+<span class="nc" id="L96">            rs.getInt(&quot;total_qty&quot;),</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">            rs.getString(&quot;uom&quot;) != null ? rs.getString(&quot;uom&quot;) : &quot;PCS&quot;,</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            rs.getBigDecimal(&quot;base_price&quot;) != null ? rs.getBigDecimal(&quot;base_price&quot;) : BigDecimal.ZERO</span>
+        ));
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        return results != null ? results : Collections.emptyList();</span>
+    }
+
+    public List&lt;com.spiceflow.backend.dashboard.inventory.dto.WarehouseStockDto&gt; getWarehouseStocks(Long tenantId) {
+<span class="nc" id="L104">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                w.id AS warehouse_id,
+                w.name AS warehouse_name,
+                w.location AS location,
+                COALESCE(SUM(i.quantity_available * COALESCE(p.base_price, 0)), 0.00) AS total_value,
+                COUNT(DISTINCT CASE WHEN i.quantity_available &gt; 0 THEN p.id ELSE NULL END) AS item_count
+            FROM warehouses w
+            LEFT JOIN inventory_items i ON w.id = i.warehouse_id AND i.deleted_at IS NULL
+            LEFT JOIN products p ON i.product_id = p.id AND p.deleted_at IS NULL
+            WHERE w.tenant_id = :tenantId AND w.deleted_at IS NULL
+            GROUP BY w.id, w.name, w.location
+            ORDER BY w.name
+            &quot;&quot;&quot;;
+<span class="nc" id="L118">        MapSqlParameterSource params = new MapSqlParameterSource(&quot;tenantId&quot;, tenantId);</span>
+
+<span class="nc" id="L120">        List&lt;com.spiceflow.backend.dashboard.inventory.dto.WarehouseStockDto&gt; results = jdbcTemplate.query(sql, params, (rs, rowNum) -&gt; new com.spiceflow.backend.dashboard.inventory.dto.WarehouseStockDto(</span>
+<span class="nc" id="L121">            rs.getLong(&quot;warehouse_id&quot;),</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">            rs.getString(&quot;warehouse_name&quot;) != null ? rs.getString(&quot;warehouse_name&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            rs.getString(&quot;location&quot;) != null ? rs.getString(&quot;location&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            rs.getBigDecimal(&quot;total_value&quot;) != null ? rs.getBigDecimal(&quot;total_value&quot;) : BigDecimal.ZERO,</span>
+<span class="nc" id="L125">            rs.getLong(&quot;item_count&quot;)</span>
+        ));
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        return results != null ? results : Collections.emptyList();</span>
+    }
+
+    public List&lt;RecentMovementDto&gt; getRecentMovements(Long tenantId, int limit) {
+<span class="nc" id="L131">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                l.id,
+                l.movement_type,
+                l.product_id,
+                COALESCE(p.name, 'Unknown Product') AS product_name,
+                l.quantity,
+                l.total_value,
+                l.reference_id,
+                l.timestamp,
+                l.performed_by
+            FROM inventory_ledger_entries l
+            LEFT JOIN products p ON l.product_id = p.id
+            WHERE l.tenant_id = :tenantId
+            ORDER BY l.timestamp DESC
+            LIMIT :limit
+            &quot;&quot;&quot;;
+<span class="nc" id="L148">        MapSqlParameterSource params = new MapSqlParameterSource()</span>
+<span class="nc" id="L149">            .addValue(&quot;tenantId&quot;, tenantId)</span>
+<span class="nc" id="L150">            .addValue(&quot;limit&quot;, limit);</span>
+
+<span class="nc" id="L152">        List&lt;RecentMovementDto&gt; results = jdbcTemplate.query(sql, params, (rs, rowNum) -&gt; {</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">            Instant ts = rs.getTimestamp(&quot;timestamp&quot;) != null ? rs.getTimestamp(&quot;timestamp&quot;).toInstant() : Instant.EPOCH;</span>
+<span class="nc" id="L154">            return new RecentMovementDto(</span>
+<span class="nc" id="L155">                rs.getLong(&quot;id&quot;),</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">                rs.getString(&quot;movement_type&quot;) != null ? rs.getString(&quot;movement_type&quot;) : &quot;&quot;,</span>
+<span class="nc" id="L157">                rs.getLong(&quot;product_id&quot;),</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">                rs.getString(&quot;product_name&quot;) != null ? rs.getString(&quot;product_name&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">                rs.getBigDecimal(&quot;quantity&quot;) != null ? rs.getBigDecimal(&quot;quantity&quot;) : BigDecimal.ZERO,</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">                rs.getBigDecimal(&quot;total_value&quot;) != null ? rs.getBigDecimal(&quot;total_value&quot;) : BigDecimal.ZERO,</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">                rs.getString(&quot;reference_id&quot;) != null ? rs.getString(&quot;reference_id&quot;) : &quot;&quot;,</span>
+                ts,
+<span class="nc bnc" id="L163" title="All 2 branches missed.">                rs.getString(&quot;performed_by&quot;) != null ? rs.getString(&quot;performed_by&quot;) : &quot;&quot;</span>
+            );
+        });
+<span class="nc bnc" id="L166" title="All 2 branches missed.">        return results != null ? results : Collections.emptyList();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

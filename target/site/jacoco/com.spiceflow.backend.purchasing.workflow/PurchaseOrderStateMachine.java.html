@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PurchaseOrderStateMachine.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.purchasing.workflow</a> &gt; <span class="el_source">PurchaseOrderStateMachine.java</span></div><h1>PurchaseOrderStateMachine.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.purchasing.workflow;
+
+import com.spiceflow.backend.purchasing.domain.PurchaseOrderState;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
+
+public final class PurchaseOrderStateMachine {
+
+    private static final Map&lt;PurchaseOrderState, Set&lt;PurchaseOrderState&gt;&gt; TRANSITIONS;
+
+    static {
+<span class="fc" id="L14">        Map&lt;PurchaseOrderState, Set&lt;PurchaseOrderState&gt;&gt; map = new EnumMap&lt;&gt;(PurchaseOrderState.class);</span>
+
+<span class="fc" id="L16">        map.put(PurchaseOrderState.DRAFT, Set.of(</span>
+                PurchaseOrderState.SUBMITTED
+        ));
+
+<span class="fc" id="L20">        map.put(PurchaseOrderState.SUBMITTED, Set.of(</span>
+                PurchaseOrderState.APPROVED,
+                PurchaseOrderState.REJECTED
+        ));
+
+<span class="fc" id="L25">        map.put(PurchaseOrderState.APPROVED, Set.of(</span>
+                PurchaseOrderState.ORDERED
+        ));
+
+<span class="fc" id="L29">        map.put(PurchaseOrderState.ORDERED, Set.of(</span>
+                PurchaseOrderState.PARTIALLY_RECEIVED,
+                PurchaseOrderState.RECEIVED
+        ));
+
+<span class="fc" id="L34">        map.put(PurchaseOrderState.PARTIALLY_RECEIVED, Set.of(</span>
+                PurchaseOrderState.RECEIVED
+        ));
+
+<span class="fc" id="L38">        map.put(PurchaseOrderState.RECEIVED, Set.of(</span>
+                PurchaseOrderState.CLOSED
+        ));
+
+<span class="fc" id="L42">        map.put(PurchaseOrderState.REJECTED, Set.of());</span>
+
+<span class="fc" id="L44">        map.put(PurchaseOrderState.CLOSED, Set.of());</span>
+
+<span class="fc" id="L46">        TRANSITIONS = Collections.unmodifiableMap(map);</span>
+<span class="fc" id="L47">    }</span>
+
+    public static boolean canTransition(PurchaseOrderState from, PurchaseOrderState to) {
+<span class="fc" id="L50">        return TRANSITIONS.getOrDefault(from, Set.of()).contains(to);</span>
+    }
+
+    public static Set&lt;PurchaseOrderState&gt; allowedNext(PurchaseOrderState state) {
+<span class="nc" id="L54">        return TRANSITIONS.getOrDefault(state, Set.of());</span>
+    }
+
+    private PurchaseOrderStateMachine() {}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

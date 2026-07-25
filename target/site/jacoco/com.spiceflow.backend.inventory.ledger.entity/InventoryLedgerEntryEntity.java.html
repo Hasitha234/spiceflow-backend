@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InventoryLedgerEntryEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.inventory.ledger.entity</a> &gt; <span class="el_source">InventoryLedgerEntryEntity.java</span></div><h1>InventoryLedgerEntryEntity.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.inventory.ledger.entity;
+
+import com.spiceflow.backend.inventory.ledger.InventoryMovementType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Immutable append-only double-entry stock ledger entity.
+ * Strict Rule 15 &amp; ADR-013: All columns updatable = false, no setters.
+ */
+@Entity
+@Table(name = &quot;inventory_ledger_entries&quot;)
+public class InventoryLedgerEntryEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private @Nullable Long id;
+
+    @Column(name = &quot;tenant_id&quot;, nullable = false, updatable = false)
+    private Long tenantId;
+
+    @Column(name = &quot;warehouse_id&quot;, nullable = false, updatable = false)
+    private Long warehouseId;
+
+    @Column(name = &quot;product_id&quot;, nullable = false, updatable = false)
+    private Long productId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;movement_type&quot;, nullable = false, updatable = false)
+    private InventoryMovementType movementType;
+
+    @Column(name = &quot;quantity&quot;, nullable = false, updatable = false, precision = 19, scale = 2)
+    private BigDecimal quantity;
+
+    @Column(name = &quot;unit_cost&quot;, nullable = false, updatable = false, precision = 19, scale = 2)
+    private BigDecimal unitCost;
+
+    @Column(name = &quot;total_value&quot;, nullable = false, updatable = false, precision = 19, scale = 2)
+    private BigDecimal totalValue;
+
+    @Column(name = &quot;reference_id&quot;, nullable = false, updatable = false, length = 50)
+    private String referenceId;
+
+    @Column(name = &quot;lot_number&quot;, nullable = false, updatable = false, length = 100)
+    private String lotNumber;
+
+    @Column(name = &quot;expiration_date&quot;, updatable = false)
+    private @Nullable LocalDate expirationDate;
+
+    @Column(name = &quot;timestamp&quot;, nullable = false, updatable = false)
+    private Instant timestamp;
+
+    @Column(name = &quot;performed_by&quot;, nullable = false, updatable = false, length = 100)
+    private String performedBy;
+
+<span class="fc" id="L67">    protected InventoryLedgerEntryEntity() {</span>
+<span class="fc" id="L68">        this.tenantId = 0L;</span>
+<span class="fc" id="L69">        this.warehouseId = 0L;</span>
+<span class="fc" id="L70">        this.productId = 0L;</span>
+<span class="fc" id="L71">        this.movementType = InventoryMovementType.RECEIPT;</span>
+<span class="fc" id="L72">        this.quantity = BigDecimal.ZERO;</span>
+<span class="fc" id="L73">        this.unitCost = BigDecimal.ZERO;</span>
+<span class="fc" id="L74">        this.totalValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L75">        this.referenceId = &quot;&quot;;</span>
+<span class="fc" id="L76">        this.lotNumber = &quot;&quot;;</span>
+<span class="fc" id="L77">        this.timestamp = Instant.EPOCH;</span>
+<span class="fc" id="L78">        this.performedBy = &quot;&quot;;</span>
+<span class="fc" id="L79">    }</span>
+
+    public InventoryLedgerEntryEntity(Long tenantId, Long warehouseId, Long productId,
+                                      InventoryMovementType movementType, BigDecimal quantity,
+                                      BigDecimal unitCost, BigDecimal totalValue, String referenceId,
+                                      String lotNumber, @Nullable LocalDate expirationDate,
+<span class="fc" id="L85">                                      Instant timestamp, String performedBy) {</span>
+<span class="fc" id="L86">        this.tenantId = Objects.requireNonNull(tenantId);</span>
+<span class="fc" id="L87">        this.warehouseId = Objects.requireNonNull(warehouseId);</span>
+<span class="fc" id="L88">        this.productId = Objects.requireNonNull(productId);</span>
+<span class="fc" id="L89">        this.movementType = Objects.requireNonNull(movementType);</span>
+<span class="fc" id="L90">        this.quantity = Objects.requireNonNull(quantity);</span>
+<span class="fc" id="L91">        this.unitCost = Objects.requireNonNull(unitCost);</span>
+<span class="fc" id="L92">        this.totalValue = Objects.requireNonNull(totalValue);</span>
+<span class="fc" id="L93">        this.referenceId = Objects.requireNonNull(referenceId);</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        this.lotNumber = lotNumber != null ? lotNumber : &quot;&quot;;</span>
+<span class="fc" id="L95">        this.expirationDate = expirationDate;</span>
+<span class="fc" id="L96">        this.timestamp = Objects.requireNonNull(timestamp);</span>
+<span class="fc" id="L97">        this.performedBy = Objects.requireNonNull(performedBy);</span>
+<span class="fc" id="L98">    }</span>
+
+<span class="fc" id="L100">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L101">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L102">    public Long getWarehouseId() { return warehouseId; }</span>
+<span class="fc" id="L103">    public Long getProductId() { return productId; }</span>
+<span class="fc" id="L104">    public InventoryMovementType getMovementType() { return movementType; }</span>
+<span class="fc" id="L105">    public BigDecimal getQuantity() { return quantity; }</span>
+<span class="fc" id="L106">    public BigDecimal getUnitCost() { return unitCost; }</span>
+<span class="fc" id="L107">    public BigDecimal getTotalValue() { return totalValue; }</span>
+<span class="fc" id="L108">    public String getReferenceId() { return referenceId; }</span>
+<span class="fc" id="L109">    public String getLotNumber() { return lotNumber; }</span>
+<span class="fc" id="L110">    public @Nullable LocalDate getExpirationDate() { return expirationDate; }</span>
+<span class="fc" id="L111">    public Instant getTimestamp() { return timestamp; }</span>
+<span class="fc" id="L112">    public String getPerformedBy() { return performedBy; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

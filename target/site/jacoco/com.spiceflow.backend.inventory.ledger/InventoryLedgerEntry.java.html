@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InventoryLedgerEntry.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.inventory.ledger</a> &gt; <span class="el_source">InventoryLedgerEntry.java</span></div><h1>InventoryLedgerEntry.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.inventory.ledger;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Immutable domain record representing a double-entry stock movement in the ledger.
+ */
+<span class="fc" id="L11">public record InventoryLedgerEntry(</span>
+        @Nullable Long id,
+        Long tenantId,
+        Long warehouseId,
+        Long productId,
+        InventoryMovementType movementType,
+        BigDecimal quantity,
+        BigDecimal unitCost,
+        BigDecimal totalValue,
+        String referenceId,
+        String lotNumber,
+        @Nullable LocalDate expirationDate,
+        Instant timestamp,
+        String performedBy
+) {
+    public static InventoryLedgerEntry createReceipt(Long tenantId, Long warehouseId, Long productId,
+                                                     BigDecimal quantity, BigDecimal unitCost,
+                                                     String referenceId, String lotNumber,
+                                                     @Nullable LocalDate expirationDate,
+                                                     Instant timestamp, String performedBy) {
+<span class="nc" id="L31">        BigDecimal totalVal = quantity.multiply(unitCost);</span>
+<span class="nc" id="L32">        return new InventoryLedgerEntry(</span>
+                null, tenantId, warehouseId, productId,
+                InventoryMovementType.RECEIPT, quantity, unitCost, totalVal,
+<span class="nc bnc" id="L35" title="All 2 branches missed.">                referenceId, lotNumber != null ? lotNumber : &quot;&quot;, expirationDate,</span>
+                timestamp, performedBy
+        );
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

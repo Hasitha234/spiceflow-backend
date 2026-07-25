@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DeliveryShopItemRecord.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.delivery.domain</a> &gt; <span class="el_source">DeliveryShopItemRecord.java</span></div><h1>DeliveryShopItemRecord.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.delivery.domain;
+
+import java.math.BigDecimal;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Immutable record representing a delivered line item for a shop within a Delivery.
+ * ADR-013: Self-validating, NullAway-safe, no setters.
+ */
+public record DeliveryShopItemRecord(
+        @Nullable Long id,
+        Long productId,
+        Integer quantityDelivered,
+        @Nullable String unitType,
+        BigDecimal rate,
+        BigDecimal grossAmount,
+        BigDecimal discountAmount,
+        BigDecimal netAmount,
+        boolean isFreeItem
+) {
+<span class="fc" id="L21">    public DeliveryShopItemRecord {</span>
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if (productId == null) throw new IllegalArgumentException(&quot;productId cannot be null&quot;);</span>
+<span class="pc bpc" id="L23" title="2 of 4 branches missed.">        if (quantityDelivered == null || quantityDelivered &lt; 0) throw new IllegalArgumentException(&quot;quantityDelivered cannot be negative&quot;);</span>
+<span class="pc bpc" id="L24" title="1 of 2 branches missed.">        if (rate == null) throw new IllegalArgumentException(&quot;rate cannot be null&quot;);</span>
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        if (grossAmount == null) throw new IllegalArgumentException(&quot;grossAmount cannot be null&quot;);</span>
+<span class="pc bpc" id="L26" title="1 of 2 branches missed.">        if (discountAmount == null) throw new IllegalArgumentException(&quot;discountAmount cannot be null&quot;);</span>
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">        if (netAmount == null) throw new IllegalArgumentException(&quot;netAmount cannot be null&quot;);</span>
+<span class="fc" id="L28">    }</span>
+
+    /** Convenience constructor without a persisted id. */
+    public DeliveryShopItemRecord(Long productId, Integer quantityDelivered, @Nullable String unitType,
+                                   BigDecimal rate, BigDecimal grossAmount, BigDecimal discountAmount,
+                                   BigDecimal netAmount, boolean isFreeItem) {
+<span class="nc" id="L34">        this(null, productId, quantityDelivered, unitType, rate, grossAmount, discountAmount, netAmount, isFreeItem);</span>
+<span class="nc" id="L35">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

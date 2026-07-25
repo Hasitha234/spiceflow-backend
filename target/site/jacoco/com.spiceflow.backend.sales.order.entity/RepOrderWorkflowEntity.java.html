@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RepOrderWorkflowEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.order.entity</a> &gt; <span class="el_source">RepOrderWorkflowEntity.java</span></div><h1>RepOrderWorkflowEntity.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.order.entity;
+
+import com.spiceflow.backend.sales.order.domain.RepOrderState;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+@Entity
+@Table(name = &quot;rep_orders&quot;)
+public class RepOrderWorkflowEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private @Nullable Long id;
+
+    @Column(name = &quot;order_number&quot;, unique = true)
+    private @Nullable String orderNumber;
+
+    @Column(name = &quot;tenant_id&quot;, nullable = false)
+    private Long tenantId;
+
+    @Column(name = &quot;rep_id&quot;, nullable = false)
+    private Long repId;
+
+    @Column(name = &quot;order_date&quot;, nullable = false)
+    private LocalDate orderDate;
+
+    @Column(name = &quot;route_area&quot;)
+    private @Nullable String routeArea;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;status&quot;, nullable = false)
+    private RepOrderState status;
+
+    @Column(name = &quot;total_gross_amount&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal totalGrossAmount;
+
+    @Column(name = &quot;total_returns_value&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal totalReturnsValue;
+
+    @Column(name = &quot;net_amount&quot;, nullable = false, precision = 15, scale = 2)
+    private BigDecimal netAmount;
+
+    @Column(name = &quot;loading_status&quot;, nullable = false)
+    private String loadingStatus;
+
+    @Column(name = &quot;created_by&quot;)
+    private @Nullable String createdBy;
+
+    @Column(name = &quot;approved_by&quot;)
+    private @Nullable String approvedBy;
+
+    @Column(name = &quot;loaded_by&quot;)
+    private @Nullable String loadedBy;
+
+    @Column(name = &quot;delivered_by&quot;)
+    private @Nullable String deliveredBy;
+
+    @Version
+    private @Nullable Long version;
+
+    @Column(name = &quot;created_at&quot;, nullable = false)
+    private Instant createdAt;
+
+    @Column(name = &quot;updated_at&quot;, nullable = false)
+    private Instant updatedAt;
+
+    @Column(name = &quot;approved_at&quot;)
+    private @Nullable Instant approvedAt;
+
+    @Column(name = &quot;loaded_at&quot;)
+    private @Nullable Instant loadedAt;
+
+    @Column(name = &quot;delivered_at&quot;)
+    private @Nullable Instant deliveredAt;
+
+<span class="fc" id="L91">    @OneToMany(</span>
+        mappedBy = &quot;repOrder&quot;,
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
+    private List&lt;RepOrderShopWorkflowEntity&gt; shops = new ArrayList&lt;&gt;();
+
+<span class="fc" id="L98">    public RepOrderWorkflowEntity() {</span>
+<span class="fc" id="L99">        this.tenantId = 0L;</span>
+<span class="fc" id="L100">        this.repId = 0L;</span>
+<span class="fc" id="L101">        this.orderDate = LocalDate.now(java.time.ZoneId.systemDefault());</span>
+<span class="fc" id="L102">        this.status = RepOrderState.DRAFT;</span>
+<span class="fc" id="L103">        this.totalGrossAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L104">        this.totalReturnsValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L105">        this.netAmount = BigDecimal.ZERO;</span>
+<span class="fc" id="L106">        this.loadingStatus = &quot;DRAFT&quot;;</span>
+<span class="fc" id="L107">        this.createdAt = Instant.EPOCH;</span>
+<span class="fc" id="L108">        this.updatedAt = Instant.EPOCH;</span>
+<span class="fc" id="L109">    }</span>
+
+<span class="fc" id="L111">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L112">    public void setId(@Nullable Long id) { this.id = id; }</span>
+
+<span class="fc" id="L114">    public @Nullable String getOrderNumber() { return orderNumber; }</span>
+<span class="fc" id="L115">    public void setOrderNumber(@Nullable String orderNumber) { this.orderNumber = orderNumber; }</span>
+
+<span class="fc" id="L117">    public Long getTenantId() { return tenantId; }</span>
+<span class="fc" id="L118">    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }</span>
+
+<span class="fc" id="L120">    public Long getRepId() { return repId; }</span>
+<span class="fc" id="L121">    public void setRepId(Long repId) { this.repId = repId; }</span>
+
+<span class="fc" id="L123">    public LocalDate getOrderDate() { return orderDate; }</span>
+<span class="fc" id="L124">    public void setOrderDate(LocalDate orderDate) { this.orderDate = orderDate; }</span>
+
+<span class="fc" id="L126">    public @Nullable String getRouteArea() { return routeArea; }</span>
+<span class="fc" id="L127">    public void setRouteArea(@Nullable String routeArea) { this.routeArea = routeArea; }</span>
+
+<span class="fc" id="L129">    public RepOrderState getStatus() { return status; }</span>
+<span class="fc" id="L130">    public void setStatus(RepOrderState status) { this.status = status; }</span>
+
+<span class="fc" id="L132">    public BigDecimal getTotalGrossAmount() { return totalGrossAmount; }</span>
+<span class="fc" id="L133">    public void setTotalGrossAmount(BigDecimal totalGrossAmount) { this.totalGrossAmount = totalGrossAmount; }</span>
+
+<span class="fc" id="L135">    public BigDecimal getTotalReturnsValue() { return totalReturnsValue; }</span>
+<span class="fc" id="L136">    public void setTotalReturnsValue(BigDecimal totalReturnsValue) { this.totalReturnsValue = totalReturnsValue; }</span>
+
+<span class="fc" id="L138">    public BigDecimal getNetAmount() { return netAmount; }</span>
+<span class="fc" id="L139">    public void setNetAmount(BigDecimal netAmount) { this.netAmount = netAmount; }</span>
+
+<span class="nc" id="L141">    public String getLoadingStatus() { return loadingStatus; }</span>
+<span class="fc" id="L142">    public void setLoadingStatus(String loadingStatus) { this.loadingStatus = loadingStatus; }</span>
+
+<span class="fc" id="L144">    public @Nullable String getCreatedBy() { return createdBy; }</span>
+<span class="fc" id="L145">    public void setCreatedBy(@Nullable String createdBy) { this.createdBy = createdBy; }</span>
+
+<span class="fc" id="L147">    public @Nullable String getApprovedBy() { return approvedBy; }</span>
+<span class="fc" id="L148">    public void setApprovedBy(@Nullable String approvedBy) { this.approvedBy = approvedBy; }</span>
+
+<span class="fc" id="L150">    public @Nullable String getLoadedBy() { return loadedBy; }</span>
+<span class="fc" id="L151">    public void setLoadedBy(@Nullable String loadedBy) { this.loadedBy = loadedBy; }</span>
+
+<span class="fc" id="L153">    public @Nullable String getDeliveredBy() { return deliveredBy; }</span>
+<span class="fc" id="L154">    public void setDeliveredBy(@Nullable String deliveredBy) { this.deliveredBy = deliveredBy; }</span>
+
+<span class="fc" id="L156">    public @Nullable Long getVersion() { return version; }</span>
+<span class="fc" id="L157">    public void setVersion(@Nullable Long version) { this.version = version; }</span>
+
+<span class="fc" id="L159">    public Instant getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L160">    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }</span>
+
+<span class="fc" id="L162">    public Instant getUpdatedAt() { return updatedAt; }</span>
+<span class="fc" id="L163">    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }</span>
+
+<span class="fc" id="L165">    public @Nullable Instant getApprovedAt() { return approvedAt; }</span>
+<span class="fc" id="L166">    public void setApprovedAt(@Nullable Instant approvedAt) { this.approvedAt = approvedAt; }</span>
+
+<span class="fc" id="L168">    public @Nullable Instant getLoadedAt() { return loadedAt; }</span>
+<span class="fc" id="L169">    public void setLoadedAt(@Nullable Instant loadedAt) { this.loadedAt = loadedAt; }</span>
+
+<span class="fc" id="L171">    public @Nullable Instant getDeliveredAt() { return deliveredAt; }</span>
+<span class="fc" id="L172">    public void setDeliveredAt(@Nullable Instant deliveredAt) { this.deliveredAt = deliveredAt; }</span>
+
+<span class="fc" id="L174">    public List&lt;RepOrderShopWorkflowEntity&gt; getShops() { return shops; }</span>
+    public void setShops(List&lt;RepOrderShopWorkflowEntity&gt; shops) {
+<span class="fc" id="L176">        this.shops.clear();</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        if (shops != null) {</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">            for (RepOrderShopWorkflowEntity shop : shops) {</span>
+<span class="fc" id="L179">                addShop(shop);</span>
+<span class="fc" id="L180">            }</span>
+        }
+<span class="fc" id="L182">    }</span>
+
+    public void addShop(RepOrderShopWorkflowEntity shop) {
+<span class="fc" id="L185">        this.shops.add(shop);</span>
+<span class="fc" id="L186">        shop.setRepOrder(this);</span>
+<span class="fc" id="L187">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

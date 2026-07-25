@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProductCategoryService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.inventory.service</a> &gt; <span class="el_source">ProductCategoryService.java</span></div><h1>ProductCategoryService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.inventory.service;
+
+import com.spiceflow.backend.auth.entity.Tenant;
+import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.inventory.dto.request.ProductCategoryRequest;
+import com.spiceflow.backend.inventory.dto.response.ProductCategoryResponse;
+import com.spiceflow.backend.inventory.entity.ProductCategory;
+import com.spiceflow.backend.inventory.repository.ProductCategoryRepository;
+import com.spiceflow.backend.inventory.mapper.ProductCategoryMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+
+<span class="fc" id="L21">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class ProductCategoryService {
+
+    private final ProductCategoryRepository productCategoryRepository;
+    private final TenantRepository tenantRepository;
+    private final ProductCategoryMapper productCategoryMapper;
+
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = &quot;productCategories&quot;, allEntries = true)
+    public ProductCategoryResponse createCategory(Long tenantId, ProductCategoryRequest request) {
+<span class="fc" id="L34">        log.debug(&quot;Creating product category for tenantId: {}, name: {}&quot;, tenantId, request.name());</span>
+        try {
+<span class="fc" id="L36">            Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L37">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Tenant with ID &quot; + tenantId + &quot; not found&quot;));</span>
+            
+<span class="fc" id="L39">            ProductCategory parentCategory = null;</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">            if (request.parentCategoryId() != null) {</span>
+<span class="fc" id="L41">                parentCategory = getCategoryEntity(request.parentCategoryId(), tenantId);</span>
+            }
+            
+<span class="fc" id="L44">            ProductCategory category = ProductCategory.builder()</span>
+<span class="fc" id="L45">                .name(request.name())</span>
+<span class="fc" id="L46">                .description(request.description())</span>
+<span class="fc" id="L47">                .parentCategory(parentCategory)</span>
+<span class="fc" id="L48">                .tenant(tenant)</span>
+<span class="fc" id="L49">                .build();</span>
+                
+<span class="fc" id="L51">            ProductCategory savedCategory = productCategoryRepository.save(category);</span>
+<span class="fc" id="L52">            log.info(&quot;Successfully created product category with ID: {} for tenantId: {}&quot;, savedCategory.getId(), tenantId);</span>
+<span class="fc" id="L53">            return productCategoryMapper.toResponse(savedCategory);</span>
+<span class="nc" id="L54">        } catch (Exception e) {</span>
+<span class="nc" id="L55">            log.error(&quot;Failed to create product category for tenantId: {}&quot;, tenantId, e);</span>
+<span class="nc" id="L56">            throw new BusinessRuleViolationException(&quot;Failed to create product category: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    @Cacheable(value = &quot;productCategories&quot;)
+    public Page&lt;ProductCategoryResponse&gt; getCategories(Long tenantId, String search, Pageable pageable) {
+<span class="fc" id="L62">        log.debug(&quot;Fetching product categories for tenantId: {}, search: {}&quot;, tenantId, search);</span>
+        try {
+            Page&lt;ProductCategory&gt; categoryPage;
+<span class="pc bpc" id="L65" title="1 of 4 branches missed.">            if (search != null &amp;&amp; !search.trim().isEmpty()) {</span>
+<span class="fc" id="L66">                categoryPage = productCategoryRepository.searchByTenantId(tenantId, search.trim(), pageable);</span>
+            } else {
+<span class="fc" id="L68">                categoryPage = productCategoryRepository.findByTenantId(tenantId, pageable);</span>
+            }
+<span class="fc" id="L70">            return categoryPage.map(productCategoryMapper::toResponse);</span>
+<span class="nc" id="L71">        } catch (Exception e) {</span>
+<span class="nc" id="L72">            log.error(&quot;Failed to fetch product categories for tenantId: {}&quot;, tenantId, e);</span>
+<span class="nc" id="L73">            throw new BusinessRuleViolationException(&quot;Failed to fetch product categories&quot;);</span>
+        }
+    }
+    
+    @Cacheable(value = &quot;productCategories&quot;)
+    public ProductCategoryResponse getCategory(Long id, Long tenantId) {
+<span class="fc" id="L79">        log.debug(&quot;Fetching product category with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="fc" id="L80">        return productCategoryMapper.toResponse(getCategoryEntity(id, tenantId));</span>
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = &quot;productCategories&quot;, allEntries = true)
+    public ProductCategoryResponse updateCategory(Long id, Long tenantId, ProductCategoryRequest request) {
+<span class="fc" id="L86">        log.debug(&quot;Updating product category with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+        try {
+<span class="fc" id="L88">            ProductCategory category = getCategoryEntity(id, tenantId);</span>
+            
+<span class="fc" id="L90">            category.setName(request.name());</span>
+<span class="fc" id="L91">            category.setDescription(request.description());</span>
+            
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            if (request.parentCategoryId() != null) {</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">                if (request.parentCategoryId().equals(id)) {</span>
+<span class="fc" id="L95">                    throw new BusinessRuleViolationException(&quot;A category cannot be its own parent&quot;);</span>
+                }
+<span class="nc" id="L97">                ProductCategory parentCategory = getCategoryEntity(request.parentCategoryId(), tenantId);</span>
+<span class="nc" id="L98">                category.setParentCategory(parentCategory);</span>
+<span class="nc" id="L99">            } else {</span>
+<span class="fc" id="L100">                category.setParentCategory(null);</span>
+            }
+            
+<span class="fc" id="L103">            ProductCategory updatedCategory = productCategoryRepository.save(category);</span>
+<span class="fc" id="L104">            log.info(&quot;Successfully updated product category with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="fc" id="L105">            return productCategoryMapper.toResponse(updatedCategory);</span>
+<span class="fc" id="L106">        } catch (BusinessRuleViolationException | ResourceNotFoundException e) {</span>
+<span class="fc" id="L107">            throw e;</span>
+<span class="nc" id="L108">        } catch (Exception e) {</span>
+<span class="nc" id="L109">            log.error(&quot;Failed to update product category with ID: {} for tenantId: {}&quot;, id, tenantId, e);</span>
+<span class="nc" id="L110">            throw new BusinessRuleViolationException(&quot;Failed to update product category: &quot; + e.getMessage());</span>
+        }
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = &quot;productCategories&quot;, allEntries = true)
+    public void deleteCategory(Long id, Long tenantId) {
+<span class="fc" id="L117">        log.debug(&quot;Deleting product category with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+        try {
+<span class="fc" id="L119">            ProductCategory category = getCategoryEntity(id, tenantId);</span>
+<span class="fc" id="L120">            productCategoryRepository.delete(category);</span>
+<span class="fc" id="L121">            log.info(&quot;Successfully deleted product category with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="nc" id="L122">        } catch (ResourceNotFoundException e) {</span>
+<span class="nc" id="L123">            throw e;</span>
+<span class="nc" id="L124">        } catch (Exception e) {</span>
+<span class="nc" id="L125">            log.error(&quot;Failed to delete product category with ID: {} for tenantId: {}&quot;, id, tenantId, e);</span>
+<span class="nc" id="L126">            throw new BusinessRuleViolationException(&quot;Failed to delete product category due to existing dependencies&quot;);</span>
+<span class="fc" id="L127">        }</span>
+<span class="fc" id="L128">    }</span>
+    
+    public ProductCategory getCategoryEntity(Long id, Long tenantId) {
+<span class="fc" id="L131">        return productCategoryRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="fc" id="L132">            .orElseThrow(() -&gt; {</span>
+<span class="fc" id="L133">                log.error(&quot;Product category not found with ID: {} for tenantId: {}&quot;, id, tenantId);</span>
+<span class="fc" id="L134">                return new ResourceNotFoundException(&quot;Product Category not found with id: &quot; + id);</span>
+            });
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

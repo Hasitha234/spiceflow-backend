@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.auth.service</a> &gt; <span class="el_source">AuthService.java</span></div><h1>AuthService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.auth.service;
+
+import com.spiceflow.backend.admin.entity.PlatformAdmin;
+import com.spiceflow.backend.admin.repository.PlatformAdminRepository;
+import com.spiceflow.backend.auth.dto.request.ChangePasswordRequest;
+import com.spiceflow.backend.auth.dto.request.LoginRequest;
+import com.spiceflow.backend.auth.dto.request.TokenRefreshRequest;
+import com.spiceflow.backend.auth.dto.response.LoginResponse;
+import com.spiceflow.backend.auth.entity.RefreshToken;
+import com.spiceflow.backend.auth.entity.User;
+import com.spiceflow.backend.auth.repository.RefreshTokenRepository;
+import com.spiceflow.backend.auth.repository.UserRepository;
+import com.spiceflow.backend.auth.util.JwtUtil;
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import com.spiceflow.backend.common.exception.InvalidCredentialsException;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.OffsetDateTime;
+import java.util.HexFormat;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import com.spiceflow.backend.admin.entity.PlatformAdmin;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.spiceflow.backend.security.service.LoginAttemptService;
+import java.util.Optional;
+
+
+
+
+/** Handles all authentication operations: login, refresh, logout, change password. */
+@Service
+@Transactional(readOnly = true)
+public class AuthService {
+
+<span class="fc" id="L41">  private static final Logger log = LoggerFactory.getLogger(AuthService.class);</span>
+  private static final int MAX_FAILED_ATTEMPTS = 5;
+  private static final int LOCKOUT_MINUTES = 15;
+
+  private final UserRepository userRepository;
+  private final RefreshTokenRepository refreshTokenRepository;
+  private final JwtUtil jwtUtil;
+  private final PasswordEncoder passwordEncoder;
+  private final PlatformAdminRepository platformAdminRepository;
+  private final LoginAttemptService loginAttemptService;
+  private final TokenBlacklistService tokenBlacklistService;
+  private final com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository;
+
+
+  public AuthService(
+    UserRepository userRepository,
+    RefreshTokenRepository refreshTokenRepository,
+    JwtUtil jwtUtil,
+    PasswordEncoder passwordEncoder,
+    PlatformAdminRepository platformAdminRepository,
+    LoginAttemptService loginAttemptService,
+    TokenBlacklistService tokenBlacklistService,
+<span class="fc" id="L63">    com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository) {</span>
+<span class="fc" id="L64">  this.userRepository = userRepository;</span>
+<span class="fc" id="L65">  this.refreshTokenRepository = refreshTokenRepository;</span>
+<span class="fc" id="L66">  this.jwtUtil = jwtUtil;</span>
+<span class="fc" id="L67">  this.passwordEncoder = passwordEncoder;</span>
+<span class="fc" id="L68">  this.platformAdminRepository = platformAdminRepository;</span>
+<span class="fc" id="L69">  this.loginAttemptService = loginAttemptService;</span>
+<span class="fc" id="L70">  this.tokenBlacklistService = tokenBlacklistService;</span>
+<span class="fc" id="L71">  this.businessOwnerTenantRepository = businessOwnerTenantRepository;</span>
+<span class="fc" id="L72">}</span>
+
+
+  /**
+   * Authenticates a user by email and password.
+   * Enforces account lockout after 5 failed attempts.
+   */
+  @Transactional(rollbackFor = Exception.class)
+public LoginResponse login(LoginRequest request) {
+  // Check platform_admins table first
+<span class="fc" id="L82">  Optional&lt;PlatformAdmin&gt; adminOpt =</span>
+<span class="fc" id="L83">      platformAdminRepository.findByEmailAndDeletedAtIsNull(request.email());</span>
+
+<span class="fc bfc" id="L85" title="All 2 branches covered.">  if (adminOpt.isPresent()) {</span>
+<span class="fc" id="L86">    PlatformAdmin admin = adminOpt.get();</span>
+    
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">    if (loginAttemptService.isBlocked(admin.getEmail())) {</span>
+<span class="nc" id="L89">      throw new InvalidCredentialsException(&quot;Account is temporarily locked due to too many failed attempts.&quot;);</span>
+    }
+    
+<span class="fc bfc" id="L92" title="All 2 branches covered.">    if (!passwordEncoder.matches(request.password(), admin.getPasswordHash())) {</span>
+<span class="fc" id="L93">      loginAttemptService.loginFailed(admin.getEmail());</span>
+<span class="fc" id="L94">      throw new InvalidCredentialsException(&quot;Invalid email or password&quot;);</span>
+    }
+    
+<span class="fc" id="L97">    loginAttemptService.loginSucceeded(admin.getEmail());</span>
+<span class="fc" id="L98">    String accessToken = jwtUtil.generateAdminToken(admin);</span>
+<span class="fc" id="L99">    String rawRefreshToken = generateAndSaveRefreshTokenForAdmin(admin);</span>
+<span class="fc" id="L100">    log.info(&quot;Platform admin {} logged in successfully&quot;, admin.getEmail());</span>
+<span class="fc" id="L101">    return new LoginResponse(</span>
+      accessToken,
+      rawRefreshToken,
+      &quot;Bearer&quot;,
+<span class="fc" id="L105">      jwtUtil.getAccessTokenExpiryMs() / 1000,</span>
+      false
+  );
+  }
+
+  // Then check tenant users table
+<span class="fc" id="L111">  User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())</span>
+<span class="fc" id="L112">      .orElseThrow(() -&gt; new InvalidCredentialsException(&quot;Invalid email or password&quot;));</span>
+
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">  if (loginAttemptService.isBlocked(user.getEmail())) {</span>
+<span class="nc" id="L115">    throw new InvalidCredentialsException(&quot;Account is temporarily locked due to too many failed attempts.&quot;);</span>
+  }
+
+<span class="fc bfc" id="L118" title="All 2 branches covered.">  if (!user.isAccountNonLocked()) {</span>
+<span class="fc" id="L119">    throw new InvalidCredentialsException(</span>
+        &quot;Account is temporarily locked by administrator. Please try again in &quot; + LOCKOUT_MINUTES + &quot; minutes.&quot;);
+  }
+
+<span class="fc bfc" id="L123" title="All 2 branches covered.">  if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {</span>
+<span class="fc" id="L124">    loginAttemptService.loginFailed(user.getEmail());</span>
+<span class="fc" id="L125">    handleFailedLogin(user); // Also update DB if needed, though redundant now</span>
+<span class="fc" id="L126">    throw new InvalidCredentialsException(&quot;Invalid email or password&quot;);</span>
+  }
+
+<span class="fc" id="L129">  loginAttemptService.loginSucceeded(user.getEmail());</span>
+
+<span class="fc" id="L131">  user.setFailedLoginAttempts(0);</span>
+<span class="fc" id="L132">  user.setLockedUntil(null);</span>
+<span class="fc" id="L133">  userRepository.save(user);</span>
+
+<span class="fc" id="L135">  java.util.List&lt;Object&gt; assignedTenants = java.util.List.of();</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">  if (&quot;TENANT_OWNER&quot;.equals(user.getUserType())) {</span>
+      // Find assigned tenants
+<span class="fc" id="L138">      assignedTenants = businessOwnerTenantRepository</span>
+<span class="fc" id="L139">              .findByUserId(user.getId())</span>
+<span class="fc" id="L140">              .stream()</span>
+<span class="pc" id="L141">              .map(bt -&gt; new com.spiceflow.backend.admin.dto.response.TenantAssignedResponse(bt.getTenant().getId(), bt.getTenant().getBusinessName(), bt.getTenant().getStatus()))</span>
+<span class="fc" id="L142">              .collect(java.util.stream.Collectors.toList());</span>
+  }
+
+<span class="fc" id="L145">  String accessToken = jwtUtil.generateAccessToken(user, assignedTenants);</span>
+<span class="fc" id="L146">  String rawRefreshToken = generateAndSaveRefreshToken(user);</span>
+<span class="fc" id="L147">  log.info(&quot;User {} logged in successfully for tenant {}&quot;, user.getEmail(), user.getTenantId());</span>
+
+<span class="fc" id="L149">  return new LoginResponse(</span>
+      accessToken,
+      rawRefreshToken,
+      &quot;Bearer&quot;,
+<span class="fc" id="L153">      jwtUtil.getAccessTokenExpiryMs() / 1000,</span>
+<span class="fc" id="L154">      user.isPasswordChangeRequired()</span>
+  );
+}
+
+    @Transactional(rollbackFor = Exception.class)
+  public LoginResponse refresh(TokenRefreshRequest request) {
+<span class="fc" id="L160">    return refreshByCookie(request.refreshToken());</span>
+  }
+
+  /**
+   * Issues a new access token from a raw refresh token string.
+   * Used by the cookie-based flow in {@link com.spiceflow.backend.auth.controller.AuthController}.
+   */
+  @Transactional(rollbackFor = Exception.class)
+  public LoginResponse refreshByCookie(String rawRefreshToken) {
+<span class="fc" id="L169">    String tokenHash = sha256(rawRefreshToken);</span>
+
+<span class="fc" id="L171">    RefreshToken storedToken = refreshTokenRepository.findByTokenHash(tokenHash)</span>
+<span class="pc" id="L172">        .orElseThrow(() -&gt; new InvalidCredentialsException(&quot;Invalid or expired refresh token&quot;));</span>
+
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">    if (!storedToken.isValid()) {</span>
+<span class="nc" id="L175">      throw new InvalidCredentialsException(&quot;Refresh token has expired or been revoked&quot;);</span>
+    }
+
+    // Check if this token belongs to a Super Admin first
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">    if (storedToken.getPlatformAdminId() != null) {</span>
+<span class="nc" id="L180">      PlatformAdmin admin = platformAdminRepository.findById(storedToken.getPlatformAdminId())</span>
+<span class="nc" id="L181">          .orElseThrow(() -&gt; new InvalidCredentialsException(&quot;Admin not found&quot;));</span>
+
+<span class="nc" id="L183">      String newAccessToken = jwtUtil.generateAdminToken(admin);</span>
+
+<span class="nc" id="L185">      return new LoginResponse(</span>
+          newAccessToken,
+          rawRefreshToken,
+          &quot;Bearer&quot;,
+<span class="nc" id="L189">          jwtUtil.getAccessTokenExpiryMs() / 1000,</span>
+          false
+      );
+    }
+
+    // Fallback to regular Tenant User
+<span class="fc" id="L195">    User user = storedToken.getUser();</span>
+<span class="fc" id="L196">    java.util.List&lt;Object&gt; assignedTenants = java.util.List.of();</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">    if (&quot;TENANT_OWNER&quot;.equals(user.getUserType())) {</span>
+<span class="fc" id="L198">        assignedTenants = businessOwnerTenantRepository</span>
+<span class="fc" id="L199">                .findByUserId(user.getId())</span>
+<span class="fc" id="L200">                .stream()</span>
+<span class="pc" id="L201">                .map(bt -&gt; new com.spiceflow.backend.admin.dto.response.TenantAssignedResponse(bt.getTenant().getId(), bt.getTenant().getBusinessName(), bt.getTenant().getStatus()))</span>
+<span class="fc" id="L202">                .collect(java.util.stream.Collectors.toList());</span>
+    }
+<span class="fc" id="L204">    String newAccessToken = jwtUtil.generateAccessToken(user, assignedTenants);</span>
+
+<span class="fc" id="L206">    return new LoginResponse(</span>
+        newAccessToken,
+        rawRefreshToken,
+        &quot;Bearer&quot;,
+<span class="fc" id="L210">        jwtUtil.getAccessTokenExpiryMs() / 1000,</span>
+<span class="fc" id="L211">        user.isPasswordChangeRequired()</span>
+    );
+  }
+
+
+  /**
+   * Revokes the given refresh token and blacklists the access token.
+   */
+  @Transactional(rollbackFor = Exception.class)
+  public void logout(String rawRefreshToken, @org.jspecify.annotations.Nullable String accessToken) {
+<span class="fc" id="L221">    String tokenHash = sha256(rawRefreshToken);</span>
+<span class="fc" id="L222">    refreshTokenRepository.findByTokenHash(tokenHash).ifPresent(token -&gt; {</span>
+<span class="fc" id="L223">      token.setRevokedAt(OffsetDateTime.now(java.time.ZoneId.systemDefault()));</span>
+<span class="fc" id="L224">      refreshTokenRepository.save(token);</span>
+<span class="fc" id="L225">    });</span>
+
+<span class="pc bpc" id="L227" title="2 of 4 branches missed.">    if (accessToken != null &amp;&amp; jwtUtil.isTokenValid(accessToken)) {</span>
+<span class="fc" id="L228">      long timeToLive = jwtUtil.getRemainingTimeInMillis(accessToken);</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">      if (timeToLive &gt; 0) {</span>
+<span class="fc" id="L230">        tokenBlacklistService.blacklistToken(accessToken, timeToLive);</span>
+      }
+    }
+<span class="fc" id="L233">  }</span>
+
+  /**
+   * Changes the authenticated user's password.
+   * Revokes ALL existing refresh tokens to force re-login on all devices.
+   */
+  @Transactional(rollbackFor = Exception.class)
+  public void changePassword(com.spiceflow.backend.auth.dto.AuthenticatedUser currentUser, ChangePasswordRequest request) {
+<span class="fc" id="L241">    User user = userRepository.findById(currentUser.getId())</span>
+<span class="pc" id="L242">        .orElseThrow(() -&gt; new com.spiceflow.backend.common.exception.ResourceNotFoundException(&quot;User not found&quot;));</span>
+
+<span class="fc bfc" id="L244" title="All 2 branches covered.">    if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {</span>
+<span class="fc" id="L245">      throw new com.spiceflow.backend.common.exception.BusinessRuleViolationException(&quot;Current password is incorrect&quot;);</span>
+    }
+
+<span class="fc" id="L248">    user.setPasswordHash(java.util.Objects.requireNonNull(passwordEncoder.encode(request.newPassword())));</span>
+<span class="fc" id="L249">    user.setPasswordChangeRequired(false);</span>
+<span class="fc" id="L250">    userRepository.save(user);</span>
+
+    // Invalidate all sessions — user must log in again on all devices
+<span class="fc" id="L253">    refreshTokenRepository.revokeAllByUserId(user.getId(), java.time.OffsetDateTime.now(java.time.ZoneId.systemDefault()));</span>
+<span class="fc" id="L254">    log.info(&quot;Password changed for user {}. All sessions revoked.&quot;, user.getEmail());</span>
+<span class="fc" id="L255">  }</span>
+
+  // ── Private helpers ───────────────────────────────────────────────────────
+
+  private void handleFailedLogin(User user) {
+<span class="fc" id="L260">    int attempts = user.getFailedLoginAttempts() + 1;</span>
+<span class="fc" id="L261">    user.setFailedLoginAttempts(attempts);</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">    if (attempts &gt;= MAX_FAILED_ATTEMPTS) {</span>
+<span class="nc" id="L263">      user.setLockedUntil(OffsetDateTime.now(java.time.ZoneId.systemDefault()).plusMinutes(LOCKOUT_MINUTES));</span>
+<span class="nc" id="L264">      log.warn(&quot;Account locked for user {} after {} failed attempts&quot;,</span>
+<span class="nc" id="L265">          user.getEmail(), attempts);</span>
+    }
+<span class="fc" id="L267">    userRepository.save(user);</span>
+<span class="fc" id="L268">  }</span>
+
+  private String generateAndSaveRefreshToken(User user) {
+<span class="fc" id="L271">    String rawToken = UUID.randomUUID().toString();</span>
+<span class="fc" id="L272">    String tokenHash = sha256(rawToken);</span>
+
+<span class="fc" id="L274">    RefreshToken refreshToken = RefreshToken.builder()</span>
+<span class="fc" id="L275">        .user(user)</span>
+<span class="fc" id="L276">        .tokenHash(tokenHash)</span>
+<span class="fc" id="L277">        .expiresAt(OffsetDateTime.now(java.time.ZoneId.systemDefault()).plusSeconds(</span>
+<span class="fc" id="L278">            jwtUtil.getRefreshTokenExpiryMs() / 1000))</span>
+<span class="fc" id="L279">        .build();</span>
+
+<span class="fc" id="L281">    refreshTokenRepository.save(refreshToken);</span>
+<span class="fc" id="L282">    return rawToken;</span>
+  }
+
+  private String sha256(String input) {
+    try {
+<span class="fc" id="L287">      MessageDigest digest = MessageDigest.getInstance(&quot;SHA-256&quot;);</span>
+<span class="fc" id="L288">      byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L289">      return HexFormat.of().formatHex(hash);</span>
+<span class="nc" id="L290">    } catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L291">      throw new IllegalStateException(&quot;SHA-256 not available&quot;, e);</span>
+    }
+  }
+
+  private String generateAndSaveRefreshTokenForAdmin(PlatformAdmin admin) {
+<span class="fc" id="L296">    String rawToken = UUID.randomUUID().toString();</span>
+<span class="fc" id="L297">    String tokenHash = sha256(rawToken);</span>
+<span class="fc" id="L298">    RefreshToken refreshToken = RefreshToken.builder()</span>
+<span class="fc" id="L299">        .platformAdminId(admin.getId())</span>
+<span class="fc" id="L300">        .tokenHash(tokenHash)</span>
+<span class="fc" id="L301">        .expiresAt(OffsetDateTime.now(java.time.ZoneId.systemDefault()).plusSeconds(</span>
+<span class="fc" id="L302">            jwtUtil.getRefreshTokenExpiryMs() / 1000))</span>
+<span class="fc" id="L303">        .build();</span>
+<span class="fc" id="L304">    refreshTokenRepository.save(refreshToken);</span>
+<span class="fc" id="L305">    return rawToken;</span>
+  }
+}
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

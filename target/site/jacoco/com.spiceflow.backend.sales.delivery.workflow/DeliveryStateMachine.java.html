@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DeliveryStateMachine.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.delivery.workflow</a> &gt; <span class="el_source">DeliveryStateMachine.java</span></div><h1>DeliveryStateMachine.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.delivery.workflow;
+
+import com.spiceflow.backend.sales.delivery.domain.DeliveryState;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Finite State Machine transition registry for Customer Deliveries.
+ * Eliminates scattered if-else lifecycle checks across services.
+ *
+ * Valid transitions:
+ *   IN_PROGRESS -&gt; DISPATCHED
+ *   IN_PROGRESS -&gt; COMPLETED  (direct completion — field drivers may not use DISPATCHED step)
+ *   IN_PROGRESS -&gt; CANCELLED
+ *   DISPATCHED  -&gt; COMPLETED
+ *   DISPATCHED  -&gt; CANCELLED
+ */
+public final class DeliveryStateMachine {
+
+    private static final Map&lt;DeliveryState, Set&lt;DeliveryState&gt;&gt; TRANSITIONS;
+
+    static {
+<span class="fc" id="L25">        Map&lt;DeliveryState, Set&lt;DeliveryState&gt;&gt; map = new EnumMap&lt;&gt;(DeliveryState.class);</span>
+
+<span class="fc" id="L27">        map.put(DeliveryState.IN_PROGRESS, Set.of(</span>
+                DeliveryState.DISPATCHED,
+                DeliveryState.COMPLETED,
+                DeliveryState.CANCELLED
+        ));
+
+<span class="fc" id="L33">        map.put(DeliveryState.DISPATCHED, Set.of(</span>
+                DeliveryState.COMPLETED,
+                DeliveryState.CANCELLED
+        ));
+
+<span class="fc" id="L38">        map.put(DeliveryState.COMPLETED, Set.of());</span>
+<span class="fc" id="L39">        map.put(DeliveryState.CANCELLED, Set.of());</span>
+
+<span class="fc" id="L41">        TRANSITIONS = Collections.unmodifiableMap(map);</span>
+<span class="fc" id="L42">    }</span>
+
+    public static boolean canTransition(DeliveryState from, DeliveryState to) {
+<span class="fc" id="L45">        return TRANSITIONS.getOrDefault(from, Set.of()).contains(to);</span>
+    }
+
+    public static Set&lt;DeliveryState&gt; allowedNext(DeliveryState state) {
+<span class="nc" id="L49">        return TRANSITIONS.getOrDefault(state, Set.of());</span>
+    }
+
+    private DeliveryStateMachine() {}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SubmitRepOrderCommand.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.order.workflow.command</a> &gt; <span class="el_source">SubmitRepOrderCommand.java</span></div><h1>SubmitRepOrderCommand.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.order.workflow.command;
+
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import com.spiceflow.backend.sales.order.domain.RepOrder;
+import com.spiceflow.backend.sales.order.domain.RepOrderItem;
+import com.spiceflow.backend.sales.order.domain.RepOrderShop;
+import com.spiceflow.backend.sales.order.domain.RepOrderState;
+import com.spiceflow.backend.sales.order.workflow.RepOrderStateMachine;
+import com.spiceflow.backend.workflow.WorkflowCommand;
+import com.spiceflow.backend.workflow.WorkflowContext;
+import java.math.BigDecimal;
+import org.jspecify.annotations.Nullable;
+
+<span class="fc" id="L14">public record SubmitRepOrderCommand(@Nullable String comment) implements WorkflowCommand&lt;RepOrder, RepOrderState&gt; {</span>
+
+    public SubmitRepOrderCommand() {
+<span class="fc" id="L17">        this(null);</span>
+<span class="fc" id="L18">    }</span>
+
+    @Override
+    public String getCommandName() {
+<span class="fc" id="L22">        return &quot;SubmitRepOrder&quot;;</span>
+    }
+
+    @Override
+    public RepOrderState getTargetState() {
+<span class="fc" id="L27">        return RepOrderState.SUBMITTED;</span>
+    }
+
+    @Override
+    public @Nullable String getComment() {
+<span class="fc" id="L32">        return comment;</span>
+    }
+
+    @Override
+    public void validate(RepOrder aggregate, WorkflowContext context) {
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (!RepOrderStateMachine.canTransition(aggregate.getState(), getTargetState())) {</span>
+<span class="nc" id="L38">            throw new BusinessRuleViolationException(</span>
+<span class="nc" id="L39">                    &quot;Cannot transition Rep Order from &quot; + aggregate.getState() + &quot; to &quot; + getTargetState()</span>
+            );
+        }
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (aggregate.getShops().isEmpty()) {</span>
+<span class="fc" id="L43">            throw new BusinessRuleViolationException(&quot;Rep Order must have at least one shop order&quot;);</span>
+        }
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        for (RepOrderShop shop : aggregate.getShops()) {</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            if (shop.items().isEmpty()) {</span>
+<span class="fc" id="L47">                throw new BusinessRuleViolationException(&quot;Shop order for shop ID &quot; + shop.shopId() + &quot; must have at least one item&quot;);</span>
+            }
+<span class="fc bfc" id="L49" title="All 2 branches covered.">            for (RepOrderItem item : shop.items()) {</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">                if (item.quantity() &lt;= 0) {</span>
+<span class="nc" id="L51">                    throw new BusinessRuleViolationException(&quot;Ordered quantity must be positive for product ID &quot; + item.productId());</span>
+                }
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">                if (item.rate().compareTo(BigDecimal.ZERO) &lt; 0) {</span>
+<span class="nc" id="L54">                    throw new BusinessRuleViolationException(&quot;Rate cannot be negative for product ID &quot; + item.productId());</span>
+                }
+<span class="fc" id="L56">            }</span>
+<span class="fc" id="L57">        }</span>
+<span class="fc" id="L58">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

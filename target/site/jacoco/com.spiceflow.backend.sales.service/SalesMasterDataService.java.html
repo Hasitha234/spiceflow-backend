@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SalesMasterDataService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.service</a> &gt; <span class="el_source">SalesMasterDataService.java</span></div><h1>SalesMasterDataService.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.service;
+
+import com.spiceflow.backend.auth.entity.Tenant;
+import com.spiceflow.backend.auth.repository.TenantRepository;
+import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.repository.WarehouseRepository;
+import com.spiceflow.backend.sales.dto.request.DriverRequest;
+import com.spiceflow.backend.sales.dto.request.RepRequest;
+import com.spiceflow.backend.sales.dto.request.ShopRequest;
+import com.spiceflow.backend.sales.dto.response.DriverResponse;
+import com.spiceflow.backend.sales.dto.response.RepResponse;
+import com.spiceflow.backend.sales.dto.response.ShopResponse;
+import com.spiceflow.backend.sales.entity.Driver;
+import com.spiceflow.backend.sales.entity.Rep;
+import com.spiceflow.backend.sales.entity.Shop;
+import com.spiceflow.backend.sales.mapper.SalesMapper;
+import com.spiceflow.backend.sales.repository.DriverRepository;
+import com.spiceflow.backend.sales.repository.RepRepository;
+import com.spiceflow.backend.sales.repository.ShopRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+<span class="fc" id="L28">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class SalesMasterDataService {
+
+    private final ShopRepository shopRepository;
+    private final RepRepository repRepository;
+    private final DriverRepository driverRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final TenantRepository tenantRepository;
+    private final SalesMapper salesMapper;
+    
+    // --- REP ---
+    @Transactional(rollbackFor = Exception.class)
+    public RepResponse createRep(Long tenantId, RepRequest request) {
+<span class="fc" id="L44">        Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L45">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
+            
+<span class="fc" id="L47">        Rep rep = Rep.builder()</span>
+<span class="fc" id="L48">            .tenant(tenant)</span>
+<span class="fc" id="L49">            .employeeId(request.employeeId())</span>
+<span class="fc" id="L50">            .name(request.name())</span>
+<span class="fc" id="L51">            .email(request.email())</span>
+<span class="fc" id="L52">            .phone(request.phone())</span>
+<span class="fc" id="L53">            .area(request.area())</span>
+<span class="fc" id="L54">            .employmentDate(request.employmentDate())</span>
+<span class="fc" id="L55">            .terminationDate(request.terminationDate())</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">            .isActive(request.isActive() != null ? request.isActive() : true)</span>
+<span class="fc" id="L57">            .build();</span>
+            
+<span class="fc" id="L59">        return salesMapper.toRepResponseWithCount(repRepository.save(rep), 0L);</span>
+    }
+    
+    public Page&lt;RepResponse&gt; getReps(Long tenantId, String name, Pageable pageable) {
+        Page&lt;Rep&gt; reps;
+<span class="pc bpc" id="L64" title="1 of 4 branches missed.">        if (name != null &amp;&amp; !name.isBlank()) {</span>
+<span class="fc" id="L65">            reps = repRepository.findByTenantIdAndNameContainingIgnoreCase(tenantId, name, pageable);</span>
+        } else {
+<span class="fc" id="L67">            reps = repRepository.findByTenantId(tenantId, pageable);</span>
+        }
+<span class="fc" id="L69">        java.util.Map&lt;Long, Long&gt; countsMap = shopRepository.countShopsByAssignedRepId(tenantId).stream()</span>
+<span class="fc" id="L70">            .collect(java.util.stream.Collectors.toMap(</span>
+<span class="nc" id="L71">                row -&gt; ((Number) row[0]).longValue(),</span>
+<span class="nc" id="L72">                row -&gt; ((Number) row[1]).longValue()</span>
+            ));
+<span class="fc" id="L74">        return reps.map(rep -&gt; salesMapper.toRepResponseWithCount(rep, countsMap.getOrDefault(rep.getId(), 0L)));</span>
+    }
+
+    public RepResponse getRep(Long id, Long tenantId) {
+<span class="fc" id="L78">        Rep rep = getRepEntity(id, tenantId);</span>
+<span class="fc" id="L79">        return salesMapper.toRepResponse(rep);</span>
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public RepResponse updateRep(Long id, Long tenantId, RepRequest request) {
+<span class="fc" id="L84">        Rep rep = getRepEntity(id, tenantId);</span>
+<span class="fc" id="L85">        rep.setEmployeeId(request.employeeId());</span>
+<span class="fc" id="L86">        rep.setName(request.name());</span>
+<span class="fc" id="L87">        rep.setEmail(request.email());</span>
+<span class="fc" id="L88">        rep.setPhone(request.phone());</span>
+<span class="fc" id="L89">        rep.setArea(request.area());</span>
+<span class="fc" id="L90">        rep.setEmploymentDate(request.employmentDate());</span>
+<span class="fc" id="L91">        rep.setTerminationDate(request.terminationDate());</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (request.isActive() != null) {</span>
+<span class="fc" id="L93">            rep.setIsActive(request.isActive());</span>
+        }
+<span class="fc" id="L95">        return salesMapper.toRepResponse(repRepository.save(rep));</span>
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteRep(Long id, Long tenantId) {
+<span class="fc" id="L100">        Rep rep = getRepEntity(id, tenantId);</span>
+<span class="fc" id="L101">        repRepository.delete(rep);</span>
+<span class="fc" id="L102">    }</span>
+    
+    // --- DRIVER ---
+    @Transactional(rollbackFor = Exception.class)
+    public DriverResponse createDriver(Long tenantId, DriverRequest request) {
+<span class="fc" id="L107">        Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L108">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
+            
+<span class="fc" id="L110">        Warehouse defaultWarehouse = null;</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (request.defaultWarehouseId() != null) {</span>
+<span class="nc" id="L112">            defaultWarehouse = warehouseRepository.findByIdAndTenantId(request.defaultWarehouseId(), tenantId)</span>
+<span class="nc" id="L113">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Warehouse not found&quot;));</span>
+        }
+            
+<span class="fc" id="L116">        Driver driver = Driver.builder()</span>
+<span class="fc" id="L117">            .tenant(tenant)</span>
+<span class="fc" id="L118">            .name(request.name())</span>
+<span class="fc" id="L119">            .employeeId(request.employeeId())</span>
+<span class="fc" id="L120">            .email(request.email())</span>
+<span class="fc" id="L121">            .phone(request.phone())</span>
+<span class="fc" id="L122">            .employmentDate(request.employmentDate())</span>
+<span class="fc" id="L123">            .terminationDate(request.terminationDate())</span>
+<span class="fc" id="L124">            .licenseNumber(request.licenseNumber())</span>
+<span class="fc" id="L125">            .licenseClass(request.licenseClass())</span>
+<span class="fc" id="L126">            .licenseExpiry(request.licenseExpiry())</span>
+<span class="fc" id="L127">            .defaultWarehouse(defaultWarehouse)</span>
+<span class="fc" id="L128">            .assignedVehicle(request.assignedVehicle())</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">            .status(request.status() != null ? request.status() : com.spiceflow.backend.common.enums.DriverStatus.AVAILABLE)</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">            .isActive(request.isActive() != null ? request.isActive() : true)</span>
+<span class="fc" id="L131">            .build();</span>
+            
+<span class="fc" id="L133">        return salesMapper.toDriverResponse(driverRepository.save(driver));</span>
+    }
+    
+    public Page&lt;DriverResponse&gt; getDrivers(Long tenantId, String name, Pageable pageable) {
+        Page&lt;Driver&gt; drivers;
+<span class="pc bpc" id="L138" title="1 of 4 branches missed.">        if (name != null &amp;&amp; !name.isBlank()) {</span>
+<span class="fc" id="L139">            drivers = driverRepository.findByTenantIdAndNameContainingIgnoreCase(tenantId, name, pageable);</span>
+        } else {
+<span class="fc" id="L141">            drivers = driverRepository.findByTenantId(tenantId, pageable);</span>
+        }
+<span class="fc" id="L143">        return drivers.map(salesMapper::toDriverResponse);</span>
+    }
+
+    public DriverResponse getDriver(Long id, Long tenantId) {
+<span class="fc" id="L147">        return salesMapper.toDriverResponse(getDriverEntity(id, tenantId));</span>
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public DriverResponse updateDriver(Long id, Long tenantId, DriverRequest request) {
+<span class="fc" id="L152">        Driver driver = getDriverEntity(id, tenantId);</span>
+
+<span class="fc" id="L154">        Warehouse defaultWarehouse = null;</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        if (request.defaultWarehouseId() != null) {</span>
+<span class="nc" id="L156">            defaultWarehouse = warehouseRepository.findByIdAndTenantId(request.defaultWarehouseId(), tenantId)</span>
+<span class="nc" id="L157">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Warehouse not found&quot;));</span>
+        }
+
+<span class="fc" id="L160">        driver.setName(request.name());</span>
+<span class="fc" id="L161">        driver.setEmployeeId(request.employeeId());</span>
+<span class="fc" id="L162">        driver.setEmail(request.email());</span>
+<span class="fc" id="L163">        driver.setPhone(request.phone());</span>
+<span class="fc" id="L164">        driver.setEmploymentDate(request.employmentDate());</span>
+<span class="fc" id="L165">        driver.setTerminationDate(request.terminationDate());</span>
+<span class="fc" id="L166">        driver.setLicenseNumber(request.licenseNumber());</span>
+<span class="fc" id="L167">        driver.setLicenseClass(request.licenseClass());</span>
+<span class="fc" id="L168">        driver.setLicenseExpiry(request.licenseExpiry());</span>
+<span class="fc" id="L169">        driver.setDefaultWarehouse(defaultWarehouse);</span>
+<span class="fc" id="L170">        driver.setAssignedVehicle(request.assignedVehicle());</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        if (request.status() != null) {</span>
+<span class="nc" id="L172">            driver.setStatus(request.status());</span>
+        }
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if (request.isActive() != null) {</span>
+<span class="fc" id="L175">            driver.setIsActive(request.isActive());</span>
+        }
+
+<span class="fc" id="L178">        return salesMapper.toDriverResponse(driverRepository.save(driver));</span>
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteDriver(Long id, Long tenantId) {
+<span class="fc" id="L183">        Driver driver = getDriverEntity(id, tenantId);</span>
+<span class="fc" id="L184">        driverRepository.delete(driver);</span>
+<span class="fc" id="L185">    }</span>
+    
+    // --- SHOP ---
+    @Transactional(rollbackFor = Exception.class)
+    public ShopResponse createShop(Long tenantId, ShopRequest request) {
+<span class="fc" id="L190">        Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L191">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
+            
+<span class="fc" id="L193">        Rep assignedRep = null;</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        if (request.assignedRepId() != null) {</span>
+<span class="fc" id="L195">            assignedRep = repRepository.findByIdAndTenantId(request.assignedRepId(), tenantId)</span>
+<span class="pc" id="L196">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Rep not found&quot;));</span>
+        }
+            
+<span class="fc" id="L199">        Shop shop = Shop.builder()</span>
+<span class="fc" id="L200">            .tenant(tenant)</span>
+<span class="fc" id="L201">            .name(request.name())</span>
+<span class="fc" id="L202">            .ownerName(request.ownerName())</span>
+<span class="fc" id="L203">            .phone(request.phone())</span>
+<span class="fc" id="L204">            .address(request.address())</span>
+<span class="fc" id="L205">            .area(request.area())</span>
+<span class="fc" id="L206">            .route(request.route())</span>
+<span class="fc" id="L207">            .assignedRep(assignedRep)</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">            .outstandingLoan(request.outstandingLoan() != null ? request.outstandingLoan() : java.math.BigDecimal.ZERO)</span>
+<span class="fc" id="L209">            .latitude(request.latitude())</span>
+<span class="fc" id="L210">            .longitude(request.longitude())</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">            .isActive(request.isActive() != null ? request.isActive() : true)</span>
+<span class="fc" id="L212">            .build();</span>
+            
+<span class="fc" id="L214">        return salesMapper.toShopResponse(shopRepository.save(shop));</span>
+    }
+    
+    public Page&lt;ShopResponse&gt; getShops(Long tenantId, String name, Pageable pageable) {
+        Page&lt;Shop&gt; shops;
+<span class="pc bpc" id="L219" title="1 of 4 branches missed.">        if (name != null &amp;&amp; !name.isBlank()) {</span>
+<span class="fc" id="L220">            shops = shopRepository.findByTenantIdAndNameContainingIgnoreCase(tenantId, name, pageable);</span>
+        } else {
+<span class="fc" id="L222">            shops = shopRepository.findByTenantId(tenantId, pageable);</span>
+        }
+<span class="fc" id="L224">        return shops.map(salesMapper::toShopResponse);</span>
+    }
+
+    public ShopResponse getShop(Long id, Long tenantId) {
+<span class="nc" id="L228">        return salesMapper.toShopResponse(getShopEntity(id, tenantId));</span>
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public ShopResponse updateShop(Long id, Long tenantId, ShopRequest request) {
+<span class="nc" id="L233">        Shop shop = getShopEntity(id, tenantId);</span>
+
+<span class="nc" id="L235">        Rep assignedRep = null;</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">        if (request.assignedRepId() != null) {</span>
+<span class="nc" id="L237">            assignedRep = repRepository.findByIdAndTenantId(request.assignedRepId(), tenantId)</span>
+<span class="nc" id="L238">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Rep not found&quot;));</span>
+        }
+
+<span class="nc" id="L241">        shop.setName(request.name());</span>
+<span class="nc" id="L242">        shop.setOwnerName(request.ownerName());</span>
+<span class="nc" id="L243">        shop.setPhone(request.phone());</span>
+<span class="nc" id="L244">        shop.setAddress(request.address());</span>
+<span class="nc" id="L245">        shop.setArea(request.area());</span>
+<span class="nc" id="L246">        shop.setRoute(request.route());</span>
+<span class="nc" id="L247">        shop.setAssignedRep(assignedRep);</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">        if (request.outstandingLoan() != null) {</span>
+<span class="nc" id="L249">            shop.setOutstandingLoan(request.outstandingLoan());</span>
+        }
+<span class="nc" id="L251">        shop.setLatitude(request.latitude());</span>
+<span class="nc" id="L252">        shop.setLongitude(request.longitude());</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">        if (request.isActive() != null) {</span>
+<span class="nc" id="L254">            shop.setIsActive(request.isActive());</span>
+        }
+
+<span class="nc" id="L257">        return salesMapper.toShopResponse(shopRepository.save(shop));</span>
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteShop(Long id, Long tenantId) {
+<span class="nc" id="L262">        Shop shop = getShopEntity(id, tenantId);</span>
+<span class="nc" id="L263">        shopRepository.delete(shop);</span>
+<span class="nc" id="L264">    }</span>
+    
+    public Shop getShopEntity(Long id, Long tenantId) {
+<span class="fc" id="L267">        return shopRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="fc" id="L268">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Shop not found&quot;));</span>
+    }
+    
+    public Rep getRepEntity(Long id, Long tenantId) {
+<span class="fc" id="L272">        return repRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="pc" id="L273">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Rep not found&quot;));</span>
+    }
+    
+    public Driver getDriverEntity(Long id, Long tenantId) {
+<span class="fc" id="L277">        return driverRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="pc" id="L278">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Driver not found&quot;));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

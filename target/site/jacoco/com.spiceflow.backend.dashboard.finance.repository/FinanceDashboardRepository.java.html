@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FinanceDashboardRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.dashboard.finance.repository</a> &gt; <span class="el_source">FinanceDashboardRepository.java</span></div><h1>FinanceDashboardRepository.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.dashboard.finance.repository;
+
+import com.spiceflow.backend.dashboard.finance.dto.ReceivableAgingBucketDto;
+import com.spiceflow.backend.dashboard.finance.dto.RecentFinancialTransactionDto;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Pure CQRS Read Model repository for the Finance Dashboard.
+ * Executes read-only SQL aggregations against shops, purchase_orders, cash_collections, and goods_receipts.
+ */
+<span class="fc" id="L20">@Slf4j</span>
+@Repository
+@RequiredArgsConstructor
+public class FinanceDashboardRepository {
+
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+
+<span class="fc" id="L27">    public record SummaryMetrics(</span>
+        BigDecimal totalReceivables,
+        BigDecimal totalPayables,
+        BigDecimal monthCollections,
+        BigDecimal monthPoSpent
+    ) {}
+
+    public SummaryMetrics getSummaryMetrics(Long tenantId, Instant startOfMonth) {
+<span class="nc" id="L35">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                (SELECT COALESCE(SUM(outstanding_loan), 0.00)
+                 FROM shops
+                 WHERE tenant_id = :tenantId AND deleted_at IS NULL) AS total_rec,
+                (SELECT COALESCE(SUM(total_amount), 0.00)
+                 FROM purchase_orders
+                 WHERE tenant_id = :tenantId AND status IN ('SUBMITTED', 'APPROVED', 'ORDERED', 'PARTIALLY_RECEIVED')) AS total_pay,
+                (SELECT COALESCE(SUM(amount), 0.00)
+                 FROM cash_collections
+                 WHERE tenant_id = :tenantId AND status = 'CONFIRMED' AND COALESCE(confirmed_at, created_at) &gt;= :startOfMonth) AS month_coll,
+                (SELECT COALESCE(SUM(total_accepted_value), 0.00)
+                 FROM goods_receipts
+                 WHERE tenant_id = :tenantId AND status = 'POSTED' AND COALESCE(posted_at, created_at) &gt;= :startOfMonth) AS month_po
+            &quot;&quot;&quot;;
+<span class="nc" id="L50">        MapSqlParameterSource params = new MapSqlParameterSource()</span>
+<span class="nc" id="L51">            .addValue(&quot;tenantId&quot;, tenantId)</span>
+<span class="nc" id="L52">            .addValue(&quot;startOfMonth&quot;, java.sql.Timestamp.from(startOfMonth));</span>
+
+<span class="nc" id="L54">        SummaryMetrics metrics = jdbcTemplate.queryForObject(sql, params, (rs, rowNum) -&gt; new SummaryMetrics(</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">            rs.getBigDecimal(&quot;total_rec&quot;) != null ? rs.getBigDecimal(&quot;total_rec&quot;) : BigDecimal.ZERO,</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">            rs.getBigDecimal(&quot;total_pay&quot;) != null ? rs.getBigDecimal(&quot;total_pay&quot;) : BigDecimal.ZERO,</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">            rs.getBigDecimal(&quot;month_coll&quot;) != null ? rs.getBigDecimal(&quot;month_coll&quot;) : BigDecimal.ZERO,</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">            rs.getBigDecimal(&quot;month_po&quot;) != null ? rs.getBigDecimal(&quot;month_po&quot;) : BigDecimal.ZERO</span>
+        ));
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        return metrics != null ? metrics : new SummaryMetrics(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);</span>
+    }
+
+    public List&lt;ReceivableAgingBucketDto&gt; getReceivablesAgingBuckets(Long tenantId) {
+<span class="nc" id="L64">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) &gt;= CURRENT_TIMESTAMP - INTERVAL '30' DAY THEN 1 ELSE 0 END), 0) AS count_0_30,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) &gt;= CURRENT_TIMESTAMP - INTERVAL '30' DAY THEN outstanding_loan ELSE 0.00 END), 0.00) AS val_0_30,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) &lt; CURRENT_TIMESTAMP - INTERVAL '30' DAY AND COALESCE(updated_at, created_at) &gt;= CURRENT_TIMESTAMP - INTERVAL '60' DAY THEN 1 ELSE 0 END), 0) AS count_31_60,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) &lt; CURRENT_TIMESTAMP - INTERVAL '30' DAY AND COALESCE(updated_at, created_at) &gt;= CURRENT_TIMESTAMP - INTERVAL '60' DAY THEN outstanding_loan ELSE 0.00 END), 0.00) AS val_31_60,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) &lt; CURRENT_TIMESTAMP - INTERVAL '60' DAY AND COALESCE(updated_at, created_at) &gt;= CURRENT_TIMESTAMP - INTERVAL '90' DAY THEN 1 ELSE 0 END), 0) AS count_61_90,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) &lt; CURRENT_TIMESTAMP - INTERVAL '60' DAY AND COALESCE(updated_at, created_at) &gt;= CURRENT_TIMESTAMP - INTERVAL '90' DAY THEN outstanding_loan ELSE 0.00 END), 0.00) AS val_61_90,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) &lt; CURRENT_TIMESTAMP - INTERVAL '90' DAY THEN 1 ELSE 0 END), 0) AS count_90_plus,
+                COALESCE(SUM(CASE WHEN COALESCE(updated_at, created_at) &lt; CURRENT_TIMESTAMP - INTERVAL '90' DAY THEN outstanding_loan ELSE 0.00 END), 0.00) AS val_90_plus
+            FROM shops
+            WHERE tenant_id = :tenantId AND deleted_at IS NULL AND outstanding_loan &gt; 0
+            &quot;&quot;&quot;;
+<span class="nc" id="L77">        MapSqlParameterSource params = new MapSqlParameterSource(&quot;tenantId&quot;, tenantId);</span>
+
+<span class="nc" id="L79">        List&lt;ReceivableAgingBucketDto&gt; buckets = jdbcTemplate.query(sql, params, rs -&gt; {</span>
+<span class="nc" id="L80">            List&lt;ReceivableAgingBucketDto&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">            if (rs.next()) {</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">                list.add(new ReceivableAgingBucketDto(&quot;0–30 Days&quot;, rs.getLong(&quot;count_0_30&quot;), rs.getBigDecimal(&quot;val_0_30&quot;) != null ? rs.getBigDecimal(&quot;val_0_30&quot;) : BigDecimal.ZERO));</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">                list.add(new ReceivableAgingBucketDto(&quot;31–60 Days&quot;, rs.getLong(&quot;count_31_60&quot;), rs.getBigDecimal(&quot;val_31_60&quot;) != null ? rs.getBigDecimal(&quot;val_31_60&quot;) : BigDecimal.ZERO));</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">                list.add(new ReceivableAgingBucketDto(&quot;61–90 Days&quot;, rs.getLong(&quot;count_61_90&quot;), rs.getBigDecimal(&quot;val_61_90&quot;) != null ? rs.getBigDecimal(&quot;val_61_90&quot;) : BigDecimal.ZERO));</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">                list.add(new ReceivableAgingBucketDto(&quot;90+ Days&quot;, rs.getLong(&quot;count_90_plus&quot;), rs.getBigDecimal(&quot;val_90_plus&quot;) != null ? rs.getBigDecimal(&quot;val_90_plus&quot;) : BigDecimal.ZERO));</span>
+            }
+<span class="nc" id="L87">            return list;</span>
+        });
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        return buckets != null ? buckets : Collections.emptyList();</span>
+    }
+
+    public List&lt;RecentFinancialTransactionDto&gt; getRecentTransactions(Long tenantId, int limit) {
+<span class="nc" id="L93">        String sql = &quot;&quot;&quot;</span>
+            SELECT id, tx_type, ref_no, party_name, amount, payment_method, ts, status
+            FROM (
+                SELECT
+                    cc.id AS id,
+                    'COLLECTION' AS tx_type,
+                    cc.collection_number AS ref_no,
+                    COALESCE(s.name, 'Unknown Shop') AS party_name,
+                    cc.amount AS amount,
+                    cc.payment_method AS payment_method,
+                    COALESCE(cc.confirmed_at, cc.created_at) AS ts,
+                    cc.status AS status
+                FROM cash_collections cc
+                LEFT JOIN shops s ON cc.shop_id = s.id
+                WHERE cc.tenant_id = :tenantId AND cc.status = 'CONFIRMED'
+                UNION ALL
+                SELECT
+                    gr.id AS id,
+                    'PO_RECEIPT' AS tx_type,
+                    gr.receipt_number AS ref_no,
+                    COALESCE(sup.name, 'Unknown Supplier') AS party_name,
+                    gr.total_accepted_value AS amount,
+                    'BANK_TRANSFER' AS payment_method,
+                    COALESCE(gr.posted_at, gr.created_at) AS ts,
+                    gr.status AS status
+                FROM goods_receipts gr
+                LEFT JOIN suppliers sup ON gr.supplier_id = sup.id
+                WHERE gr.tenant_id = :tenantId AND gr.status = 'POSTED'
+            ) combined
+            WHERE ts IS NOT NULL
+            ORDER BY ts DESC
+            LIMIT :limit
+            &quot;&quot;&quot;;
+<span class="nc" id="L126">        MapSqlParameterSource params = new MapSqlParameterSource()</span>
+<span class="nc" id="L127">            .addValue(&quot;tenantId&quot;, tenantId)</span>
+<span class="nc" id="L128">            .addValue(&quot;limit&quot;, limit);</span>
+
+<span class="nc" id="L130">        List&lt;RecentFinancialTransactionDto&gt; results = jdbcTemplate.query(sql, params, (rs, rowNum) -&gt; {</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            Instant ts = rs.getTimestamp(&quot;ts&quot;) != null ? rs.getTimestamp(&quot;ts&quot;).toInstant() : Instant.EPOCH;</span>
+<span class="nc" id="L132">            return new RecentFinancialTransactionDto(</span>
+<span class="nc" id="L133">                rs.getLong(&quot;id&quot;),</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">                rs.getString(&quot;tx_type&quot;) != null ? rs.getString(&quot;tx_type&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">                rs.getString(&quot;ref_no&quot;) != null ? rs.getString(&quot;ref_no&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">                rs.getString(&quot;party_name&quot;) != null ? rs.getString(&quot;party_name&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">                rs.getBigDecimal(&quot;amount&quot;) != null ? rs.getBigDecimal(&quot;amount&quot;) : BigDecimal.ZERO,</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">                rs.getString(&quot;payment_method&quot;) != null ? rs.getString(&quot;payment_method&quot;) : &quot;&quot;,</span>
+                ts,
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                rs.getString(&quot;status&quot;) != null ? rs.getString(&quot;status&quot;) : &quot;&quot;</span>
+            );
+        });
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        return results != null ? results : Collections.emptyList();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

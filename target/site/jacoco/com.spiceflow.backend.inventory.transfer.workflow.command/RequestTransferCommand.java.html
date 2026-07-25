@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RequestTransferCommand.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.inventory.transfer.workflow.command</a> &gt; <span class="el_source">RequestTransferCommand.java</span></div><h1>RequestTransferCommand.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.inventory.transfer.workflow.command;
+
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import com.spiceflow.backend.inventory.transfer.domain.WarehouseTransfer;
+import com.spiceflow.backend.inventory.transfer.domain.WarehouseTransferLine;
+import com.spiceflow.backend.inventory.transfer.domain.WarehouseTransferState;
+import com.spiceflow.backend.inventory.transfer.workflow.WarehouseTransferStateMachine;
+import com.spiceflow.backend.workflow.WorkflowCommand;
+import com.spiceflow.backend.workflow.WorkflowContext;
+import java.math.BigDecimal;
+import org.jspecify.annotations.Nullable;
+
+<span class="fc" id="L13">public record RequestTransferCommand(@Nullable String comment) implements WorkflowCommand&lt;WarehouseTransfer, WarehouseTransferState&gt; {</span>
+
+    public RequestTransferCommand() {
+<span class="fc" id="L16">        this(null);</span>
+<span class="fc" id="L17">    }</span>
+
+    @Override
+    public String getCommandName() {
+<span class="fc" id="L21">        return &quot;RequestTransfer&quot;;</span>
+    }
+
+    @Override
+    public WarehouseTransferState getTargetState() {
+<span class="fc" id="L26">        return WarehouseTransferState.REQUESTED;</span>
+    }
+
+    @Override
+    public @Nullable String getComment() {
+<span class="fc" id="L31">        return comment;</span>
+    }
+
+    @Override
+    public void validate(WarehouseTransfer aggregate, WorkflowContext context) {
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        if (!WarehouseTransferStateMachine.canTransition(aggregate.getState(), getTargetState())) {</span>
+<span class="nc" id="L37">            throw new BusinessRuleViolationException(</span>
+<span class="nc" id="L38">                    &quot;Cannot transition Warehouse Transfer from &quot; + aggregate.getState() + &quot; to &quot; + getTargetState()</span>
+            );
+        }
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (aggregate.getLines().isEmpty()) {</span>
+<span class="fc" id="L42">            throw new BusinessRuleViolationException(&quot;Warehouse Transfer must have at least one line item&quot;);</span>
+        }
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (WarehouseTransferLine line : aggregate.getLines()) {</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">            if (line.getRequestedQty().compareTo(BigDecimal.ZERO) &lt;= 0) {</span>
+<span class="nc" id="L46">                throw new BusinessRuleViolationException(&quot;Requested quantity must be positive for product &quot; + line.getProductId());</span>
+            }
+<span class="fc" id="L48">        }</span>
+<span class="fc" id="L49">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

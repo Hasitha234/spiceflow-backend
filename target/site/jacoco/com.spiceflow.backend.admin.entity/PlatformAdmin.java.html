@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PlatformAdmin.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.admin.entity</a> &gt; <span class="el_source">PlatformAdmin.java</span></div><h1>PlatformAdmin.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.admin.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import com.spiceflow.backend.common.entity.BaseEntity;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
+/** Platform-level administrator. Completely separate from tenant users. */
+@Entity
+@Table(name = &quot;platform_admins&quot;)
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@SQLDelete(sql = &quot;UPDATE platform_admins SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?&quot;)
+@SQLRestriction(&quot;deleted_at IS NULL&quot;)
+public class PlatformAdmin extends BaseEntity implements UserDetails {
+
+  @Column(name = &quot;email&quot;, nullable = false, unique = true, length = 255)
+  private String email;
+
+  @Column(name = &quot;password_hash&quot;, nullable = false, length = 255)
+  @ToString.Exclude // Never expose password hash in logs
+  private String passwordHash;
+
+  @Column(name = &quot;name&quot;, nullable = false, length = 255)
+  private String name;
+
+  // ── UserDetails contract ──────────────────────────────────────────────────
+
+  @Override
+  public Collection&lt;? extends GrantedAuthority&gt; getAuthorities() {
+<span class="fc" id="L51">    return List.of(new SimpleGrantedAuthority(&quot;ROLE_SUPER_ADMIN&quot;));</span>
+  }
+
+  @Override
+  public String getPassword() {
+<span class="fc" id="L56">    return passwordHash;</span>
+  }
+
+  @Override
+  public String getUsername() {
+<span class="fc" id="L61">    return email;</span>
+  }
+
+  @Override
+  public boolean isEnabled() {
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">    return getDeletedAt() == null;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

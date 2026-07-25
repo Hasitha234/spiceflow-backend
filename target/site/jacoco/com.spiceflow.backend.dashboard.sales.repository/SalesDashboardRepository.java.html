@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SalesDashboardRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.dashboard.sales.repository</a> &gt; <span class="el_source">SalesDashboardRepository.java</span></div><h1>SalesDashboardRepository.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.dashboard.sales.repository;
+
+import com.spiceflow.backend.dashboard.sales.dto.RecentRepOrderDto;
+import com.spiceflow.backend.dashboard.sales.dto.TopDebtorShopDto;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Pure CQRS Read Model repository for the Sales Dashboard.
+ * Executes read-only SQL aggregations against rep_orders, cash_collections, shops, and reps.
+ */
+<span class="fc" id="L19">@Slf4j</span>
+@Repository
+@RequiredArgsConstructor
+public class SalesDashboardRepository {
+
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+
+<span class="fc" id="L26">    public record SummaryMetrics(</span>
+        BigDecimal todaySalesValue,
+        BigDecimal monthSalesValue,
+        BigDecimal monthCollectionsValue,
+        BigDecimal totalOutstandingLoans
+    ) {}
+
+    public SummaryMetrics getSummaryMetrics(Long tenantId, Instant startOfMonth) {
+<span class="nc" id="L34">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                (SELECT COALESCE(SUM(net_amount), 0.00)
+                 FROM rep_orders
+                 WHERE tenant_id = :tenantId AND deleted_at IS NULL AND status IN ('SUBMITTED', 'APPROVED', 'LOADED', 'DELIVERED') AND CAST(order_date AS DATE) = CURRENT_DATE) AS today_sales,
+                (SELECT COALESCE(SUM(net_amount), 0.00)
+                 FROM rep_orders
+                 WHERE tenant_id = :tenantId AND deleted_at IS NULL AND status IN ('SUBMITTED', 'APPROVED', 'LOADED', 'DELIVERED') AND created_at &gt;= :startOfMonth) AS month_sales,
+                (SELECT COALESCE(SUM(amount), 0.00)
+                 FROM cash_collections
+                 WHERE tenant_id = :tenantId AND status = 'CONFIRMED' AND confirmed_at &gt;= :startOfMonth) AS month_collections,
+                (SELECT COALESCE(SUM(outstanding_loan), 0.00)
+                 FROM shops
+                 WHERE tenant_id = :tenantId AND deleted_at IS NULL) AS total_loans
+            &quot;&quot;&quot;;
+<span class="nc" id="L49">        MapSqlParameterSource params = new MapSqlParameterSource()</span>
+<span class="nc" id="L50">            .addValue(&quot;tenantId&quot;, tenantId)</span>
+<span class="nc" id="L51">            .addValue(&quot;startOfMonth&quot;, java.sql.Timestamp.from(startOfMonth));</span>
+
+<span class="nc" id="L53">        SummaryMetrics metrics = jdbcTemplate.queryForObject(sql, params, (rs, rowNum) -&gt; new SummaryMetrics(</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">            rs.getBigDecimal(&quot;today_sales&quot;) != null ? rs.getBigDecimal(&quot;today_sales&quot;) : BigDecimal.ZERO,</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">            rs.getBigDecimal(&quot;month_sales&quot;) != null ? rs.getBigDecimal(&quot;month_sales&quot;) : BigDecimal.ZERO,</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">            rs.getBigDecimal(&quot;month_collections&quot;) != null ? rs.getBigDecimal(&quot;month_collections&quot;) : BigDecimal.ZERO,</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">            rs.getBigDecimal(&quot;total_loans&quot;) != null ? rs.getBigDecimal(&quot;total_loans&quot;) : BigDecimal.ZERO</span>
+        ));
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        return metrics != null ? metrics : new SummaryMetrics(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);</span>
+    }
+
+    public List&lt;RecentRepOrderDto&gt; getRecentOrders(Long tenantId, int limit) {
+<span class="nc" id="L63">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                ro.id,
+                COALESCE(ro.order_number, CONCAT('RO-', ro.id)) AS order_no,
+                ro.rep_id,
+                COALESCE(r.name, 'Unknown Rep') AS rep_name,
+                ro.status,
+                CAST(ro.order_date AS VARCHAR) AS order_date,
+                COALESCE(ro.net_amount, 0.00) AS total_amt,
+                (SELECT COUNT(*) FROM rep_order_shops ros WHERE ros.rep_order_id = ro.id) AS shop_count
+            FROM rep_orders ro
+            LEFT JOIN reps r ON ro.rep_id = r.id
+            WHERE ro.tenant_id = :tenantId AND ro.deleted_at IS NULL
+            ORDER BY ro.created_at DESC
+            LIMIT :limit
+            &quot;&quot;&quot;;
+<span class="nc" id="L79">        MapSqlParameterSource params = new MapSqlParameterSource()</span>
+<span class="nc" id="L80">            .addValue(&quot;tenantId&quot;, tenantId)</span>
+<span class="nc" id="L81">            .addValue(&quot;limit&quot;, limit);</span>
+
+<span class="nc" id="L83">        List&lt;RecentRepOrderDto&gt; results = jdbcTemplate.query(sql, params, (rs, rowNum) -&gt; new RecentRepOrderDto(</span>
+<span class="nc" id="L84">            rs.getLong(&quot;id&quot;),</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            rs.getString(&quot;order_no&quot;) != null ? rs.getString(&quot;order_no&quot;) : &quot;&quot;,</span>
+<span class="nc" id="L86">            rs.getLong(&quot;rep_id&quot;),</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">            rs.getString(&quot;rep_name&quot;) != null ? rs.getString(&quot;rep_name&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            rs.getString(&quot;status&quot;) != null ? rs.getString(&quot;status&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">            rs.getString(&quot;order_date&quot;) != null ? rs.getString(&quot;order_date&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">            rs.getBigDecimal(&quot;total_amt&quot;) != null ? rs.getBigDecimal(&quot;total_amt&quot;) : BigDecimal.ZERO,</span>
+<span class="nc" id="L91">            rs.getInt(&quot;shop_count&quot;)</span>
+        ));
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        return results != null ? results : Collections.emptyList();</span>
+    }
+
+    public List&lt;TopDebtorShopDto&gt; getTopDebtorShops(Long tenantId, int limit) {
+<span class="nc" id="L97">        String sql = &quot;&quot;&quot;</span>
+            SELECT
+                id AS shop_id,
+                COALESCE(name, 'Unknown Shop') AS shop_name,
+                COALESCE(owner_name, '') AS owner_name,
+                COALESCE(phone, '') AS phone,
+                COALESCE(area, '') AS area,
+                COALESCE(outstanding_loan, 0.00) AS loan
+            FROM shops
+            WHERE tenant_id = :tenantId AND deleted_at IS NULL AND outstanding_loan &gt; 0
+            ORDER BY outstanding_loan DESC
+            LIMIT :limit
+            &quot;&quot;&quot;;
+<span class="nc" id="L110">        MapSqlParameterSource params = new MapSqlParameterSource()</span>
+<span class="nc" id="L111">            .addValue(&quot;tenantId&quot;, tenantId)</span>
+<span class="nc" id="L112">            .addValue(&quot;limit&quot;, limit);</span>
+
+<span class="nc" id="L114">        List&lt;TopDebtorShopDto&gt; results = jdbcTemplate.query(sql, params, (rs, rowNum) -&gt; new TopDebtorShopDto(</span>
+<span class="nc" id="L115">            rs.getLong(&quot;shop_id&quot;),</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            rs.getString(&quot;shop_name&quot;) != null ? rs.getString(&quot;shop_name&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            rs.getString(&quot;owner_name&quot;) != null ? rs.getString(&quot;owner_name&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            rs.getString(&quot;phone&quot;) != null ? rs.getString(&quot;phone&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            rs.getString(&quot;area&quot;) != null ? rs.getString(&quot;area&quot;) : &quot;&quot;,</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">            rs.getBigDecimal(&quot;loan&quot;) != null ? rs.getBigDecimal(&quot;loan&quot;) : BigDecimal.ZERO</span>
+        ));
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        return results != null ? results : Collections.emptyList();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

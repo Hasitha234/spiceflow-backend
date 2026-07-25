@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DomainEventType.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.events</a> &gt; <span class="el_source">DomainEventType.java</span></div><h1>DomainEventType.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.events;
+
+/**
+ * Vocabulary of domain events emitted by operational workflows.
+ */
+<span class="fc" id="L6">public enum DomainEventType {</span>
+<span class="fc" id="L7">    PURCHASE_ORDER_CREATED,</span>
+<span class="fc" id="L8">    PURCHASE_ORDER_SUBMITTED,</span>
+<span class="fc" id="L9">    PURCHASE_ORDER_APPROVED,</span>
+<span class="fc" id="L10">    PURCHASE_ORDER_REJECTED,</span>
+<span class="fc" id="L11">    PURCHASE_ORDER_ORDERED,</span>
+<span class="fc" id="L12">    PURCHASE_ORDER_PARTIALLY_RECEIVED,</span>
+<span class="fc" id="L13">    PURCHASE_ORDER_RECEIVED,</span>
+<span class="fc" id="L14">    PURCHASE_ORDER_CLOSED,</span>
+<span class="fc" id="L15">    GOODS_RECEIPT_CREATED,</span>
+<span class="fc" id="L16">    GOODS_RECEIPT_VERIFIED,</span>
+<span class="fc" id="L17">    GOODS_RECEIPT_POSTED,</span>
+<span class="fc" id="L18">    GOODS_RECEIPT_CANCELLED,</span>
+<span class="fc" id="L19">    GOODS_RECEIVED,</span>
+<span class="fc" id="L20">    INVENTORY_ADJUSTED,</span>
+<span class="fc" id="L21">    WAREHOUSE_TRANSFER_REQUESTED,</span>
+<span class="fc" id="L22">    WAREHOUSE_TRANSFER_APPROVED,</span>
+<span class="fc" id="L23">    WAREHOUSE_TRANSFER_SHIPPED,</span>
+<span class="fc" id="L24">    WAREHOUSE_TRANSFER_RECEIVED,</span>
+<span class="fc" id="L25">    WAREHOUSE_TRANSFER_COMPLETED,</span>
+<span class="fc" id="L26">    WAREHOUSE_TRANSFER_CANCELLED,</span>
+<span class="fc" id="L27">    REP_ORDER_CREATED,</span>
+<span class="fc" id="L28">    REP_ORDER_SUBMITTED,</span>
+<span class="fc" id="L29">    REP_ORDER_APPROVED,</span>
+<span class="fc" id="L30">    REP_ORDER_LOADED,</span>
+<span class="fc" id="L31">    REP_ORDER_DELIVERED,</span>
+<span class="fc" id="L32">    REP_ORDER_CANCELLED,</span>
+<span class="fc" id="L33">    LOADING_SHEET_GENERATED,</span>
+<span class="fc" id="L34">    LOADING_SHEET_CONFIRMED,</span>
+<span class="fc" id="L35">    LOADING_SHEET_CANCELLED,</span>
+<span class="fc" id="L36">    DELIVERY_DISPATCHED,</span>
+<span class="fc" id="L37">    DELIVERY_COMPLETED,</span>
+<span class="fc" id="L38">    DELIVERY_CANCELLED,</span>
+<span class="fc" id="L39">    CASH_COLLECTED</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
