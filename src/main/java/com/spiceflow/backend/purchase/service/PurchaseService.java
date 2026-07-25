@@ -288,16 +288,18 @@ public class PurchaseService {
             Optional<InventoryItem> invOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
                 lineItem.getProduct().getId(), mainStore.getId(), tenantId);
                 
+            int eachQuantity = convertToEachItems(lineItem.getSoldQuantity(), lineItem.getUnitType());
+                
             InventoryItem inventoryItem;
             if (invOpt.isPresent()) {
                 inventoryItem = invOpt.get();
-                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() + lineItem.getSoldQuantity());
+                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() + eachQuantity);
             } else {
                 inventoryItem = InventoryItem.builder()
                     .tenant(purchase.getTenant())
                     .product(lineItem.getProduct())
                     .warehouse(mainStore)
-                    .quantityAvailable(lineItem.getSoldQuantity())
+                    .quantityAvailable(eachQuantity)
                     .build();
             }
             
@@ -307,7 +309,7 @@ public class PurchaseService {
                 .tenant(purchase.getTenant())
                 .inventoryItem(inventoryItem)
                 .transactionType("PURCHASE_IN")
-                .quantity(lineItem.getSoldQuantity())
+                .quantity(eachQuantity)
                 .referenceId("PUR-" + purchase.getInvoiceNo())
                 .notes("Purchase ID: " + purchase.getId())
                 .build();
@@ -322,18 +324,20 @@ public class PurchaseService {
                     retItem.getProduct().getId(), retStore.getId(), tenantId)
                     .orElseThrow(() -> new BusinessRuleViolationException("Insufficient stock for return in warehouse: " + retStore.getName()));
                 
-                if (inventoryItem.getQuantityAvailable() < retItem.getQuantity()) {
+                int eachReturnQuantity = convertToEachItems(retItem.getQuantity(), retItem.getUnitType());
+                
+                if (inventoryItem.getQuantityAvailable() < eachReturnQuantity) {
                     throw new BusinessRuleViolationException("Insufficient stock for return. Product: " + retItem.getProduct().getName());
                 }
                 
-                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() - retItem.getQuantity());
+                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() - eachReturnQuantity);
                 inventoryItemRepository.save(inventoryItem);
                 
                 InventoryTransaction tx = InventoryTransaction.builder()
                     .tenant(purchase.getTenant())
                     .inventoryItem(inventoryItem)
                     .transactionType("PURCHASE_RETURN_OUT")
-                    .quantity(retItem.getQuantity())
+                    .quantity(eachReturnQuantity)
                     .referenceId("PUR-RET-" + purchase.getInvoiceNo())
                     .notes("Purchase Return ID: " + purchase.getId())
                     .build();
@@ -356,6 +360,22 @@ public class PurchaseService {
         }
         
         purchaseRepository.delete(purchase);
+    }
+
+    private int convertToEachItems(int quantity, String unitType) {
+        int divisor;
+        switch (unitType != null ? unitType.toUpperCase() : "EA") {
+            case "DZ":  
+                divisor = 12;   
+                break;
+            case "MC":  
+                divisor = 1000; 
+                break;
+            default:    
+                divisor = 1;    
+                break; // EA
+        }
+        return quantity * divisor;
     }
 }
 
