@@ -15,6 +15,8 @@ import com.spiceflow.backend.inventory.entity.ProductCategory;
 import com.spiceflow.backend.inventory.entity.Supplier;
 import com.spiceflow.backend.inventory.mapper.ProductMapper;
 import com.spiceflow.backend.inventory.repository.ProductRepository;
+import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
+import com.spiceflow.backend.purchase.repository.PurchaseLineItemRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +38,8 @@ class ProductServiceTest {
     @Mock private ProductCategoryService productCategoryService;
     @Mock private SupplierService supplierService;
     @Mock private ProductMapper productMapper;
+    @Mock private InventoryItemRepository inventoryItemRepository;
+    @Mock private PurchaseLineItemRepository purchaseLineItemRepository;
 
     @InjectMocks private ProductService productService;
 

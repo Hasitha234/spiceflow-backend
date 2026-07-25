@@ -82,4 +82,14 @@ public class ProductController {
         productService.deleteProduct(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.noContent().build();
     }
+    
+    @PatchMapping("/{id}/restore")
+    @Operation(summary = "Restore a soft-deleted product", description = "Restores a product that was previously soft-deleted", operationId = "restoreProduct")
+    public ResponseEntity<ProductResponse> restoreProduct(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        log.info("Received request to restore product ID: {} by user: {}", id, currentUser.getId());
+        ProductResponse response = productService.restoreProduct(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
+        return ResponseEntity.ok(response);
+    }
 }
