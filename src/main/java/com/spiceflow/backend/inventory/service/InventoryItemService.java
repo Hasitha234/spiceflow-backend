@@ -157,7 +157,7 @@ public class InventoryItemService {
                     item.getProduct().getId(),
                     movementType,
                     BigDecimal.valueOf(Math.abs(diff)),
-                    item.getProduct().getBasePrice() != null ? item.getProduct().getBasePrice() : BigDecimal.ZERO,
+                    productService.getProductBasePriceGracefully(item.getProduct().getId(), tenantId),
                     "ADJ-" + updatedItem.getId() + "-" + Instant.now().toEpochMilli(),
                     request.batchNumber() != null ? request.batchNumber() : "",
                     request.expirationDate(),
