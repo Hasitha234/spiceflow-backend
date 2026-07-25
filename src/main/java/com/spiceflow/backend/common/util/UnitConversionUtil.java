@@ -7,7 +7,7 @@ public final class UnitConversionUtil {
     }
 
     public static int toEachItems(int quantity, String unitType) {
-        switch (unitType != null ? unitType.toUpperCase() : "EA") {
+        switch (unitType != null ? unitType.toUpperCase(java.util.Locale.ROOT) : "EA") {
             case "DZ":
                 return quantity * 12;
             case "MC":

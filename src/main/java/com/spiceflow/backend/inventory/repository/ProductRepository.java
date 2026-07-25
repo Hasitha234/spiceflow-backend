@@ -34,5 +34,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                                 @Nullable @Param("categoryId") Long categoryId,
                                 @Nullable @Param("supplierId") Long supplierId,
                                 Pageable pageable);
+
+    @Query(value = "SELECT * FROM products WHERE id = :id AND tenant_id = :tenantId AND deleted_at IS NOT NULL", nativeQuery = true)
+    Optional<Product> findSoftDeletedByIdAndTenantId(@Param("id") Long id, @Param("tenantId") Long tenantId);
 }
 

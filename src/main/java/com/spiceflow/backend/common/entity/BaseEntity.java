@@ -42,6 +42,7 @@ public abstract class BaseEntity {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    @org.springframework.lang.Nullable
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
 

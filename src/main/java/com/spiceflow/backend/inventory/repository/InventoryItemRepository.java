@@ -21,4 +21,6 @@ public interface InventoryItemRepository extends JpaRepository<InventoryItem, Lo
     Page<InventoryItem> findByWarehouseIdAndTenantId(Long warehouseId, Long tenantId, Pageable pageable);
     
     Page<InventoryItem> findByProductIdAndTenantId(Long productId, Long tenantId, Pageable pageable);
+    
+    boolean existsByProductIdAndTenantId(Long productId, Long tenantId);
 }

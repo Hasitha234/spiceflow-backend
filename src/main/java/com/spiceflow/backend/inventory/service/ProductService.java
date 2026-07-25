@@ -10,6 +10,8 @@ import com.spiceflow.backend.inventory.entity.Product;
 import com.spiceflow.backend.inventory.entity.ProductCategory;
 import com.spiceflow.backend.inventory.entity.Supplier;
 import com.spiceflow.backend.inventory.repository.ProductRepository;
+import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
+import com.spiceflow.backend.purchase.repository.PurchaseLineItemRepository;
 import com.spiceflow.backend.inventory.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,8 @@ public class ProductService {
     private final ProductCategoryService productCategoryService;
     private final SupplierService supplierService;
     private final ProductMapper productMapper;
+    private final InventoryItemRepository inventoryItemRepository;
+    private final PurchaseLineItemRepository purchaseLineItemRepository;
 
     @Transactional(rollbackFor = Exception.class)
     public ProductResponse createProduct(Long tenantId, ProductRequest request) {
@@ -148,14 +152,41 @@ public class ProductService {
         log.debug("Deleting product with ID: {} for tenantId: {}", id, tenantId);
         try {
             Product product = getProductEntity(id, tenantId);
+
+            // Block deletion if product has inventory stock
+            boolean hasInventory = inventoryItemRepository.existsByProductIdAndTenantId(id, tenantId);
+            if (hasInventory) {
+                throw new BusinessRuleViolationException(
+                    "Cannot delete product '" + product.getName() + "' — it has inventory stock in one or more warehouses.");
+            }
+
+            // Block deletion if product is in active purchase line items  
+            boolean hasPurchases = purchaseLineItemRepository.existsByProductIdAndTenantId(id, tenantId);
+            if (hasPurchases) {
+                throw new BusinessRuleViolationException(
+                    "Cannot delete product '" + product.getName() + "' — it is referenced by purchase records.");
+            }
+
             productRepository.delete(product);
             log.info("Successfully deleted product with ID: {} for tenantId: {}", id, tenantId);
-        } catch (ResourceNotFoundException e) {
+        } catch (BusinessRuleViolationException | ResourceNotFoundException e) {
             throw e;
         } catch (Exception e) {
             log.error("Failed to delete product with ID: {} for tenantId: {}", id, tenantId, e);
             throw new BusinessRuleViolationException("Failed to delete product due to existing dependencies");
         }
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public ProductResponse restoreProduct(Long id, Long tenantId) {
+        log.debug("Restoring product with ID: {} for tenantId: {}", id, tenantId);
+        Product product = productRepository.findSoftDeletedByIdAndTenantId(id, tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("Soft-deleted product not found with id: " + id));
+            
+        product.setDeletedAt(null);
+        Product restored = productRepository.save(product);
+        log.info("Successfully restored product with ID: {} for tenantId: {}", id, tenantId);
+        return productMapper.toResponse(restored);
     }
     
     public Product getProductEntity(Long id, Long tenantId) {

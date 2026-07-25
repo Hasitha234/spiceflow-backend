@@ -15,6 +15,8 @@ import com.spiceflow.backend.inventory.entity.ProductCategory;
 import com.spiceflow.backend.inventory.entity.Supplier;
 import com.spiceflow.backend.inventory.mapper.ProductMapper;
 import com.spiceflow.backend.inventory.repository.ProductRepository;
+import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
+import com.spiceflow.backend.purchase.repository.PurchaseLineItemRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +38,8 @@ class ProductServiceTest {
     @Mock private ProductCategoryService productCategoryService;
     @Mock private SupplierService supplierService;
     @Mock private ProductMapper productMapper;
+    @Mock private InventoryItemRepository inventoryItemRepository;
+    @Mock private PurchaseLineItemRepository purchaseLineItemRepository;
 
     @InjectMocks private ProductService productService;
 
@@ -172,9 +176,50 @@ class ProductServiceTest {
     @Test
     void deleteProduct_Success() {
         when(productRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(product));
+        when(inventoryItemRepository.existsByProductIdAndTenantId(1L, 1L)).thenReturn(false);
+        when(purchaseLineItemRepository.existsByProductIdAndTenantId(1L, 1L)).thenReturn(false);
 
         productService.deleteProduct(1L, 1L);
 
         verify(productRepository).delete(product);
+    }
+    
+    @Test
+    void deleteProduct_HasInventory() {
+        when(productRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(product));
+        when(inventoryItemRepository.existsByProductIdAndTenantId(1L, 1L)).thenReturn(true);
+
+        assertThrows(BusinessRuleViolationException.class, () -> productService.deleteProduct(1L, 1L));
+        verify(productRepository, never()).delete(any());
+    }
+
+    @Test
+    void deleteProduct_HasPurchases() {
+        when(productRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(product));
+        when(inventoryItemRepository.existsByProductIdAndTenantId(1L, 1L)).thenReturn(false);
+        when(purchaseLineItemRepository.existsByProductIdAndTenantId(1L, 1L)).thenReturn(true);
+
+        assertThrows(BusinessRuleViolationException.class, () -> productService.deleteProduct(1L, 1L));
+        verify(productRepository, never()).delete(any());
+    }
+
+    @Test
+    void restoreProduct_Success() {
+        when(productRepository.findSoftDeletedByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(product));
+        when(productRepository.save(any(Product.class))).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        ProductResponse result = productService.restoreProduct(1L, 1L);
+
+        assertNotNull(result);
+        assertNull(product.getDeletedAt());
+        verify(productRepository).save(product);
+    }
+
+    @Test
+    void restoreProduct_NotFound() {
+        when(productRepository.findSoftDeletedByIdAndTenantId(1L, 1L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> productService.restoreProduct(1L, 1L));
     }
 }

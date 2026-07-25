@@ -11,4 +11,6 @@ public interface PurchaseLineItemRepository extends JpaRepository<PurchaseLineIt
     List<PurchaseLineItem> findByPurchaseIdAndTenantId(Long purchaseId, Long tenantId);
     
     void deleteByPurchaseIdAndTenantId(Long purchaseId, Long tenantId);
+
+    boolean existsByProductIdAndTenantId(Long productId, Long tenantId);
 }
