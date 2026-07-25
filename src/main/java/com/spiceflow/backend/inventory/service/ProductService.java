@@ -196,4 +196,12 @@ public class ProductService {
                 return new ResourceNotFoundException("Product not found with id: " + id);
             });
     }
+
+    public java.math.BigDecimal getProductBasePriceGracefully(Long id, Long tenantId) {
+        return productRepository.findByIdAndTenantId(id, tenantId)
+            .map(Product::getBasePrice)
+            .orElseGet(() -> productRepository.findSoftDeletedByIdAndTenantId(id, tenantId)
+                .map(Product::getBasePrice)
+                .orElse(java.math.BigDecimal.ZERO));
+    }
 }
