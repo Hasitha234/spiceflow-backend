@@ -4,6 +4,7 @@ import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.common.util.UnitConversionUtil;
 import com.spiceflow.backend.inventory.entity.Product;
 import com.spiceflow.backend.inventory.entity.InventoryItem;
 import com.spiceflow.backend.inventory.entity.InventoryTransaction;
@@ -279,7 +280,8 @@ public class DeliveryService {
                         inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
                                 item.getProduct().getId(), vehicleStoreOpt.get().getId(), tenantId)
                             .ifPresent(invItem -> {
-                                int newQty = Math.max(0, invItem.getQuantityAvailable() - item.getQuantityDelivered());
+                                int eachDelivered = UnitConversionUtil.toEachItems(item.getQuantityDelivered(), item.getUnitType());
+                                int newQty = Math.max(0, invItem.getQuantityAvailable() - eachDelivered);
                                 int deducted = invItem.getQuantityAvailable() - newQty;
                                 invItem.setQuantityAvailable(newQty);
                                 inventoryItemRepository.save(invItem);
@@ -313,13 +315,15 @@ public class DeliveryService {
                                 return inventoryItemRepository.save(newItem);
                             });
 
-                        invItem.setQuantityAvailable(invItem.getQuantityAvailable() + returnItem.getQuantityReturned());
+                        int eachReturned = UnitConversionUtil.toEachItems(returnItem.getQuantityReturned(), returnItem.getUnitType());
+                        
+                        invItem.setQuantityAvailable(invItem.getQuantityAvailable() + eachReturned);
                         inventoryItemRepository.save(invItem);
 
                         InventoryTransaction inTx = InventoryTransaction.builder()
                             .inventoryItem(invItem)
                             .transactionType("DELIVERY_RETURN")
-                            .quantity(returnItem.getQuantityReturned())
+                            .quantity(eachReturned)
                             .referenceId("DEL-" + deliveryId)
                             .notes("Return from shop " + shop.getShop().getName())
                             .tenant(invItem.getTenant())
