@@ -4,6 +4,7 @@ import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.common.util.UnitConversionUtil;
 import com.spiceflow.backend.sales.dto.request.CreateLoadingSheetRequest;
 import com.spiceflow.backend.sales.dto.response.LoadingSheetResponse;
 import com.spiceflow.backend.sales.entity.Driver;
@@ -181,11 +182,12 @@ public class LoadingSheetService {
         // Transfer items
         for (LoadingSheetItem item : sheet.getItems()) {
             if (item.getQuantityLoaded() > 0) {
+                int eachQty = UnitConversionUtil.toEachItems(item.getQuantityLoaded(), item.getUnitType());
                 InventoryTransferRequest transferRequest = new InventoryTransferRequest(
                         mainStore.getId(),
                         vehicleStore.getId(),
                         item.getProduct().getId(),
-                        item.getQuantityLoaded(),
+                        eachQty,
                         "Loading Sheet " + sheet.getId()
                 );
                 

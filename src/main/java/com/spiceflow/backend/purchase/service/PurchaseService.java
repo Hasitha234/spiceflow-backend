@@ -4,6 +4,7 @@ import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.common.util.UnitConversionUtil;
 import com.spiceflow.backend.inventory.entity.InventoryItem;
 import com.spiceflow.backend.inventory.entity.InventoryTransaction;
 import com.spiceflow.backend.inventory.entity.Product;
@@ -288,7 +289,7 @@ public class PurchaseService {
             Optional<InventoryItem> invOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
                 lineItem.getProduct().getId(), mainStore.getId(), tenantId);
                 
-            int eachQuantity = convertToEachItems(lineItem.getSoldQuantity(), lineItem.getUnitType());
+            int eachQuantity = UnitConversionUtil.toEachItems(lineItem.getSoldQuantity(), lineItem.getUnitType());
                 
             InventoryItem inventoryItem;
             if (invOpt.isPresent()) {
@@ -324,7 +325,7 @@ public class PurchaseService {
                     retItem.getProduct().getId(), retStore.getId(), tenantId)
                     .orElseThrow(() -> new BusinessRuleViolationException("Insufficient stock for return in warehouse: " + retStore.getName()));
                 
-                int eachReturnQuantity = convertToEachItems(retItem.getQuantity(), retItem.getUnitType());
+                int eachReturnQuantity = UnitConversionUtil.toEachItems(retItem.getQuantity(), retItem.getUnitType());
                 
                 if (inventoryItem.getQuantityAvailable() < eachReturnQuantity) {
                     throw new BusinessRuleViolationException("Insufficient stock for return. Product: " + retItem.getProduct().getName());
@@ -360,22 +361,6 @@ public class PurchaseService {
         }
         
         purchaseRepository.delete(purchase);
-    }
-
-    private int convertToEachItems(int quantity, String unitType) {
-        int divisor;
-        switch (unitType != null ? unitType.toUpperCase() : "EA") {
-            case "DZ":  
-                divisor = 12;   
-                break;
-            case "MC":  
-                divisor = 1000; 
-                break;
-            default:    
-                divisor = 1;    
-                break; // EA
-        }
-        return quantity * divisor;
     }
 }
 
