@@ -353,14 +353,21 @@ public class AdminService {
 
   private Role getOrCreateSystemRole(Tenant tenant, String userType) {
       String roleName = "DATA_ENTRY".equals(userType) ? "Data Entry" : "Driver";
+      java.util.Set<String> permCodes = "DATA_ENTRY".equals(userType)
+          ? java.util.Set.of("INVENTORY_VIEW", "INVENTORY_TRANSFER", "PURCHASE_VIEW", "PURCHASE_CREATE", "PURCHASE_UPDATE", "ORDER_VIEW", "ORDER_CREATE", "ORDER_UPDATE", "LOADING_VIEW", "LOADING_CREATE", "LOADING_CONFIRM", "DELIVERY_VIEW", "DELIVERY_CREATE", "DELIVERY_UPDATE", "SETTINGS_PRODUCTS", "SETTINGS_SHOPS", "SETTINGS_REPS", "SETTINGS_DRIVERS", "SETTINGS_SUPPLIERS", "STORE_VIEW")
+          : java.util.Set.of("LOADING_VIEW", "DELIVERY_VIEW", "DELIVERY_CREATE", "DELIVERY_UPDATE");
+
       return roleRepository.findByTenantId(tenant.getId()).stream()
           .filter(r -> roleName.equals(r.getName()))
           .findFirst()
+          .map(existingRole -> {
+              List<com.spiceflow.backend.auth.entity.Permission> allPerms = permissionRepository.findAll().stream()
+                  .filter(p -> permCodes.contains(p.getCode()))
+                  .collect(Collectors.toList());
+              existingRole.setPermissions(new HashSet<>(allPerms));
+              return roleRepository.save(existingRole);
+          })
           .orElseGet(() -> {
-              java.util.Set<String> permCodes = "DATA_ENTRY".equals(userType)
-                  ? java.util.Set.of("INVENTORY_VIEW", "INVENTORY_TRANSFER", "PURCHASE_VIEW", "PURCHASE_CREATE", "PURCHASE_UPDATE", "ORDER_VIEW", "ORDER_CREATE", "ORDER_UPDATE", "LOADING_VIEW", "LOADING_CREATE", "LOADING_CONFIRM", "DELIVERY_VIEW", "DELIVERY_CREATE", "DELIVERY_UPDATE", "SETTINGS_PRODUCTS", "SETTINGS_SHOPS", "SETTINGS_REPS", "SETTINGS_DRIVERS", "SETTINGS_SUPPLIERS", "STORE_VIEW")
-                  : java.util.Set.of("LOADING_VIEW", "DELIVERY_VIEW", "DELIVERY_CREATE", "DELIVERY_UPDATE");
-                  
               List<com.spiceflow.backend.auth.entity.Permission> perms = permissionRepository.findAll().stream()
                   .filter(p -> permCodes.contains(p.getCode()))
                   .collect(Collectors.toList());

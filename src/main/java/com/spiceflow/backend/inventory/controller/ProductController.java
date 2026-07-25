@@ -24,12 +24,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
 @Tag(name = "Products", description = "Endpoints for managing products (requires SETTINGS_PRODUCTS authority)")
-@PreAuthorize("hasAuthority('SETTINGS_PRODUCTS')")
 public class ProductController {
 
     private final ProductService productService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('SETTINGS_PRODUCTS')")
     @Operation(summary = "Create a new product", description = "Creates a new product under the authenticated tenant's scope", operationId = "createProduct")
     public ResponseEntity<ProductResponse> createProduct(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -40,6 +40,7 @@ public class ProductController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('INVENTORY_VIEW')")
     @Operation(summary = "List all products", description = "Returns a paginated list of products, optionally filtered by search text, category, or supplier", operationId = "getProducts")
     public ResponseEntity<Page<ProductResponse>> getProducts(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -54,6 +55,7 @@ public class ProductController {
 
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('INVENTORY_VIEW')")
     @Operation(summary = "Get product by ID", description = "Returns details of a specific product", operationId = "getProduct")
     public ResponseEntity<ProductResponse> getProduct(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -64,6 +66,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('SETTINGS_PRODUCTS')")
     @Operation(summary = "Update product", description = "Updates details of an existing product", operationId = "updateProduct")
     public ResponseEntity<ProductResponse> updateProduct(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -74,6 +77,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('SETTINGS_PRODUCTS')")
     @Operation(summary = "Delete product", description = "Deletes a product if it has no associated inventory items", operationId = "deleteProduct")
     public ResponseEntity<Void> deleteProduct(
             @AuthenticationPrincipal AuthenticatedUser currentUser,

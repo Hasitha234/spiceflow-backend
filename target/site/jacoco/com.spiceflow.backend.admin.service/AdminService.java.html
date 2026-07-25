@@ -353,48 +353,55 @@ public class AdminService {
 
   private Role getOrCreateSystemRole(Tenant tenant, String userType) {
 <span class="nc bnc" id="L355" title="All 2 branches missed.">      String roleName = &quot;DATA_ENTRY&quot;.equals(userType) ? &quot;Data Entry&quot; : &quot;Driver&quot;;</span>
-<span class="nc" id="L356">      return roleRepository.findByTenantId(tenant.getId()).stream()</span>
-<span class="nc" id="L357">          .filter(r -&gt; roleName.equals(r.getName()))</span>
-<span class="nc" id="L358">          .findFirst()</span>
-<span class="nc" id="L359">          .orElseGet(() -&gt; {</span>
-<span class="nc bnc" id="L360" title="All 2 branches missed.">              java.util.Set&lt;String&gt; permCodes = &quot;DATA_ENTRY&quot;.equals(userType)</span>
-<span class="nc" id="L361">                  ? java.util.Set.of(&quot;INVENTORY_VIEW&quot;, &quot;INVENTORY_TRANSFER&quot;, &quot;PURCHASE_VIEW&quot;, &quot;PURCHASE_CREATE&quot;, &quot;PURCHASE_UPDATE&quot;, &quot;ORDER_VIEW&quot;, &quot;ORDER_CREATE&quot;, &quot;ORDER_UPDATE&quot;, &quot;LOADING_VIEW&quot;, &quot;LOADING_CREATE&quot;, &quot;LOADING_CONFIRM&quot;, &quot;DELIVERY_VIEW&quot;, &quot;DELIVERY_CREATE&quot;, &quot;DELIVERY_UPDATE&quot;, &quot;SETTINGS_PRODUCTS&quot;, &quot;SETTINGS_SHOPS&quot;, &quot;SETTINGS_REPS&quot;, &quot;SETTINGS_DRIVERS&quot;, &quot;SETTINGS_SUPPLIERS&quot;, &quot;STORE_VIEW&quot;)</span>
-<span class="nc" id="L362">                  : java.util.Set.of(&quot;LOADING_VIEW&quot;, &quot;DELIVERY_VIEW&quot;, &quot;DELIVERY_CREATE&quot;, &quot;DELIVERY_UPDATE&quot;);</span>
-                  
-<span class="nc" id="L364">              List&lt;com.spiceflow.backend.auth.entity.Permission&gt; perms = permissionRepository.findAll().stream()</span>
+<span class="nc bnc" id="L356" title="All 2 branches missed.">      java.util.Set&lt;String&gt; permCodes = &quot;DATA_ENTRY&quot;.equals(userType)</span>
+<span class="nc" id="L357">          ? java.util.Set.of(&quot;INVENTORY_VIEW&quot;, &quot;INVENTORY_TRANSFER&quot;, &quot;PURCHASE_VIEW&quot;, &quot;PURCHASE_CREATE&quot;, &quot;PURCHASE_UPDATE&quot;, &quot;ORDER_VIEW&quot;, &quot;ORDER_CREATE&quot;, &quot;ORDER_UPDATE&quot;, &quot;LOADING_VIEW&quot;, &quot;LOADING_CREATE&quot;, &quot;LOADING_CONFIRM&quot;, &quot;DELIVERY_VIEW&quot;, &quot;DELIVERY_CREATE&quot;, &quot;DELIVERY_UPDATE&quot;, &quot;SETTINGS_PRODUCTS&quot;, &quot;SETTINGS_SHOPS&quot;, &quot;SETTINGS_REPS&quot;, &quot;SETTINGS_DRIVERS&quot;, &quot;SETTINGS_SUPPLIERS&quot;, &quot;STORE_VIEW&quot;)</span>
+<span class="nc" id="L358">          : java.util.Set.of(&quot;LOADING_VIEW&quot;, &quot;DELIVERY_VIEW&quot;, &quot;DELIVERY_CREATE&quot;, &quot;DELIVERY_UPDATE&quot;);</span>
+
+<span class="nc" id="L360">      return roleRepository.findByTenantId(tenant.getId()).stream()</span>
+<span class="nc" id="L361">          .filter(r -&gt; roleName.equals(r.getName()))</span>
+<span class="nc" id="L362">          .findFirst()</span>
+<span class="nc" id="L363">          .map(existingRole -&gt; {</span>
+<span class="nc" id="L364">              List&lt;com.spiceflow.backend.auth.entity.Permission&gt; allPerms = permissionRepository.findAll().stream()</span>
 <span class="nc" id="L365">                  .filter(p -&gt; permCodes.contains(p.getCode()))</span>
 <span class="nc" id="L366">                  .collect(Collectors.toList());</span>
+<span class="nc" id="L367">              existingRole.setPermissions(new HashSet&lt;&gt;(allPerms));</span>
+<span class="nc" id="L368">              return roleRepository.save(existingRole);</span>
+          })
+<span class="nc" id="L370">          .orElseGet(() -&gt; {</span>
+<span class="nc" id="L371">              List&lt;com.spiceflow.backend.auth.entity.Permission&gt; perms = permissionRepository.findAll().stream()</span>
+<span class="nc" id="L372">                  .filter(p -&gt; permCodes.contains(p.getCode()))</span>
+<span class="nc" id="L373">                  .collect(Collectors.toList());</span>
               
-<span class="nc" id="L368">              Role role = Role.builder()</span>
-<span class="nc" id="L369">                  .tenant(tenant)</span>
-<span class="nc" id="L370">                  .name(roleName)</span>
-<span class="nc" id="L371">                  .description(&quot;Auto-created system role for &quot; + roleName)</span>
-<span class="nc" id="L372">                  .isSystemRole(true)</span>
-<span class="nc" id="L373">                  .permissions(new HashSet&lt;&gt;(perms))</span>
-<span class="nc" id="L374">                  .build();</span>
-<span class="nc" id="L375">              return roleRepository.save(role);</span>
+<span class="nc" id="L375">              Role role = Role.builder()</span>
+<span class="nc" id="L376">                  .tenant(tenant)</span>
+<span class="nc" id="L377">                  .name(roleName)</span>
+<span class="nc" id="L378">                  .description(&quot;Auto-created system role for &quot; + roleName)</span>
+<span class="nc" id="L379">                  .isSystemRole(true)</span>
+<span class="nc" id="L380">                  .permissions(new HashSet&lt;&gt;(perms))</span>
+<span class="nc" id="L381">                  .build();</span>
+<span class="nc" id="L382">              return roleRepository.save(role);</span>
           });
   }
 
   private com.spiceflow.backend.admin.dto.response.UserResponse mapToUserResponse(User user) {
-<span class="nc" id="L380">      List&lt;com.spiceflow.backend.admin.dto.response.TenantAssignedResponse&gt; assigned = List.of();</span>
-<span class="nc bnc" id="L381" title="All 2 branches missed.">      if (&quot;TENANT_OWNER&quot;.equals(user.getUserType())) {</span>
-<span class="nc" id="L382">          assigned = businessOwnerTenantRepository.findByUserId(user.getId()).stream()</span>
-<span class="nc" id="L383">              .map(bt -&gt; new com.spiceflow.backend.admin.dto.response.TenantAssignedResponse(</span>
-<span class="nc" id="L384">                  bt.getTenant().getId(), bt.getTenant().getBusinessName(), bt.getTenant().getStatus()))</span>
-<span class="nc" id="L385">              .collect(Collectors.toList());</span>
+<span class="nc" id="L387">      List&lt;com.spiceflow.backend.admin.dto.response.TenantAssignedResponse&gt; assigned = List.of();</span>
+<span class="nc bnc" id="L388" title="All 2 branches missed.">      if (&quot;TENANT_OWNER&quot;.equals(user.getUserType())) {</span>
+<span class="nc" id="L389">          assigned = businessOwnerTenantRepository.findByUserId(user.getId()).stream()</span>
+<span class="nc" id="L390">              .map(bt -&gt; new com.spiceflow.backend.admin.dto.response.TenantAssignedResponse(</span>
+<span class="nc" id="L391">                  bt.getTenant().getId(), bt.getTenant().getBusinessName(), bt.getTenant().getStatus()))</span>
+<span class="nc" id="L392">              .collect(Collectors.toList());</span>
       }
       
-<span class="nc" id="L388">      return new com.spiceflow.backend.admin.dto.response.UserResponse(</span>
-<span class="nc" id="L389">          user.getId(),</span>
-<span class="nc" id="L390">          user.getName(),</span>
-<span class="nc" id="L391">          user.getEmail(),</span>
-<span class="nc" id="L392">          user.getUserType(),</span>
-<span class="nc bnc" id="L393" title="All 2 branches missed.">          user.getTenantId() != null ? user.getTenantId() : -1L,</span>
-<span class="nc bnc" id="L394" title="All 2 branches missed.">          user.getTenant() != null ? user.getTenant().getBusinessName() : &quot;&quot;,</span>
-<span class="nc bnc" id="L395" title="All 2 branches missed.">          user.getAssignedRole() != null ? user.getAssignedRole().getName() : &quot;&quot;,</span>
+<span class="nc" id="L395">      return new com.spiceflow.backend.admin.dto.response.UserResponse(</span>
+<span class="nc" id="L396">          user.getId(),</span>
+<span class="nc" id="L397">          user.getName(),</span>
+<span class="nc" id="L398">          user.getEmail(),</span>
+<span class="nc" id="L399">          user.getUserType(),</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">          user.getTenantId() != null ? user.getTenantId() : -1L,</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">          user.getTenant() != null ? user.getTenant().getBusinessName() : &quot;&quot;,</span>
+<span class="nc bnc" id="L402" title="All 2 branches missed.">          user.getAssignedRole() != null ? user.getAssignedRole().getName() : &quot;&quot;,</span>
           assigned,
-<span class="nc" id="L397">          user.getCreatedAt()</span>
+<span class="nc" id="L404">          user.getCreatedAt()</span>
       );
   }
 }

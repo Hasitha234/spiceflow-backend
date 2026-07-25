@@ -24,12 +24,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/product-categories")
 @RequiredArgsConstructor
 @Tag(name = "Product Categories", description = "Endpoints for managing product categories (requires SETTINGS_PRODUCTS authority)")
-@PreAuthorize("hasAuthority('SETTINGS_PRODUCTS')")
 public class ProductCategoryController {
 
     private final ProductCategoryService productCategoryService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('SETTINGS_PRODUCTS')")
     @Operation(summary = "Create a new product category", description = "Creates a new category under the authenticated tenant's scope", operationId = "createCategory")
     public ResponseEntity<ProductCategoryResponse> createCategory(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -40,6 +40,7 @@ public class ProductCategoryController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('INVENTORY_VIEW')")
     @Operation(summary = "List all product categories", description = "Returns a paginated list of categories, optionally filtered by search text", operationId = "getCategories")
     public ResponseEntity<Page<ProductCategoryResponse>> getCategories(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -51,6 +52,7 @@ public class ProductCategoryController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('INVENTORY_VIEW')")
     @Operation(summary = "Get product category by ID", description = "Returns details of a specific category", operationId = "getCategory")
     public ResponseEntity<ProductCategoryResponse> getCategory(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -61,6 +63,7 @@ public class ProductCategoryController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('SETTINGS_PRODUCTS')")
     @Operation(summary = "Update product category", description = "Updates details of an existing category", operationId = "updateCategory")
     public ResponseEntity<ProductCategoryResponse> updateCategory(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -71,6 +74,7 @@ public class ProductCategoryController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('SETTINGS_PRODUCTS')")
     @Operation(summary = "Delete product category", description = "Deletes a category if it has no child categories or products", operationId = "deleteCategory")
     public ResponseEntity<Void> deleteCategory(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
