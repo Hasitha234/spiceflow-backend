@@ -1,5 +1,8 @@
 package com.spiceflow.backend.auth.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -51,6 +54,7 @@ import org.hibernate.annotations.SQLRestriction;
 public class User extends BaseEntity implements UserDetails {
     
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "tenant_id", nullable = true)
     private Tenant tenant;
 
@@ -84,6 +88,7 @@ public class User extends BaseEntity implements UserDetails {
 
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "role_id")
     private Role assignedRole;
 

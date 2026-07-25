@@ -1,5 +1,8 @@
 package com.spiceflow.backend.purchase.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.common.entity.BaseEntity;
 import com.spiceflow.backend.inventory.entity.Supplier;
@@ -31,10 +34,12 @@ import org.hibernate.annotations.SQLRestriction;
 public class Purchase extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "supplier_id", nullable = false)
     private Supplier supplier;
 
@@ -101,6 +106,7 @@ public class Purchase extends BaseEntity {
     private String notes;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "return_warehouse_id")
     @org.jspecify.annotations.Nullable
     private Warehouse returnWarehouse;

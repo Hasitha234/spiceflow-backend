@@ -1,5 +1,8 @@
 package com.spiceflow.backend.sales.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.common.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -28,6 +31,7 @@ import java.util.UUID;
 public class Shop extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
@@ -55,6 +59,7 @@ public class Shop extends BaseEntity {
     private String route;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "assigned_rep_id")
     @org.jspecify.annotations.Nullable
     private Rep assignedRep;

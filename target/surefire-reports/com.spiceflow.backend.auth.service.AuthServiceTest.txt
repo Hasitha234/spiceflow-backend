@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.spiceflow.backend.auth.service.AuthServiceTest
 -------------------------------------------------------------------------------
-Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.078 s -- in com.spiceflow.backend.auth.service.AuthServiceTest
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.045 s -- in com.spiceflow.backend.auth.service.AuthServiceTest

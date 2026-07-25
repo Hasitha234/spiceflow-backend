@@ -1,5 +1,8 @@
 package com.spiceflow.backend.sales.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.common.entity.BaseEntity;
 import com.spiceflow.backend.common.enums.DriverStatus;
@@ -31,6 +34,7 @@ import java.time.LocalDate;
 public class Driver extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
@@ -71,6 +75,7 @@ public class Driver extends BaseEntity {
     private LocalDate licenseExpiry;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "default_warehouse_id")
     @Nullable
     private Warehouse defaultWarehouse;

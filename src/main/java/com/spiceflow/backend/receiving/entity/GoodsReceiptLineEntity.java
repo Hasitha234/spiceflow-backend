@@ -1,5 +1,8 @@
 package com.spiceflow.backend.receiving.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -22,6 +25,7 @@ public class GoodsReceiptLineEntity {
     private @Nullable Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "goods_receipt_id", nullable = false)
     private @Nullable GoodsReceiptEntity goodsReceipt;
 

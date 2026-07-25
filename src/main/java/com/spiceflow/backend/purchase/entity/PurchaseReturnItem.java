@@ -1,5 +1,8 @@
 package com.spiceflow.backend.purchase.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.inventory.entity.Product;
 import jakarta.persistence.*;
@@ -27,14 +30,17 @@ public class PurchaseReturnItem {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "purchase_id", nullable = false)
     private Purchase purchase;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 

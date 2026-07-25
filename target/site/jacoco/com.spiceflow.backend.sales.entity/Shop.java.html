@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Shop.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.sales.entity</a> &gt; <span class="el_source">Shop.java</span></div><h1>Shop.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.sales.entity;
 
+
 import org.hibernate.annotations.NotFound;
 import org.hibernate.annotations.NotFoundAction;
-
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.common.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -31,6 +31,7 @@ import java.util.UUID;
 public class Shop extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = &quot;tenant_id&quot;, nullable = false)
     private Tenant tenant;
 
@@ -58,6 +59,7 @@ public class Shop extends BaseEntity {
     private String route;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = &quot;assigned_rep_id&quot;)
     @org.jspecify.annotations.Nullable
     private Rep assignedRep;
@@ -83,9 +85,9 @@ public class Shop extends BaseEntity {
 
     @PrePersist
     protected void onCreate() {
-<span class="nc bnc" id="L86" title="All 2 branches missed.">        if (this.qrCodeToken == null) {</span>
-<span class="nc" id="L87">            this.qrCodeToken = UUID.randomUUID().toString();</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (this.qrCodeToken == null) {</span>
+<span class="nc" id="L89">            this.qrCodeToken = UUID.randomUUID().toString();</span>
         }
-<span class="nc" id="L89">    }</span>
+<span class="nc" id="L91">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

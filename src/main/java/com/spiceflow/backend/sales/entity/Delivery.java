@@ -1,5 +1,8 @@
 package com.spiceflow.backend.sales.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.common.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -29,10 +32,12 @@ import org.hibernate.annotations.SQLRestriction;
 public class Delivery extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "loading_sheet_id", nullable = false)
     private LoadingSheet loadingSheet;
 

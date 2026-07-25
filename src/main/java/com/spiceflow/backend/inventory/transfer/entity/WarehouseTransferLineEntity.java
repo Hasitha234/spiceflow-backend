@@ -1,5 +1,8 @@
 package com.spiceflow.backend.inventory.transfer.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -21,6 +24,7 @@ public class WarehouseTransferLineEntity {
     private @Nullable Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "warehouse_transfer_id", nullable = false)
     private @Nullable WarehouseTransferEntity warehouseTransfer;
 

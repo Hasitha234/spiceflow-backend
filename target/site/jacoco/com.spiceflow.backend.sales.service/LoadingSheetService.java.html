@@ -4,6 +4,7 @@ import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.common.util.UnitConversionUtil;
 import com.spiceflow.backend.sales.dto.request.CreateLoadingSheetRequest;
 import com.spiceflow.backend.sales.dto.response.LoadingSheetResponse;
 import com.spiceflow.backend.sales.entity.Driver;
@@ -35,7 +36,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-<span class="fc" id="L38">@Slf4j</span>
+<span class="fc" id="L39">@Slf4j</span>
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -52,219 +53,220 @@ public class LoadingSheetService {
 
     @Transactional(rollbackFor = Exception.class)
     public LoadingSheetResponse createLoadingSheet(Long tenantId, CreateLoadingSheetRequest request) {
-<span class="fc" id="L55">        log.info(&quot;Creating loading sheet for repOrderId: {}&quot;, request.repOrderId());</span>
-<span class="fc" id="L56">        log.debug(&quot;Tenant ID: {}&quot;, tenantId);</span>
+<span class="fc" id="L56">        log.info(&quot;Creating loading sheet for repOrderId: {}&quot;, request.repOrderId());</span>
+<span class="fc" id="L57">        log.debug(&quot;Tenant ID: {}&quot;, tenantId);</span>
 
-<span class="fc" id="L58">        Tenant tenant = tenantRepository.findById(tenantId)</span>
-<span class="pc" id="L59">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
+<span class="fc" id="L59">        Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="pc" id="L60">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
 
-<span class="fc" id="L61">        RepOrder repOrder = repOrderRepository.findByIdAndTenantId(request.repOrderId(), tenantId)</span>
-<span class="pc" id="L62">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;RepOrder not found&quot;));</span>
+<span class="fc" id="L62">        RepOrder repOrder = repOrderRepository.findByIdAndTenantId(request.repOrderId(), tenantId)</span>
+<span class="pc" id="L63">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;RepOrder not found&quot;));</span>
 
-<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (!&quot;DRAFT&quot;.equals(repOrder.getLoadingStatus())) {</span>
-<span class="fc" id="L65">            throw new BusinessRuleViolationException(&quot;RepOrder is already loaded or in progress&quot;);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (!&quot;DRAFT&quot;.equals(repOrder.getLoadingStatus())) {</span>
+<span class="fc" id="L66">            throw new BusinessRuleViolationException(&quot;RepOrder is already loaded or in progress&quot;);</span>
         }
 
-<span class="fc" id="L68">        Driver driver = salesMasterDataService.getDriverEntity(request.driverId(), tenantId);</span>
+<span class="fc" id="L69">        Driver driver = salesMasterDataService.getDriverEntity(request.driverId(), tenantId);</span>
 
-<span class="fc" id="L70">        LoadingSheet loadingSheet = LoadingSheet.builder()</span>
-<span class="fc" id="L71">            .tenant(tenant)</span>
-<span class="fc" id="L72">            .repOrder(repOrder)</span>
-<span class="fc" id="L73">            .driver(driver)</span>
-<span class="fc" id="L74">            .loadingDate(request.loadingDate())</span>
-<span class="fc" id="L75">            .status(&quot;DRAFT&quot;)</span>
-<span class="fc" id="L76">            .build();</span>
+<span class="fc" id="L71">        LoadingSheet loadingSheet = LoadingSheet.builder()</span>
+<span class="fc" id="L72">            .tenant(tenant)</span>
+<span class="fc" id="L73">            .repOrder(repOrder)</span>
+<span class="fc" id="L74">            .driver(driver)</span>
+<span class="fc" id="L75">            .loadingDate(request.loadingDate())</span>
+<span class="fc" id="L76">            .status(&quot;DRAFT&quot;)</span>
+<span class="fc" id="L77">            .build();</span>
 
         // 1. Aggregate required quantities (items)
-<span class="fc" id="L79">        Map&lt;Long, LoadingSheetItem&gt; aggregatedItems = new HashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (RepOrderShop shop : repOrder.getShops()) {</span>
-<span class="fc bfc" id="L81" title="All 2 branches covered.">            for (RepOrderItem item : shop.getItems()) {</span>
-<span class="fc" id="L82">                Long productId = item.getProduct().getId();</span>
-<span class="fc" id="L83">                LoadingSheetItem sheetItem = aggregatedItems.computeIfAbsent(productId, k -&gt; LoadingSheetItem.builder()</span>
-<span class="fc" id="L84">                    .tenant(tenant)</span>
-<span class="fc" id="L85">                    .loadingSheet(loadingSheet)</span>
-<span class="fc" id="L86">                    .product(item.getProduct())</span>
-<span class="fc" id="L87">                    .unitType(item.getUnitType())</span>
-<span class="fc" id="L88">                    .quantityLoaded(0)</span>
-<span class="fc" id="L89">                    .build());</span>
-<span class="fc" id="L90">                sheetItem.setQuantityLoaded(sheetItem.getQuantityLoaded() + item.getQuantity());</span>
-<span class="fc" id="L91">            }</span>
-<span class="fc" id="L92">        }</span>
-<span class="fc" id="L93">        loadingSheet.setItems(new ArrayList&lt;&gt;(aggregatedItems.values()));</span>
+<span class="fc" id="L80">        Map&lt;Long, LoadingSheetItem&gt; aggregatedItems = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (RepOrderShop shop : repOrder.getShops()) {</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            for (RepOrderItem item : shop.getItems()) {</span>
+<span class="fc" id="L83">                Long productId = item.getProduct().getId();</span>
+<span class="fc" id="L84">                LoadingSheetItem sheetItem = aggregatedItems.computeIfAbsent(productId, k -&gt; LoadingSheetItem.builder()</span>
+<span class="fc" id="L85">                    .tenant(tenant)</span>
+<span class="fc" id="L86">                    .loadingSheet(loadingSheet)</span>
+<span class="fc" id="L87">                    .product(item.getProduct())</span>
+<span class="fc" id="L88">                    .unitType(item.getUnitType())</span>
+<span class="fc" id="L89">                    .quantityLoaded(0)</span>
+<span class="fc" id="L90">                    .build());</span>
+<span class="fc" id="L91">                sheetItem.setQuantityLoaded(sheetItem.getQuantityLoaded() + item.getQuantity());</span>
+<span class="fc" id="L92">            }</span>
+<span class="fc" id="L93">        }</span>
+<span class="fc" id="L94">        loadingSheet.setItems(new ArrayList&lt;&gt;(aggregatedItems.values()));</span>
 
         // 2. Aggregate expected returns
-<span class="fc" id="L96">        Map&lt;String, LoadingSheetReturn&gt; aggregatedReturns = new HashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L97" title="All 2 branches covered.">        for (RepOrderShop shop : repOrder.getShops()) {</span>
-<span class="pc bpc" id="L98" title="1 of 2 branches missed.">            if (shop.getReturns() != null) {</span>
-<span class="fc bfc" id="L99" title="All 2 branches covered.">                for (ShopReturn sr : shop.getReturns()) {</span>
-<span class="fc" id="L100">                    String key = sr.getProduct().getId() + &quot;_&quot; + sr.getReturnType();</span>
-<span class="fc" id="L101">                    LoadingSheetReturn sheetReturn = aggregatedReturns.computeIfAbsent(key, k -&gt; LoadingSheetReturn.builder()</span>
-<span class="fc" id="L102">                        .tenant(tenant)</span>
-<span class="fc" id="L103">                        .loadingSheet(loadingSheet)</span>
-<span class="fc" id="L104">                        .product(sr.getProduct())</span>
-<span class="fc" id="L105">                        .unitType(sr.getUnitType())</span>
-<span class="fc" id="L106">                        .returnType(sr.getReturnType())</span>
-<span class="fc" id="L107">                        .quantityReturned(0)</span>
-<span class="fc" id="L108">                        .build());</span>
-<span class="fc" id="L109">                    sheetReturn.setQuantityReturned(sheetReturn.getQuantityReturned() + sr.getQuantity());</span>
-<span class="fc" id="L110">                }</span>
+<span class="fc" id="L97">        Map&lt;String, LoadingSheetReturn&gt; aggregatedReturns = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        for (RepOrderShop shop : repOrder.getShops()) {</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">            if (shop.getReturns() != null) {</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">                for (ShopReturn sr : shop.getReturns()) {</span>
+<span class="fc" id="L101">                    String key = sr.getProduct().getId() + &quot;_&quot; + sr.getReturnType();</span>
+<span class="fc" id="L102">                    LoadingSheetReturn sheetReturn = aggregatedReturns.computeIfAbsent(key, k -&gt; LoadingSheetReturn.builder()</span>
+<span class="fc" id="L103">                        .tenant(tenant)</span>
+<span class="fc" id="L104">                        .loadingSheet(loadingSheet)</span>
+<span class="fc" id="L105">                        .product(sr.getProduct())</span>
+<span class="fc" id="L106">                        .unitType(sr.getUnitType())</span>
+<span class="fc" id="L107">                        .returnType(sr.getReturnType())</span>
+<span class="fc" id="L108">                        .quantityReturned(0)</span>
+<span class="fc" id="L109">                        .build());</span>
+<span class="fc" id="L110">                    sheetReturn.setQuantityReturned(sheetReturn.getQuantityReturned() + sr.getQuantity());</span>
+<span class="fc" id="L111">                }</span>
             }
-<span class="fc" id="L112">        }</span>
-<span class="fc" id="L113">        loadingSheet.setReturns(new ArrayList&lt;&gt;(aggregatedReturns.values()));</span>
+<span class="fc" id="L113">        }</span>
+<span class="fc" id="L114">        loadingSheet.setReturns(new ArrayList&lt;&gt;(aggregatedReturns.values()));</span>
 
-<span class="fc" id="L115">        repOrder.setLoadingStatus(&quot;IN_PROGRESS&quot;);</span>
-<span class="fc" id="L116">        repOrderRepository.save(repOrder);</span>
+<span class="fc" id="L116">        repOrder.setLoadingStatus(&quot;IN_PROGRESS&quot;);</span>
+<span class="fc" id="L117">        repOrderRepository.save(repOrder);</span>
 
-<span class="fc" id="L118">        LoadingSheet savedSheet = loadingSheetRepository.save(loadingSheet);</span>
-<span class="fc" id="L119">        log.debug(&quot;Successfully created loading sheet {} with {} items and {} returns&quot;, </span>
-<span class="fc" id="L120">            savedSheet.getId(), savedSheet.getItems().size(), savedSheet.getReturns().size());</span>
-<span class="fc" id="L121">        return loadingSheetMapper.toResponse(savedSheet);</span>
+<span class="fc" id="L119">        LoadingSheet savedSheet = loadingSheetRepository.save(loadingSheet);</span>
+<span class="fc" id="L120">        log.debug(&quot;Successfully created loading sheet {} with {} items and {} returns&quot;, </span>
+<span class="fc" id="L121">            savedSheet.getId(), savedSheet.getItems().size(), savedSheet.getReturns().size());</span>
+<span class="fc" id="L122">        return loadingSheetMapper.toResponse(savedSheet);</span>
     }
     
     public Page&lt;LoadingSheetResponse&gt; getLoadingSheets(Long tenantId, Pageable pageable) {
-<span class="fc" id="L125">        return getLoadingSheets(tenantId, null, null, pageable);</span>
+<span class="fc" id="L126">        return getLoadingSheets(tenantId, null, null, pageable);</span>
     }
 
     public Page&lt;LoadingSheetResponse&gt; getLoadingSheets(Long tenantId, @Nullable Long driverId, @Nullable String status, Pageable pageable) {
-<span class="pc bpc" id="L129" title="3 of 4 branches missed.">        if (driverId != null &amp;&amp; status != null) {</span>
-<span class="nc" id="L130">            return loadingSheetRepository.findByTenantIdAndDriverIdAndStatus(tenantId, driverId, status, pageable)</span>
-<span class="nc" id="L131">                .map(loadingSheetMapper::toResponse);</span>
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        } else if (driverId != null) {</span>
-<span class="nc" id="L133">            return loadingSheetRepository.findByTenantIdAndDriverId(tenantId, driverId, pageable)</span>
-<span class="nc" id="L134">                .map(loadingSheetMapper::toResponse);</span>
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        } else if (status != null) {</span>
-<span class="nc" id="L136">            return loadingSheetRepository.findByTenantIdAndStatus(tenantId, status, pageable)</span>
-<span class="nc" id="L137">                .map(loadingSheetMapper::toResponse);</span>
+<span class="pc bpc" id="L130" title="3 of 4 branches missed.">        if (driverId != null &amp;&amp; status != null) {</span>
+<span class="nc" id="L131">            return loadingSheetRepository.findByTenantIdAndDriverIdAndStatus(tenantId, driverId, status, pageable)</span>
+<span class="nc" id="L132">                .map(loadingSheetMapper::toResponse);</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        } else if (driverId != null) {</span>
+<span class="nc" id="L134">            return loadingSheetRepository.findByTenantIdAndDriverId(tenantId, driverId, pageable)</span>
+<span class="nc" id="L135">                .map(loadingSheetMapper::toResponse);</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">        } else if (status != null) {</span>
+<span class="nc" id="L137">            return loadingSheetRepository.findByTenantIdAndStatus(tenantId, status, pageable)</span>
+<span class="nc" id="L138">                .map(loadingSheetMapper::toResponse);</span>
         }
-<span class="fc" id="L139">        return loadingSheetRepository.findByTenantId(tenantId, pageable)</span>
-<span class="fc" id="L140">            .map(loadingSheetMapper::toResponse);</span>
+<span class="fc" id="L140">        return loadingSheetRepository.findByTenantId(tenantId, pageable)</span>
+<span class="fc" id="L141">            .map(loadingSheetMapper::toResponse);</span>
     }
 
     public LoadingSheetResponse getLoadingSheet(Long id, Long tenantId) {
-<span class="fc" id="L144">        LoadingSheet sheet = loadingSheetRepository.findByIdAndTenantId(id, tenantId)</span>
-<span class="pc" id="L145">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;LoadingSheet not found&quot;));</span>
-<span class="fc" id="L146">        return loadingSheetMapper.toResponse(sheet);</span>
+<span class="fc" id="L145">        LoadingSheet sheet = loadingSheetRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="pc" id="L146">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;LoadingSheet not found&quot;));</span>
+<span class="fc" id="L147">        return loadingSheetMapper.toResponse(sheet);</span>
     }
 
     @Transactional(rollbackFor = Exception.class)
     public LoadingSheetResponse confirmLoadingSheet(Long id, Long tenantId) {
-<span class="fc" id="L151">        log.info(&quot;Confirming loading sheet: {}&quot;, id);</span>
-<span class="fc" id="L152">        LoadingSheet sheet = loadingSheetRepository.findByIdAndTenantId(id, tenantId)</span>
-<span class="pc" id="L153">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;LoadingSheet not found&quot;));</span>
+<span class="fc" id="L152">        log.info(&quot;Confirming loading sheet: {}&quot;, id);</span>
+<span class="fc" id="L153">        LoadingSheet sheet = loadingSheetRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="pc" id="L154">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;LoadingSheet not found&quot;));</span>
             
-<span class="fc bfc" id="L155" title="All 2 branches covered.">        if (!&quot;DRAFT&quot;.equals(sheet.getStatus())) {</span>
-<span class="fc" id="L156">            throw new BusinessRuleViolationException(&quot;Only DRAFT loading sheets can be confirmed&quot;);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        if (!&quot;DRAFT&quot;.equals(sheet.getStatus())) {</span>
+<span class="fc" id="L157">            throw new BusinessRuleViolationException(&quot;Only DRAFT loading sheets can be confirmed&quot;);</span>
         }
         
         // Find MAIN store
-<span class="fc" id="L160">        Warehouse mainStore = warehouseRepository.findAllByTenantId(tenantId).stream()</span>
-<span class="fc" id="L161">            .filter(w -&gt; &quot;MAIN&quot;.equals(w.getStoreType()))</span>
-<span class="fc" id="L162">            .findFirst()</span>
-<span class="pc" id="L163">            .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;MAIN store not found for tenant&quot;));</span>
+<span class="fc" id="L161">        Warehouse mainStore = warehouseRepository.findAllByTenantId(tenantId).stream()</span>
+<span class="fc" id="L162">            .filter(w -&gt; &quot;MAIN&quot;.equals(w.getStoreType()))</span>
+<span class="fc" id="L163">            .findFirst()</span>
+<span class="pc" id="L164">            .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;MAIN store not found for tenant&quot;));</span>
             
         // Find or Create VEHICLE store
-<span class="fc" id="L166">        String vehicleStoreName = &quot;Vehicle - &quot; + sheet.getDriver().getName();</span>
-<span class="fc" id="L167">        Warehouse vehicleStore = warehouseRepository.findAllByTenantId(tenantId).stream()</span>
-<span class="pc bpc" id="L168" title="1 of 4 branches missed.">            .filter(w -&gt; &quot;CUSTOM&quot;.equals(w.getStoreType()) &amp;&amp; w.getName().equals(vehicleStoreName))</span>
-<span class="fc" id="L169">            .findFirst()</span>
-<span class="fc" id="L170">            .orElseGet(() -&gt; {</span>
-<span class="fc" id="L171">                Warehouse newStore = Warehouse.builder()</span>
-<span class="fc" id="L172">                    .tenant(sheet.getTenant())</span>
-<span class="fc" id="L173">                    .name(vehicleStoreName)</span>
-<span class="fc" id="L174">                    .storeType(&quot;CUSTOM&quot;)</span>
-<span class="fc" id="L175">                    .isSystemStore(false)</span>
-<span class="fc" id="L176">                    .description(&quot;Store for vehicle/driver &quot; + sheet.getDriver().getName())</span>
-<span class="fc" id="L177">                    .build();</span>
-<span class="fc" id="L178">                return warehouseRepository.save(newStore);</span>
+<span class="fc" id="L167">        String vehicleStoreName = &quot;Vehicle - &quot; + sheet.getDriver().getName();</span>
+<span class="fc" id="L168">        Warehouse vehicleStore = warehouseRepository.findAllByTenantId(tenantId).stream()</span>
+<span class="pc bpc" id="L169" title="1 of 4 branches missed.">            .filter(w -&gt; &quot;CUSTOM&quot;.equals(w.getStoreType()) &amp;&amp; w.getName().equals(vehicleStoreName))</span>
+<span class="fc" id="L170">            .findFirst()</span>
+<span class="fc" id="L171">            .orElseGet(() -&gt; {</span>
+<span class="fc" id="L172">                Warehouse newStore = Warehouse.builder()</span>
+<span class="fc" id="L173">                    .tenant(sheet.getTenant())</span>
+<span class="fc" id="L174">                    .name(vehicleStoreName)</span>
+<span class="fc" id="L175">                    .storeType(&quot;CUSTOM&quot;)</span>
+<span class="fc" id="L176">                    .isSystemStore(false)</span>
+<span class="fc" id="L177">                    .description(&quot;Store for vehicle/driver &quot; + sheet.getDriver().getName())</span>
+<span class="fc" id="L178">                    .build();</span>
+<span class="fc" id="L179">                return warehouseRepository.save(newStore);</span>
             });
             
         // Transfer items
-<span class="fc bfc" id="L182" title="All 2 branches covered.">        for (LoadingSheetItem item : sheet.getItems()) {</span>
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">            if (item.getQuantityLoaded() &gt; 0) {</span>
-<span class="fc" id="L184">                InventoryTransferRequest transferRequest = new InventoryTransferRequest(</span>
-<span class="fc" id="L185">                        mainStore.getId(),</span>
-<span class="fc" id="L186">                        vehicleStore.getId(),</span>
-<span class="fc" id="L187">                        item.getProduct().getId(),</span>
-<span class="fc" id="L188">                        item.getQuantityLoaded(),</span>
-<span class="fc" id="L189">                        &quot;Loading Sheet &quot; + sheet.getId()</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        for (LoadingSheetItem item : sheet.getItems()) {</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">            if (item.getQuantityLoaded() &gt; 0) {</span>
+<span class="fc" id="L185">                int eachQty = UnitConversionUtil.toEachItems(item.getQuantityLoaded(), item.getUnitType());</span>
+<span class="fc" id="L186">                InventoryTransferRequest transferRequest = new InventoryTransferRequest(</span>
+<span class="fc" id="L187">                        mainStore.getId(),</span>
+<span class="fc" id="L188">                        vehicleStore.getId(),</span>
+<span class="fc" id="L189">                        item.getProduct().getId(),</span>
+<span class="fc" id="L190">                        eachQty,</span>
+<span class="fc" id="L191">                        &quot;Loading Sheet &quot; + sheet.getId()</span>
                 );
                 
-<span class="fc" id="L192">                inventoryItemService.transferInventory(tenantId, transferRequest);</span>
+<span class="fc" id="L194">                inventoryItemService.transferInventory(tenantId, transferRequest);</span>
             }
-<span class="fc" id="L194">        }</span>
+<span class="fc" id="L196">        }</span>
         
-<span class="fc" id="L196">        sheet.setStatus(&quot;CONFIRMED&quot;);</span>
+<span class="fc" id="L198">        sheet.setStatus(&quot;CONFIRMED&quot;);</span>
         
-<span class="fc" id="L198">        RepOrder repOrder = sheet.getRepOrder();</span>
-<span class="fc" id="L199">        repOrder.setLoadingStatus(&quot;LOADED&quot;);</span>
-<span class="fc" id="L200">        repOrderRepository.save(repOrder);</span>
+<span class="fc" id="L200">        RepOrder repOrder = sheet.getRepOrder();</span>
+<span class="fc" id="L201">        repOrder.setLoadingStatus(&quot;LOADED&quot;);</span>
+<span class="fc" id="L202">        repOrderRepository.save(repOrder);</span>
         
-<span class="fc" id="L202">        LoadingSheet savedSheet = loadingSheetRepository.save(sheet);</span>
-<span class="fc" id="L203">        log.debug(&quot;Successfully confirmed loading sheet {} and transferred stock to {}&quot;, savedSheet.getId(), vehicleStoreName);</span>
-<span class="fc" id="L204">        return loadingSheetMapper.toResponse(savedSheet);</span>
+<span class="fc" id="L204">        LoadingSheet savedSheet = loadingSheetRepository.save(sheet);</span>
+<span class="fc" id="L205">        log.debug(&quot;Successfully confirmed loading sheet {} and transferred stock to {}&quot;, savedSheet.getId(), vehicleStoreName);</span>
+<span class="fc" id="L206">        return loadingSheetMapper.toResponse(savedSheet);</span>
     }
 
     @Transactional(rollbackFor = Exception.class)
     public LoadingSheetResponse cancelLoadingSheet(Long id, Long tenantId) {
-<span class="nc" id="L209">        return cancelLoadingSheet(id, tenantId, null);</span>
+<span class="nc" id="L211">        return cancelLoadingSheet(id, tenantId, null);</span>
     }
 
     @Transactional(rollbackFor = Exception.class)
     public LoadingSheetResponse cancelLoadingSheet(Long id, Long tenantId, @Nullable Long returnWarehouseId) {
-<span class="nc" id="L214">        log.info(&quot;Cancelling loading sheet: {} with returnWarehouseId: {}&quot;, id, returnWarehouseId);</span>
-<span class="nc" id="L215">        LoadingSheet sheet = loadingSheetRepository.findByIdAndTenantId(id, tenantId)</span>
-<span class="nc" id="L216">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;LoadingSheet not found&quot;));</span>
+<span class="nc" id="L216">        log.info(&quot;Cancelling loading sheet: {} with returnWarehouseId: {}&quot;, id, returnWarehouseId);</span>
+<span class="nc" id="L217">        LoadingSheet sheet = loadingSheetRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="nc" id="L218">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;LoadingSheet not found&quot;));</span>
             
-<span class="nc bnc" id="L218" title="All 4 branches missed.">        if (!&quot;DRAFT&quot;.equals(sheet.getStatus()) &amp;&amp; !&quot;CONFIRMED&quot;.equals(sheet.getStatus())) {</span>
-<span class="nc" id="L219">            throw new BusinessRuleViolationException(&quot;Only DRAFT or CONFIRMED loading sheets can be cancelled&quot;);</span>
+<span class="nc bnc" id="L220" title="All 4 branches missed.">        if (!&quot;DRAFT&quot;.equals(sheet.getStatus()) &amp;&amp; !&quot;CONFIRMED&quot;.equals(sheet.getStatus())) {</span>
+<span class="nc" id="L221">            throw new BusinessRuleViolationException(&quot;Only DRAFT or CONFIRMED loading sheets can be cancelled&quot;);</span>
         }
         
-<span class="nc bnc" id="L222" title="All 4 branches missed.">        if (&quot;CONFIRMED&quot;.equals(sheet.getStatus()) || returnWarehouseId != null) {</span>
-<span class="nc" id="L223">            String vehicleStoreName = &quot;Vehicle - &quot; + sheet.getDriver().getName();</span>
-<span class="nc" id="L224">            Warehouse vehicleStore = warehouseRepository.findAllByTenantId(tenantId).stream()</span>
-<span class="nc bnc" id="L225" title="All 4 branches missed.">                .filter(w -&gt; &quot;CUSTOM&quot;.equals(w.getStoreType()) &amp;&amp; w.getName().equals(vehicleStoreName))</span>
-<span class="nc" id="L226">                .findFirst()</span>
-<span class="nc" id="L227">                .orElse(null);</span>
+<span class="nc bnc" id="L224" title="All 4 branches missed.">        if (&quot;CONFIRMED&quot;.equals(sheet.getStatus()) || returnWarehouseId != null) {</span>
+<span class="nc" id="L225">            String vehicleStoreName = &quot;Vehicle - &quot; + sheet.getDriver().getName();</span>
+<span class="nc" id="L226">            Warehouse vehicleStore = warehouseRepository.findAllByTenantId(tenantId).stream()</span>
+<span class="nc bnc" id="L227" title="All 4 branches missed.">                .filter(w -&gt; &quot;CUSTOM&quot;.equals(w.getStoreType()) &amp;&amp; w.getName().equals(vehicleStoreName))</span>
+<span class="nc" id="L228">                .findFirst()</span>
+<span class="nc" id="L229">                .orElse(null);</span>
                 
-<span class="nc bnc" id="L229" title="All 2 branches missed.">            if (vehicleStore != null) {</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">            if (vehicleStore != null) {</span>
                 Warehouse returnStore;
-<span class="nc bnc" id="L231" title="All 2 branches missed.">                if (returnWarehouseId != null) {</span>
-<span class="nc" id="L232">                    returnStore = warehouseRepository.findByIdAndTenantId(returnWarehouseId, tenantId)</span>
-<span class="nc" id="L233">                        .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Return warehouse not found&quot;));</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">                if (returnWarehouseId != null) {</span>
+<span class="nc" id="L234">                    returnStore = warehouseRepository.findByIdAndTenantId(returnWarehouseId, tenantId)</span>
+<span class="nc" id="L235">                        .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Return warehouse not found&quot;));</span>
                 } else {
-<span class="nc" id="L235">                    returnStore = warehouseRepository.findAllByTenantId(tenantId).stream()</span>
-<span class="nc" id="L236">                        .filter(w -&gt; &quot;MAIN&quot;.equals(w.getStoreType()))</span>
-<span class="nc" id="L237">                        .findFirst()</span>
-<span class="nc" id="L238">                        .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;MAIN store not found for tenant&quot;));</span>
+<span class="nc" id="L237">                    returnStore = warehouseRepository.findAllByTenantId(tenantId).stream()</span>
+<span class="nc" id="L238">                        .filter(w -&gt; &quot;MAIN&quot;.equals(w.getStoreType()))</span>
+<span class="nc" id="L239">                        .findFirst()</span>
+<span class="nc" id="L240">                        .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;MAIN store not found for tenant&quot;));</span>
                 }
                 
-<span class="nc" id="L241">                List&lt;InventoryItem&gt; vehicleItems = inventoryItemRepository.findByWarehouseIdAndTenantId(vehicleStore.getId(), tenantId, Pageable.unpaged()).getContent();</span>
-<span class="nc bnc" id="L242" title="All 2 branches missed.">                for (InventoryItem invItem : vehicleItems) {</span>
-<span class="nc bnc" id="L243" title="All 4 branches missed.">                    if (invItem.getQuantityAvailable() != null &amp;&amp; invItem.getQuantityAvailable() &gt; 0) {</span>
-<span class="nc" id="L244">                        InventoryTransferRequest transferRequest = new InventoryTransferRequest(</span>
-<span class="nc" id="L245">                                vehicleStore.getId(),</span>
-<span class="nc" id="L246">                                returnStore.getId(),</span>
-<span class="nc" id="L247">                                invItem.getProduct().getId(),</span>
-<span class="nc" id="L248">                                invItem.getQuantityAvailable(),</span>
-<span class="nc" id="L249">                                &quot;Cancelled Loading Sheet &quot; + sheet.getId()</span>
+<span class="nc" id="L243">                List&lt;InventoryItem&gt; vehicleItems = inventoryItemRepository.findByWarehouseIdAndTenantId(vehicleStore.getId(), tenantId, Pageable.unpaged()).getContent();</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">                for (InventoryItem invItem : vehicleItems) {</span>
+<span class="nc bnc" id="L245" title="All 4 branches missed.">                    if (invItem.getQuantityAvailable() != null &amp;&amp; invItem.getQuantityAvailable() &gt; 0) {</span>
+<span class="nc" id="L246">                        InventoryTransferRequest transferRequest = new InventoryTransferRequest(</span>
+<span class="nc" id="L247">                                vehicleStore.getId(),</span>
+<span class="nc" id="L248">                                returnStore.getId(),</span>
+<span class="nc" id="L249">                                invItem.getProduct().getId(),</span>
+<span class="nc" id="L250">                                invItem.getQuantityAvailable(),</span>
+<span class="nc" id="L251">                                &quot;Cancelled Loading Sheet &quot; + sheet.getId()</span>
                         );
-<span class="nc" id="L251">                        inventoryItemService.transferInventory(tenantId, transferRequest);</span>
+<span class="nc" id="L253">                        inventoryItemService.transferInventory(tenantId, transferRequest);</span>
                     }
-<span class="nc" id="L253">                }</span>
+<span class="nc" id="L255">                }</span>
             }
         }
         
-<span class="nc" id="L257">        sheet.setStatus(&quot;CANCELLED&quot;);</span>
+<span class="nc" id="L259">        sheet.setStatus(&quot;CANCELLED&quot;);</span>
         
-<span class="nc" id="L259">        RepOrder repOrder = sheet.getRepOrder();</span>
-<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (repOrder != null) {</span>
-<span class="nc" id="L261">            repOrder.setLoadingStatus(&quot;DRAFT&quot;);</span>
-<span class="nc" id="L262">            repOrderRepository.save(repOrder);</span>
+<span class="nc" id="L261">        RepOrder repOrder = sheet.getRepOrder();</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        if (repOrder != null) {</span>
+<span class="nc" id="L263">            repOrder.setLoadingStatus(&quot;DRAFT&quot;);</span>
+<span class="nc" id="L264">            repOrderRepository.save(repOrder);</span>
         }
         
-<span class="nc" id="L265">        LoadingSheet savedSheet = loadingSheetRepository.save(sheet);</span>
-<span class="nc" id="L266">        log.debug(&quot;Successfully cancelled loading sheet {}&quot;, savedSheet.getId());</span>
-<span class="nc" id="L267">        return loadingSheetMapper.toResponse(savedSheet);</span>
+<span class="nc" id="L267">        LoadingSheet savedSheet = loadingSheetRepository.save(sheet);</span>
+<span class="nc" id="L268">        log.debug(&quot;Successfully cancelled loading sheet {}&quot;, savedSheet.getId());</span>
+<span class="nc" id="L269">        return loadingSheetMapper.toResponse(savedSheet);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,5 +1,8 @@
 package com.spiceflow.backend.sales.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import com.spiceflow.backend.auth.entity.Tenant;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -27,10 +30,12 @@ public class DeliveryPayment {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "delivery_shop_id", nullable = false)
     private DeliveryShop deliveryShop;
 

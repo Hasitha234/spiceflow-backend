@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WarehouseTransferLineEntity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.inventory.transfer.entity</a> &gt; <span class="el_source">WarehouseTransferLineEntity.java</span></div><h1>WarehouseTransferLineEntity.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.inventory.transfer.entity;
 
+
 import org.hibernate.annotations.NotFound;
 import org.hibernate.annotations.NotFoundAction;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -24,6 +24,7 @@ public class WarehouseTransferLineEntity {
     private @Nullable Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = &quot;warehouse_transfer_id&quot;, nullable = false)
     private @Nullable WarehouseTransferEntity warehouseTransfer;
 
@@ -51,45 +52,45 @@ public class WarehouseTransferLineEntity {
     @Column(name = &quot;line_total&quot;, nullable = false, precision = 19, scale = 2)
     private BigDecimal lineTotal;
 
-<span class="fc" id="L54">    public WarehouseTransferLineEntity() {</span>
-<span class="fc" id="L55">        this.productId = 0L;</span>
-<span class="fc" id="L56">        this.requestedQty = BigDecimal.ZERO;</span>
-<span class="fc" id="L57">        this.shippedQty = BigDecimal.ZERO;</span>
-<span class="fc" id="L58">        this.receivedQty = BigDecimal.ZERO;</span>
-<span class="fc" id="L59">        this.damagedQty = BigDecimal.ZERO;</span>
-<span class="fc" id="L60">        this.lotNumber = &quot;&quot;;</span>
-<span class="fc" id="L61">        this.unitCost = BigDecimal.ZERO;</span>
-<span class="fc" id="L62">        this.lineTotal = BigDecimal.ZERO;</span>
-<span class="fc" id="L63">    }</span>
+<span class="fc" id="L55">    public WarehouseTransferLineEntity() {</span>
+<span class="fc" id="L56">        this.productId = 0L;</span>
+<span class="fc" id="L57">        this.requestedQty = BigDecimal.ZERO;</span>
+<span class="fc" id="L58">        this.shippedQty = BigDecimal.ZERO;</span>
+<span class="fc" id="L59">        this.receivedQty = BigDecimal.ZERO;</span>
+<span class="fc" id="L60">        this.damagedQty = BigDecimal.ZERO;</span>
+<span class="fc" id="L61">        this.lotNumber = &quot;&quot;;</span>
+<span class="fc" id="L62">        this.unitCost = BigDecimal.ZERO;</span>
+<span class="fc" id="L63">        this.lineTotal = BigDecimal.ZERO;</span>
+<span class="fc" id="L64">    }</span>
 
-<span class="fc" id="L65">    public @Nullable Long getId() { return id; }</span>
-<span class="fc" id="L66">    public void setId(@Nullable Long id) { this.id = id; }</span>
+<span class="fc" id="L66">    public @Nullable Long getId() { return id; }</span>
+<span class="fc" id="L67">    public void setId(@Nullable Long id) { this.id = id; }</span>
 
-<span class="nc" id="L68">    public @Nullable WarehouseTransferEntity getWarehouseTransfer() { return warehouseTransfer; }</span>
-<span class="fc" id="L69">    public void setWarehouseTransfer(@Nullable WarehouseTransferEntity warehouseTransfer) { this.warehouseTransfer = warehouseTransfer; }</span>
+<span class="nc" id="L69">    public @Nullable WarehouseTransferEntity getWarehouseTransfer() { return warehouseTransfer; }</span>
+<span class="fc" id="L70">    public void setWarehouseTransfer(@Nullable WarehouseTransferEntity warehouseTransfer) { this.warehouseTransfer = warehouseTransfer; }</span>
 
-<span class="fc" id="L71">    public Long getProductId() { return productId; }</span>
-<span class="fc" id="L72">    public void setProductId(Long productId) { this.productId = productId; }</span>
+<span class="fc" id="L72">    public Long getProductId() { return productId; }</span>
+<span class="fc" id="L73">    public void setProductId(Long productId) { this.productId = productId; }</span>
 
-<span class="fc" id="L74">    public BigDecimal getRequestedQty() { return requestedQty; }</span>
-<span class="fc" id="L75">    public void setRequestedQty(BigDecimal requestedQty) { this.requestedQty = requestedQty; }</span>
+<span class="fc" id="L75">    public BigDecimal getRequestedQty() { return requestedQty; }</span>
+<span class="fc" id="L76">    public void setRequestedQty(BigDecimal requestedQty) { this.requestedQty = requestedQty; }</span>
 
-<span class="fc" id="L77">    public BigDecimal getShippedQty() { return shippedQty; }</span>
-<span class="fc" id="L78">    public void setShippedQty(BigDecimal shippedQty) { this.shippedQty = shippedQty; }</span>
+<span class="fc" id="L78">    public BigDecimal getShippedQty() { return shippedQty; }</span>
+<span class="fc" id="L79">    public void setShippedQty(BigDecimal shippedQty) { this.shippedQty = shippedQty; }</span>
 
-<span class="fc" id="L80">    public BigDecimal getReceivedQty() { return receivedQty; }</span>
-<span class="fc" id="L81">    public void setReceivedQty(BigDecimal receivedQty) { this.receivedQty = receivedQty; }</span>
+<span class="fc" id="L81">    public BigDecimal getReceivedQty() { return receivedQty; }</span>
+<span class="fc" id="L82">    public void setReceivedQty(BigDecimal receivedQty) { this.receivedQty = receivedQty; }</span>
 
-<span class="fc" id="L83">    public BigDecimal getDamagedQty() { return damagedQty; }</span>
-<span class="fc" id="L84">    public void setDamagedQty(BigDecimal damagedQty) { this.damagedQty = damagedQty; }</span>
+<span class="fc" id="L84">    public BigDecimal getDamagedQty() { return damagedQty; }</span>
+<span class="fc" id="L85">    public void setDamagedQty(BigDecimal damagedQty) { this.damagedQty = damagedQty; }</span>
 
-<span class="fc" id="L86">    public String getLotNumber() { return lotNumber; }</span>
-<span class="fc" id="L87">    public void setLotNumber(String lotNumber) { this.lotNumber = lotNumber; }</span>
+<span class="fc" id="L87">    public String getLotNumber() { return lotNumber; }</span>
+<span class="fc" id="L88">    public void setLotNumber(String lotNumber) { this.lotNumber = lotNumber; }</span>
 
-<span class="fc" id="L89">    public BigDecimal getUnitCost() { return unitCost; }</span>
-<span class="fc" id="L90">    public void setUnitCost(BigDecimal unitCost) { this.unitCost = unitCost; }</span>
+<span class="fc" id="L90">    public BigDecimal getUnitCost() { return unitCost; }</span>
+<span class="fc" id="L91">    public void setUnitCost(BigDecimal unitCost) { this.unitCost = unitCost; }</span>
 
-<span class="nc" id="L92">    public BigDecimal getLineTotal() { return lineTotal; }</span>
-<span class="fc" id="L93">    public void setLineTotal(BigDecimal lineTotal) { this.lineTotal = lineTotal; }</span>
+<span class="nc" id="L93">    public BigDecimal getLineTotal() { return lineTotal; }</span>
+<span class="fc" id="L94">    public void setLineTotal(BigDecimal lineTotal) { this.lineTotal = lineTotal; }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

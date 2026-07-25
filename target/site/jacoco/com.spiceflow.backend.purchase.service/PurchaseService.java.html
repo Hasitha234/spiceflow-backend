@@ -4,6 +4,7 @@ import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.common.util.UnitConversionUtil;
 import com.spiceflow.backend.inventory.entity.InventoryItem;
 import com.spiceflow.backend.inventory.entity.InventoryTransaction;
 import com.spiceflow.backend.inventory.entity.Product;
@@ -36,7 +37,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-<span class="fc" id="L39">@Slf4j</span>
+<span class="fc" id="L40">@Slf4j</span>
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -53,330 +54,314 @@ public class PurchaseService {
 
     @Transactional(rollbackFor = Exception.class)
     public PurchaseResponse createPurchase(Long tenantId, CreatePurchaseRequest request) {
-<span class="fc" id="L56">        log.debug(&quot;Creating purchase for tenant: {}, invoice: {}&quot;, tenantId, request.invoiceNo());</span>
+<span class="fc" id="L57">        log.debug(&quot;Creating purchase for tenant: {}, invoice: {}&quot;, tenantId, request.invoiceNo());</span>
         
-<span class="fc" id="L58">        Tenant tenant = tenantRepository.findById(tenantId)</span>
-<span class="fc" id="L59">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
+<span class="fc" id="L59">        Tenant tenant = tenantRepository.findById(tenantId)</span>
+<span class="fc" id="L60">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Tenant not found&quot;));</span>
             
-<span class="fc" id="L61">        Supplier supplier = supplierService.getSupplierEntity(tenantId, request.supplierId());</span>
+<span class="fc" id="L62">        Supplier supplier = supplierService.getSupplierEntity(tenantId, request.supplierId());</span>
         
         // Calculate totals
-<span class="fc" id="L64">        int totalBoxes = 0;</span>
-<span class="fc" id="L65">        BigDecimal totalOrderValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L65">        int totalBoxes = 0;</span>
+<span class="fc" id="L66">        BigDecimal totalOrderValue = BigDecimal.ZERO;</span>
         
-<span class="fc" id="L67">        List&lt;PurchaseLineItem&gt; lineItems = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L68">        List&lt;PurchaseReturnItem&gt; returnItems = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L68">        List&lt;PurchaseLineItem&gt; lineItems = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L69">        List&lt;PurchaseReturnItem&gt; returnItems = new ArrayList&lt;&gt;();</span>
         
-<span class="fc" id="L70">        Warehouse returnWarehouse = null;</span>
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (request.returnWarehouseId() != null) {</span>
-<span class="nc" id="L72">            returnWarehouse = warehouseRepository.findByIdAndTenantId(request.returnWarehouseId(), tenantId)</span>
-<span class="nc" id="L73">                .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;Return warehouse not found&quot;));</span>
+<span class="fc" id="L71">        Warehouse returnWarehouse = null;</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (request.returnWarehouseId() != null) {</span>
+<span class="nc" id="L73">            returnWarehouse = warehouseRepository.findByIdAndTenantId(request.returnWarehouseId(), tenantId)</span>
+<span class="nc" id="L74">                .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;Return warehouse not found&quot;));</span>
         }
         
-<span class="fc" id="L76">        Purchase purchase = Purchase.builder()</span>
-<span class="fc" id="L77">            .tenant(tenant)</span>
-<span class="fc" id="L78">            .supplier(supplier)</span>
-<span class="fc" id="L79">            .invoiceNo(request.invoiceNo())</span>
-<span class="fc" id="L80">            .invoiceDate(request.invoiceDate())</span>
-<span class="fc" id="L81">            .orderNo(request.orderNo())</span>
-<span class="fc" id="L82">            .lcNo(request.lcNo())</span>
-<span class="fc" id="L83">            .grossWeightKg(request.grossWeightKg())</span>
-<span class="pc bpc" id="L84" title="1 of 2 branches missed.">            .discountAmount(request.discountAmount() != null ? request.discountAmount() : BigDecimal.ZERO)</span>
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">            .returnsDeductedAmount(request.returnsDeductedAmount() != null ? request.returnsDeductedAmount() : BigDecimal.ZERO)</span>
-<span class="pc bpc" id="L86" title="1 of 2 branches missed.">            .vatAmount(request.vatAmount() != null ? request.vatAmount() : BigDecimal.ZERO)</span>
-<span class="fc" id="L87">            .paymentMethod(request.paymentMethod())</span>
-<span class="fc" id="L88">            .chequeNo(request.chequeNo())</span>
-<span class="fc" id="L89">            .chequeBankName(request.chequeBankName())</span>
-<span class="fc" id="L90">            .chequeAmount(request.chequeAmount())</span>
-<span class="fc" id="L91">            .status(&quot;DRAFT&quot;)</span>
-<span class="fc" id="L92">            .notes(request.notes())</span>
-<span class="fc" id="L93">            .build();</span>
+<span class="fc" id="L77">        Purchase purchase = Purchase.builder()</span>
+<span class="fc" id="L78">            .tenant(tenant)</span>
+<span class="fc" id="L79">            .supplier(supplier)</span>
+<span class="fc" id="L80">            .invoiceNo(request.invoiceNo())</span>
+<span class="fc" id="L81">            .invoiceDate(request.invoiceDate())</span>
+<span class="fc" id="L82">            .orderNo(request.orderNo())</span>
+<span class="fc" id="L83">            .lcNo(request.lcNo())</span>
+<span class="fc" id="L84">            .grossWeightKg(request.grossWeightKg())</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">            .discountAmount(request.discountAmount() != null ? request.discountAmount() : BigDecimal.ZERO)</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">            .returnsDeductedAmount(request.returnsDeductedAmount() != null ? request.returnsDeductedAmount() : BigDecimal.ZERO)</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">            .vatAmount(request.vatAmount() != null ? request.vatAmount() : BigDecimal.ZERO)</span>
+<span class="fc" id="L88">            .paymentMethod(request.paymentMethod())</span>
+<span class="fc" id="L89">            .chequeNo(request.chequeNo())</span>
+<span class="fc" id="L90">            .chequeBankName(request.chequeBankName())</span>
+<span class="fc" id="L91">            .chequeAmount(request.chequeAmount())</span>
+<span class="fc" id="L92">            .status(&quot;DRAFT&quot;)</span>
+<span class="fc" id="L93">            .notes(request.notes())</span>
+<span class="fc" id="L94">            .build();</span>
             
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (returnWarehouse != null) {</span>
-<span class="nc" id="L96">            purchase.setReturnWarehouse(returnWarehouse);</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (returnWarehouse != null) {</span>
+<span class="nc" id="L97">            purchase.setReturnWarehouse(returnWarehouse);</span>
         }
 
-<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (PurchaseLineItemRequest itemReq : request.lineItems()) {</span>
-<span class="fc" id="L100">            Product product = productService.getProductEntity(itemReq.productId(), tenantId);</span>
-<span class="pc bpc" id="L101" title="3 of 4 branches missed.">            if (product.getSupplier() != null &amp;&amp; !product.getSupplier().getId().equals(request.supplierId())) {</span>
-<span class="nc" id="L102">                throw new BusinessRuleViolationException(&quot;Product '&quot; + product.getName() + &quot;' (SKU: &quot; + product.getSku() + &quot;) does not belong to the selected supplier.&quot;);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        for (PurchaseLineItemRequest itemReq : request.lineItems()) {</span>
+<span class="fc" id="L101">            Product product = productService.getProductEntity(itemReq.productId(), tenantId);</span>
+<span class="pc bpc" id="L102" title="3 of 4 branches missed.">            if (product.getSupplier() != null &amp;&amp; !product.getSupplier().getId().equals(request.supplierId())) {</span>
+<span class="nc" id="L103">                throw new BusinessRuleViolationException(&quot;Product '&quot; + product.getName() + &quot;' (SKU: &quot; + product.getSku() + &quot;) does not belong to the selected supplier.&quot;);</span>
             }
             
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            BigDecimal amount = itemReq.amount() != null </span>
-<span class="nc" id="L106">                ? itemReq.amount() </span>
-<span class="fc" id="L107">                : itemReq.rate().multiply(BigDecimal.valueOf(itemReq.soldQuantity()));</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">            BigDecimal amount = itemReq.amount() != null </span>
+<span class="nc" id="L107">                ? itemReq.amount() </span>
+<span class="fc" id="L108">                : itemReq.rate().multiply(BigDecimal.valueOf(itemReq.soldQuantity()));</span>
 
             
-<span class="fc" id="L110">            PurchaseLineItem lineItem = PurchaseLineItem.builder()</span>
-<span class="fc" id="L111">                .tenant(tenant)</span>
-<span class="fc" id="L112">                .purchase(purchase)</span>
-<span class="fc" id="L113">                .product(product)</span>
-<span class="fc" id="L114">                .noOfBoxes(itemReq.noOfBoxes())</span>
-<span class="fc" id="L115">                .soldQuantity(itemReq.soldQuantity())</span>
-<span class="fc" id="L116">                .unitType(itemReq.unitType())</span>
-<span class="fc" id="L117">                .rate(itemReq.rate())</span>
-<span class="fc" id="L118">                .amount(amount)</span>
-<span class="fc" id="L119">                .build();</span>
+<span class="fc" id="L111">            PurchaseLineItem lineItem = PurchaseLineItem.builder()</span>
+<span class="fc" id="L112">                .tenant(tenant)</span>
+<span class="fc" id="L113">                .purchase(purchase)</span>
+<span class="fc" id="L114">                .product(product)</span>
+<span class="fc" id="L115">                .noOfBoxes(itemReq.noOfBoxes())</span>
+<span class="fc" id="L116">                .soldQuantity(itemReq.soldQuantity())</span>
+<span class="fc" id="L117">                .unitType(itemReq.unitType())</span>
+<span class="fc" id="L118">                .rate(itemReq.rate())</span>
+<span class="fc" id="L119">                .amount(amount)</span>
+<span class="fc" id="L120">                .build();</span>
                 
-<span class="fc" id="L121">            lineItems.add(lineItem);</span>
+<span class="fc" id="L122">            lineItems.add(lineItem);</span>
             
-<span class="fc" id="L123">            totalBoxes += itemReq.noOfBoxes();</span>
-<span class="fc" id="L124">            totalOrderValue = totalOrderValue.add(amount);</span>
-<span class="fc" id="L125">        }</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (request.returnItems() != null) {</span>
-<span class="nc bnc" id="L127" title="All 2 branches missed.">            for (PurchaseReturnItemRequest retReq : request.returnItems()) {</span>
-<span class="nc" id="L128">                Product product = productService.getProductEntity(retReq.productId(), tenantId);</span>
+<span class="fc" id="L124">            totalBoxes += itemReq.noOfBoxes();</span>
+<span class="fc" id="L125">            totalOrderValue = totalOrderValue.add(amount);</span>
+<span class="fc" id="L126">        }</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (request.returnItems() != null) {</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">            for (PurchaseReturnItemRequest retReq : request.returnItems()) {</span>
+<span class="nc" id="L129">                Product product = productService.getProductEntity(retReq.productId(), tenantId);</span>
                 
-<span class="nc bnc" id="L130" title="All 2 branches missed.">                BigDecimal retAmount = retReq.amount() != null </span>
-<span class="nc" id="L131">                    ? retReq.amount() </span>
-<span class="nc" id="L132">                    : retReq.rate().multiply(BigDecimal.valueOf(retReq.quantity()));</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">                BigDecimal retAmount = retReq.amount() != null </span>
+<span class="nc" id="L132">                    ? retReq.amount() </span>
+<span class="nc" id="L133">                    : retReq.rate().multiply(BigDecimal.valueOf(retReq.quantity()));</span>
                 
-<span class="nc" id="L134">                PurchaseReturnItem retItem = PurchaseReturnItem.builder()</span>
-<span class="nc" id="L135">                    .tenant(tenant)</span>
-<span class="nc" id="L136">                    .purchase(purchase)</span>
-<span class="nc" id="L137">                    .product(product)</span>
-<span class="nc" id="L138">                    .quantity(retReq.quantity())</span>
-<span class="nc" id="L139">                    .unitType(retReq.unitType())</span>
-<span class="nc" id="L140">                    .rate(retReq.rate())</span>
-<span class="nc" id="L141">                    .amount(retAmount)</span>
-<span class="nc" id="L142">                    .build();</span>
-<span class="nc" id="L143">                returnItems.add(retItem);</span>
-<span class="nc" id="L144">            }</span>
+<span class="nc" id="L135">                PurchaseReturnItem retItem = PurchaseReturnItem.builder()</span>
+<span class="nc" id="L136">                    .tenant(tenant)</span>
+<span class="nc" id="L137">                    .purchase(purchase)</span>
+<span class="nc" id="L138">                    .product(product)</span>
+<span class="nc" id="L139">                    .quantity(retReq.quantity())</span>
+<span class="nc" id="L140">                    .unitType(retReq.unitType())</span>
+<span class="nc" id="L141">                    .rate(retReq.rate())</span>
+<span class="nc" id="L142">                    .amount(retAmount)</span>
+<span class="nc" id="L143">                    .build();</span>
+<span class="nc" id="L144">                returnItems.add(retItem);</span>
+<span class="nc" id="L145">            }</span>
         }
 
-<span class="fc" id="L147">        purchase.setTotalBoxes(totalBoxes);</span>
-<span class="fc" id="L148">        purchase.setTotalOrderValue(totalOrderValue);</span>
-<span class="fc" id="L149">        purchase.setValueOfSupply(totalOrderValue.subtract(purchase.getDiscountAmount()).subtract(purchase.getReturnsDeductedAmount()));</span>
-<span class="fc" id="L150">        purchase.setNetAmount(purchase.getValueOfSupply().add(purchase.getVatAmount()));</span>
+<span class="fc" id="L148">        purchase.setTotalBoxes(totalBoxes);</span>
+<span class="fc" id="L149">        purchase.setTotalOrderValue(totalOrderValue);</span>
+<span class="fc" id="L150">        purchase.setValueOfSupply(totalOrderValue.subtract(purchase.getDiscountAmount()).subtract(purchase.getReturnsDeductedAmount()));</span>
+<span class="fc" id="L151">        purchase.setNetAmount(purchase.getValueOfSupply().add(purchase.getVatAmount()));</span>
         
-<span class="fc" id="L152">        purchase.setLineItems(lineItems);</span>
-<span class="fc" id="L153">        purchase.setReturnItems(returnItems);</span>
+<span class="fc" id="L153">        purchase.setLineItems(lineItems);</span>
+<span class="fc" id="L154">        purchase.setReturnItems(returnItems);</span>
         
-<span class="fc" id="L155">        Purchase savedPurchase = purchaseRepository.save(purchase);</span>
+<span class="fc" id="L156">        Purchase savedPurchase = purchaseRepository.save(purchase);</span>
         
-<span class="fc" id="L157">        return purchaseMapper.toResponse(savedPurchase);</span>
+<span class="fc" id="L158">        return purchaseMapper.toResponse(savedPurchase);</span>
     }
     
     @Transactional(rollbackFor = Exception.class)
     public PurchaseResponse updatePurchase(Long id, Long tenantId, CreatePurchaseRequest request) {
-<span class="fc" id="L162">        Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)</span>
-<span class="pc" id="L163">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Purchase not found&quot;));</span>
+<span class="fc" id="L163">        Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="pc" id="L164">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Purchase not found&quot;));</span>
             
-<span class="fc bfc" id="L165" title="All 2 branches covered.">        if (!&quot;DRAFT&quot;.equals(purchase.getStatus())) {</span>
-<span class="fc" id="L166">            throw new BusinessRuleViolationException(&quot;Only DRAFT purchases can be edited&quot;);</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (!&quot;DRAFT&quot;.equals(purchase.getStatus())) {</span>
+<span class="fc" id="L167">            throw new BusinessRuleViolationException(&quot;Only DRAFT purchases can be edited&quot;);</span>
         }
         
-<span class="fc" id="L169">        Supplier supplier = supplierService.getSupplierEntity(tenantId, request.supplierId());</span>
+<span class="fc" id="L170">        Supplier supplier = supplierService.getSupplierEntity(tenantId, request.supplierId());</span>
         
-<span class="fc" id="L171">        Warehouse returnWarehouse = null;</span>
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        if (request.returnWarehouseId() != null) {</span>
-<span class="nc" id="L173">            returnWarehouse = warehouseRepository.findByIdAndTenantId(request.returnWarehouseId(), tenantId)</span>
-<span class="nc" id="L174">                .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;Return warehouse not found&quot;));</span>
+<span class="fc" id="L172">        Warehouse returnWarehouse = null;</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">        if (request.returnWarehouseId() != null) {</span>
+<span class="nc" id="L174">            returnWarehouse = warehouseRepository.findByIdAndTenantId(request.returnWarehouseId(), tenantId)</span>
+<span class="nc" id="L175">                .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;Return warehouse not found&quot;));</span>
         }
         
-<span class="fc" id="L177">        purchase.setSupplier(supplier);</span>
-<span class="fc" id="L178">        purchase.setInvoiceNo(request.invoiceNo());</span>
-<span class="fc" id="L179">        purchase.setInvoiceDate(request.invoiceDate());</span>
-<span class="fc" id="L180">        purchase.setOrderNo(request.orderNo());</span>
-<span class="fc" id="L181">        purchase.setLcNo(request.lcNo());</span>
-<span class="fc" id="L182">        purchase.setGrossWeightKg(request.grossWeightKg());</span>
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        purchase.setDiscountAmount(request.discountAmount() != null ? request.discountAmount() : BigDecimal.ZERO);</span>
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        purchase.setReturnsDeductedAmount(request.returnsDeductedAmount() != null ? request.returnsDeductedAmount() : BigDecimal.ZERO);</span>
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        purchase.setVatAmount(request.vatAmount() != null ? request.vatAmount() : BigDecimal.ZERO);</span>
-<span class="fc" id="L186">        purchase.setPaymentMethod(request.paymentMethod());</span>
-<span class="fc" id="L187">        purchase.setChequeNo(request.chequeNo());</span>
-<span class="fc" id="L188">        purchase.setChequeBankName(request.chequeBankName());</span>
-<span class="fc" id="L189">        purchase.setChequeAmount(request.chequeAmount());</span>
-<span class="fc" id="L190">        purchase.setNotes(request.notes());</span>
-<span class="fc" id="L191">        purchase.setReturnWarehouse(returnWarehouse);</span>
+<span class="fc" id="L178">        purchase.setSupplier(supplier);</span>
+<span class="fc" id="L179">        purchase.setInvoiceNo(request.invoiceNo());</span>
+<span class="fc" id="L180">        purchase.setInvoiceDate(request.invoiceDate());</span>
+<span class="fc" id="L181">        purchase.setOrderNo(request.orderNo());</span>
+<span class="fc" id="L182">        purchase.setLcNo(request.lcNo());</span>
+<span class="fc" id="L183">        purchase.setGrossWeightKg(request.grossWeightKg());</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        purchase.setDiscountAmount(request.discountAmount() != null ? request.discountAmount() : BigDecimal.ZERO);</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        purchase.setReturnsDeductedAmount(request.returnsDeductedAmount() != null ? request.returnsDeductedAmount() : BigDecimal.ZERO);</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        purchase.setVatAmount(request.vatAmount() != null ? request.vatAmount() : BigDecimal.ZERO);</span>
+<span class="fc" id="L187">        purchase.setPaymentMethod(request.paymentMethod());</span>
+<span class="fc" id="L188">        purchase.setChequeNo(request.chequeNo());</span>
+<span class="fc" id="L189">        purchase.setChequeBankName(request.chequeBankName());</span>
+<span class="fc" id="L190">        purchase.setChequeAmount(request.chequeAmount());</span>
+<span class="fc" id="L191">        purchase.setNotes(request.notes());</span>
+<span class="fc" id="L192">        purchase.setReturnWarehouse(returnWarehouse);</span>
         
-<span class="fc" id="L193">        purchase.getLineItems().clear();</span>
-<span class="fc" id="L194">        purchase.getReturnItems().clear();</span>
+<span class="fc" id="L194">        purchase.getLineItems().clear();</span>
+<span class="fc" id="L195">        purchase.getReturnItems().clear();</span>
         
-<span class="fc" id="L196">        int totalBoxes = 0;</span>
-<span class="fc" id="L197">        BigDecimal totalOrderValue = BigDecimal.ZERO;</span>
+<span class="fc" id="L197">        int totalBoxes = 0;</span>
+<span class="fc" id="L198">        BigDecimal totalOrderValue = BigDecimal.ZERO;</span>
         
-<span class="fc bfc" id="L199" title="All 2 branches covered.">        for (PurchaseLineItemRequest itemReq : request.lineItems()) {</span>
-<span class="fc" id="L200">            Product product = productService.getProductEntity(itemReq.productId(), tenantId);</span>
-<span class="pc bpc" id="L201" title="3 of 4 branches missed.">            if (product.getSupplier() != null &amp;&amp; !product.getSupplier().getId().equals(request.supplierId())) {</span>
-<span class="nc" id="L202">                throw new BusinessRuleViolationException(&quot;Product '&quot; + product.getName() + &quot;' (SKU: &quot; + product.getSku() + &quot;) does not belong to the selected supplier.&quot;);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        for (PurchaseLineItemRequest itemReq : request.lineItems()) {</span>
+<span class="fc" id="L201">            Product product = productService.getProductEntity(itemReq.productId(), tenantId);</span>
+<span class="pc bpc" id="L202" title="3 of 4 branches missed.">            if (product.getSupplier() != null &amp;&amp; !product.getSupplier().getId().equals(request.supplierId())) {</span>
+<span class="nc" id="L203">                throw new BusinessRuleViolationException(&quot;Product '&quot; + product.getName() + &quot;' (SKU: &quot; + product.getSku() + &quot;) does not belong to the selected supplier.&quot;);</span>
             }
             
-<span class="pc bpc" id="L205" title="1 of 2 branches missed.">            BigDecimal amount = itemReq.amount() != null </span>
-<span class="nc" id="L206">                ? itemReq.amount() </span>
-<span class="fc" id="L207">                : itemReq.rate().multiply(BigDecimal.valueOf(itemReq.soldQuantity()));</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">            BigDecimal amount = itemReq.amount() != null </span>
+<span class="nc" id="L207">                ? itemReq.amount() </span>
+<span class="fc" id="L208">                : itemReq.rate().multiply(BigDecimal.valueOf(itemReq.soldQuantity()));</span>
             
-<span class="fc" id="L209">            PurchaseLineItem lineItem = PurchaseLineItem.builder()</span>
-<span class="fc" id="L210">                .tenant(purchase.getTenant())</span>
-<span class="fc" id="L211">                .purchase(purchase)</span>
-<span class="fc" id="L212">                .product(product)</span>
-<span class="fc" id="L213">                .noOfBoxes(itemReq.noOfBoxes())</span>
-<span class="fc" id="L214">                .soldQuantity(itemReq.soldQuantity())</span>
-<span class="fc" id="L215">                .unitType(itemReq.unitType())</span>
-<span class="fc" id="L216">                .rate(itemReq.rate())</span>
-<span class="fc" id="L217">                .amount(amount)</span>
-<span class="fc" id="L218">                .build();</span>
+<span class="fc" id="L210">            PurchaseLineItem lineItem = PurchaseLineItem.builder()</span>
+<span class="fc" id="L211">                .tenant(purchase.getTenant())</span>
+<span class="fc" id="L212">                .purchase(purchase)</span>
+<span class="fc" id="L213">                .product(product)</span>
+<span class="fc" id="L214">                .noOfBoxes(itemReq.noOfBoxes())</span>
+<span class="fc" id="L215">                .soldQuantity(itemReq.soldQuantity())</span>
+<span class="fc" id="L216">                .unitType(itemReq.unitType())</span>
+<span class="fc" id="L217">                .rate(itemReq.rate())</span>
+<span class="fc" id="L218">                .amount(amount)</span>
+<span class="fc" id="L219">                .build();</span>
                 
-<span class="fc" id="L220">            purchase.getLineItems().add(lineItem);</span>
+<span class="fc" id="L221">            purchase.getLineItems().add(lineItem);</span>
             
-<span class="fc" id="L222">            totalBoxes += itemReq.noOfBoxes();</span>
-<span class="fc" id="L223">            totalOrderValue = totalOrderValue.add(amount);</span>
-<span class="fc" id="L224">        }</span>
+<span class="fc" id="L223">            totalBoxes += itemReq.noOfBoxes();</span>
+<span class="fc" id="L224">            totalOrderValue = totalOrderValue.add(amount);</span>
+<span class="fc" id="L225">        }</span>
         
-<span class="pc bpc" id="L226" title="1 of 2 branches missed.">        if (request.returnItems() != null) {</span>
-<span class="pc bpc" id="L227" title="1 of 2 branches missed.">            for (PurchaseReturnItemRequest retReq : request.returnItems()) {</span>
-<span class="nc" id="L228">                Product product = productService.getProductEntity(retReq.productId(), tenantId);</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">        if (request.returnItems() != null) {</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">            for (PurchaseReturnItemRequest retReq : request.returnItems()) {</span>
+<span class="nc" id="L229">                Product product = productService.getProductEntity(retReq.productId(), tenantId);</span>
                 
-<span class="nc bnc" id="L230" title="All 2 branches missed.">                BigDecimal retAmount = retReq.amount() != null </span>
-<span class="nc" id="L231">                    ? retReq.amount() </span>
-<span class="nc" id="L232">                    : retReq.rate().multiply(BigDecimal.valueOf(retReq.quantity()));</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">                BigDecimal retAmount = retReq.amount() != null </span>
+<span class="nc" id="L232">                    ? retReq.amount() </span>
+<span class="nc" id="L233">                    : retReq.rate().multiply(BigDecimal.valueOf(retReq.quantity()));</span>
                 
-<span class="nc" id="L234">                PurchaseReturnItem retItem = PurchaseReturnItem.builder()</span>
-<span class="nc" id="L235">                    .tenant(purchase.getTenant())</span>
-<span class="nc" id="L236">                    .purchase(purchase)</span>
-<span class="nc" id="L237">                    .product(product)</span>
-<span class="nc" id="L238">                    .quantity(retReq.quantity())</span>
-<span class="nc" id="L239">                    .unitType(retReq.unitType())</span>
-<span class="nc" id="L240">                    .rate(retReq.rate())</span>
-<span class="nc" id="L241">                    .amount(retAmount)</span>
-<span class="nc" id="L242">                    .build();</span>
-<span class="nc" id="L243">                purchase.getReturnItems().add(retItem);</span>
-<span class="nc" id="L244">            }</span>
+<span class="nc" id="L235">                PurchaseReturnItem retItem = PurchaseReturnItem.builder()</span>
+<span class="nc" id="L236">                    .tenant(purchase.getTenant())</span>
+<span class="nc" id="L237">                    .purchase(purchase)</span>
+<span class="nc" id="L238">                    .product(product)</span>
+<span class="nc" id="L239">                    .quantity(retReq.quantity())</span>
+<span class="nc" id="L240">                    .unitType(retReq.unitType())</span>
+<span class="nc" id="L241">                    .rate(retReq.rate())</span>
+<span class="nc" id="L242">                    .amount(retAmount)</span>
+<span class="nc" id="L243">                    .build();</span>
+<span class="nc" id="L244">                purchase.getReturnItems().add(retItem);</span>
+<span class="nc" id="L245">            }</span>
         }
         
-<span class="fc" id="L247">        purchase.setTotalBoxes(totalBoxes);</span>
-<span class="fc" id="L248">        purchase.setTotalOrderValue(totalOrderValue);</span>
-<span class="fc" id="L249">        purchase.setValueOfSupply(totalOrderValue.subtract(purchase.getDiscountAmount()).subtract(purchase.getReturnsDeductedAmount()));</span>
-<span class="fc" id="L250">        purchase.setNetAmount(purchase.getValueOfSupply().add(purchase.getVatAmount()));</span>
+<span class="fc" id="L248">        purchase.setTotalBoxes(totalBoxes);</span>
+<span class="fc" id="L249">        purchase.setTotalOrderValue(totalOrderValue);</span>
+<span class="fc" id="L250">        purchase.setValueOfSupply(totalOrderValue.subtract(purchase.getDiscountAmount()).subtract(purchase.getReturnsDeductedAmount()));</span>
+<span class="fc" id="L251">        purchase.setNetAmount(purchase.getValueOfSupply().add(purchase.getVatAmount()));</span>
         
-<span class="fc" id="L252">        Purchase savedPurchase = purchaseRepository.save(purchase);</span>
-<span class="fc" id="L253">        return purchaseMapper.toResponse(savedPurchase);</span>
+<span class="fc" id="L253">        Purchase savedPurchase = purchaseRepository.save(purchase);</span>
+<span class="fc" id="L254">        return purchaseMapper.toResponse(savedPurchase);</span>
     }
     
     public Page&lt;PurchaseResponse&gt; getPurchases(Long tenantId, String invoiceNo, LocalDate date, Pageable pageable) {
         Page&lt;Purchase&gt; purchases;
-<span class="pc bpc" id="L258" title="1 of 2 branches missed.">        if (date != null) {</span>
-<span class="nc" id="L259">            purchases = purchaseRepository.findByTenantIdAndInvoiceDate(tenantId, date, pageable);</span>
-<span class="pc bpc" id="L260" title="1 of 4 branches missed.">        } else if (invoiceNo != null &amp;&amp; !invoiceNo.isBlank()) {</span>
-<span class="fc" id="L261">            purchases = purchaseRepository.findByTenantIdAndInvoiceNoContainingIgnoreCase(tenantId, invoiceNo, pageable);</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">        if (date != null) {</span>
+<span class="nc" id="L260">            purchases = purchaseRepository.findByTenantIdAndInvoiceDate(tenantId, date, pageable);</span>
+<span class="pc bpc" id="L261" title="1 of 4 branches missed.">        } else if (invoiceNo != null &amp;&amp; !invoiceNo.isBlank()) {</span>
+<span class="fc" id="L262">            purchases = purchaseRepository.findByTenantIdAndInvoiceNoContainingIgnoreCase(tenantId, invoiceNo, pageable);</span>
         } else {
-<span class="fc" id="L263">            purchases = purchaseRepository.findByTenantId(tenantId, pageable);</span>
+<span class="fc" id="L264">            purchases = purchaseRepository.findByTenantId(tenantId, pageable);</span>
         }
-<span class="fc" id="L265">        return purchases.map(purchaseMapper::toResponse);</span>
+<span class="fc" id="L266">        return purchases.map(purchaseMapper::toResponse);</span>
     }
     
     public PurchaseResponse getPurchase(Long id, Long tenantId) {
-<span class="fc" id="L269">        Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)</span>
-<span class="pc" id="L270">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Purchase not found&quot;));</span>
-<span class="fc" id="L271">        return purchaseMapper.toResponse(purchase);</span>
+<span class="fc" id="L270">        Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="pc" id="L271">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Purchase not found&quot;));</span>
+<span class="fc" id="L272">        return purchaseMapper.toResponse(purchase);</span>
     }
     
     @Transactional(rollbackFor = Exception.class)
     public PurchaseResponse confirmPurchase(Long id, Long warehouseId, Long tenantId) {
-<span class="fc" id="L276">        Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)</span>
-<span class="pc" id="L277">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Purchase not found&quot;));</span>
+<span class="fc" id="L277">        Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="pc" id="L278">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Purchase not found&quot;));</span>
             
-<span class="fc bfc" id="L279" title="All 2 branches covered.">        if (!&quot;DRAFT&quot;.equals(purchase.getStatus())) {</span>
-<span class="fc" id="L280">            throw new BusinessRuleViolationException(&quot;Purchase is already confirmed&quot;);</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">        if (!&quot;DRAFT&quot;.equals(purchase.getStatus())) {</span>
+<span class="fc" id="L281">            throw new BusinessRuleViolationException(&quot;Purchase is already confirmed&quot;);</span>
         }
         
         // Find designated store
-<span class="fc" id="L284">        Warehouse mainStore = warehouseRepository.findByIdAndTenantId(warehouseId, tenantId)</span>
-<span class="fc" id="L285">            .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;Warehouse not found&quot;));</span>
+<span class="fc" id="L285">        Warehouse mainStore = warehouseRepository.findByIdAndTenantId(warehouseId, tenantId)</span>
+<span class="fc" id="L286">            .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;Warehouse not found&quot;));</span>
             
-<span class="fc bfc" id="L287" title="All 2 branches covered.">        for (PurchaseLineItem lineItem : purchase.getLineItems()) {</span>
-<span class="fc" id="L288">            Optional&lt;InventoryItem&gt; invOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(</span>
-<span class="fc" id="L289">                lineItem.getProduct().getId(), mainStore.getId(), tenantId);</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">        for (PurchaseLineItem lineItem : purchase.getLineItems()) {</span>
+<span class="fc" id="L289">            Optional&lt;InventoryItem&gt; invOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(</span>
+<span class="fc" id="L290">                lineItem.getProduct().getId(), mainStore.getId(), tenantId);</span>
                 
-<span class="fc" id="L291">            int eachQuantity = convertToEachItems(lineItem.getSoldQuantity(), lineItem.getUnitType());</span>
+<span class="fc" id="L292">            int eachQuantity = UnitConversionUtil.toEachItems(lineItem.getSoldQuantity(), lineItem.getUnitType());</span>
                 
             InventoryItem inventoryItem;
-<span class="pc bpc" id="L294" title="1 of 2 branches missed.">            if (invOpt.isPresent()) {</span>
-<span class="fc" id="L295">                inventoryItem = invOpt.get();</span>
-<span class="fc" id="L296">                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() + eachQuantity);</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">            if (invOpt.isPresent()) {</span>
+<span class="fc" id="L296">                inventoryItem = invOpt.get();</span>
+<span class="fc" id="L297">                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() + eachQuantity);</span>
             } else {
-<span class="nc" id="L298">                inventoryItem = InventoryItem.builder()</span>
-<span class="nc" id="L299">                    .tenant(purchase.getTenant())</span>
-<span class="nc" id="L300">                    .product(lineItem.getProduct())</span>
-<span class="nc" id="L301">                    .warehouse(mainStore)</span>
-<span class="nc" id="L302">                    .quantityAvailable(eachQuantity)</span>
-<span class="nc" id="L303">                    .build();</span>
+<span class="nc" id="L299">                inventoryItem = InventoryItem.builder()</span>
+<span class="nc" id="L300">                    .tenant(purchase.getTenant())</span>
+<span class="nc" id="L301">                    .product(lineItem.getProduct())</span>
+<span class="nc" id="L302">                    .warehouse(mainStore)</span>
+<span class="nc" id="L303">                    .quantityAvailable(eachQuantity)</span>
+<span class="nc" id="L304">                    .build();</span>
             }
             
-<span class="fc" id="L306">            inventoryItem = inventoryItemRepository.save(inventoryItem);</span>
+<span class="fc" id="L307">            inventoryItem = inventoryItemRepository.save(inventoryItem);</span>
             
-<span class="fc" id="L308">            InventoryTransaction tx = InventoryTransaction.builder()</span>
-<span class="fc" id="L309">                .tenant(purchase.getTenant())</span>
-<span class="fc" id="L310">                .inventoryItem(inventoryItem)</span>
-<span class="fc" id="L311">                .transactionType(&quot;PURCHASE_IN&quot;)</span>
-<span class="fc" id="L312">                .quantity(eachQuantity)</span>
-<span class="fc" id="L313">                .referenceId(&quot;PUR-&quot; + purchase.getInvoiceNo())</span>
-<span class="fc" id="L314">                .notes(&quot;Purchase ID: &quot; + purchase.getId())</span>
-<span class="fc" id="L315">                .build();</span>
+<span class="fc" id="L309">            InventoryTransaction tx = InventoryTransaction.builder()</span>
+<span class="fc" id="L310">                .tenant(purchase.getTenant())</span>
+<span class="fc" id="L311">                .inventoryItem(inventoryItem)</span>
+<span class="fc" id="L312">                .transactionType(&quot;PURCHASE_IN&quot;)</span>
+<span class="fc" id="L313">                .quantity(eachQuantity)</span>
+<span class="fc" id="L314">                .referenceId(&quot;PUR-&quot; + purchase.getInvoiceNo())</span>
+<span class="fc" id="L315">                .notes(&quot;Purchase ID: &quot; + purchase.getId())</span>
+<span class="fc" id="L316">                .build();</span>
                 
-<span class="fc" id="L317">            inventoryTransactionRepository.save(tx);</span>
-<span class="fc" id="L318">        }</span>
+<span class="fc" id="L318">            inventoryTransactionRepository.save(tx);</span>
+<span class="fc" id="L319">        }</span>
 
-<span class="pc bpc" id="L320" title="5 of 6 branches missed.">        if (purchase.getReturnWarehouse() != null &amp;&amp; purchase.getReturnItems() != null &amp;&amp; !purchase.getReturnItems().isEmpty()) {</span>
-<span class="nc" id="L321">            Warehouse retStore = purchase.getReturnWarehouse();</span>
-<span class="nc bnc" id="L322" title="All 2 branches missed.">            for (PurchaseReturnItem retItem : purchase.getReturnItems()) {</span>
-<span class="nc" id="L323">                InventoryItem inventoryItem = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(</span>
-<span class="nc" id="L324">                    retItem.getProduct().getId(), retStore.getId(), tenantId)</span>
-<span class="nc" id="L325">                    .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;Insufficient stock for return in warehouse: &quot; + retStore.getName()));</span>
+<span class="pc bpc" id="L321" title="5 of 6 branches missed.">        if (purchase.getReturnWarehouse() != null &amp;&amp; purchase.getReturnItems() != null &amp;&amp; !purchase.getReturnItems().isEmpty()) {</span>
+<span class="nc" id="L322">            Warehouse retStore = purchase.getReturnWarehouse();</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">            for (PurchaseReturnItem retItem : purchase.getReturnItems()) {</span>
+<span class="nc" id="L324">                InventoryItem inventoryItem = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(</span>
+<span class="nc" id="L325">                    retItem.getProduct().getId(), retStore.getId(), tenantId)</span>
+<span class="nc" id="L326">                    .orElseThrow(() -&gt; new BusinessRuleViolationException(&quot;Insufficient stock for return in warehouse: &quot; + retStore.getName()));</span>
                 
-<span class="nc" id="L327">                int eachReturnQuantity = convertToEachItems(retItem.getQuantity(), retItem.getUnitType());</span>
+<span class="nc" id="L328">                int eachReturnQuantity = UnitConversionUtil.toEachItems(retItem.getQuantity(), retItem.getUnitType());</span>
                 
-<span class="nc bnc" id="L329" title="All 2 branches missed.">                if (inventoryItem.getQuantityAvailable() &lt; eachReturnQuantity) {</span>
-<span class="nc" id="L330">                    throw new BusinessRuleViolationException(&quot;Insufficient stock for return. Product: &quot; + retItem.getProduct().getName());</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">                if (inventoryItem.getQuantityAvailable() &lt; eachReturnQuantity) {</span>
+<span class="nc" id="L331">                    throw new BusinessRuleViolationException(&quot;Insufficient stock for return. Product: &quot; + retItem.getProduct().getName());</span>
                 }
                 
-<span class="nc" id="L333">                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() - eachReturnQuantity);</span>
-<span class="nc" id="L334">                inventoryItemRepository.save(inventoryItem);</span>
+<span class="nc" id="L334">                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() - eachReturnQuantity);</span>
+<span class="nc" id="L335">                inventoryItemRepository.save(inventoryItem);</span>
                 
-<span class="nc" id="L336">                InventoryTransaction tx = InventoryTransaction.builder()</span>
-<span class="nc" id="L337">                    .tenant(purchase.getTenant())</span>
-<span class="nc" id="L338">                    .inventoryItem(inventoryItem)</span>
-<span class="nc" id="L339">                    .transactionType(&quot;PURCHASE_RETURN_OUT&quot;)</span>
-<span class="nc" id="L340">                    .quantity(eachReturnQuantity)</span>
-<span class="nc" id="L341">                    .referenceId(&quot;PUR-RET-&quot; + purchase.getInvoiceNo())</span>
-<span class="nc" id="L342">                    .notes(&quot;Purchase Return ID: &quot; + purchase.getId())</span>
-<span class="nc" id="L343">                    .build();</span>
+<span class="nc" id="L337">                InventoryTransaction tx = InventoryTransaction.builder()</span>
+<span class="nc" id="L338">                    .tenant(purchase.getTenant())</span>
+<span class="nc" id="L339">                    .inventoryItem(inventoryItem)</span>
+<span class="nc" id="L340">                    .transactionType(&quot;PURCHASE_RETURN_OUT&quot;)</span>
+<span class="nc" id="L341">                    .quantity(eachReturnQuantity)</span>
+<span class="nc" id="L342">                    .referenceId(&quot;PUR-RET-&quot; + purchase.getInvoiceNo())</span>
+<span class="nc" id="L343">                    .notes(&quot;Purchase Return ID: &quot; + purchase.getId())</span>
+<span class="nc" id="L344">                    .build();</span>
                     
-<span class="nc" id="L345">                inventoryTransactionRepository.save(tx);</span>
-<span class="nc" id="L346">            }</span>
+<span class="nc" id="L346">                inventoryTransactionRepository.save(tx);</span>
+<span class="nc" id="L347">            }</span>
         }
         
-<span class="fc" id="L349">        purchase.setStatus(&quot;CONFIRMED&quot;);</span>
-<span class="fc" id="L350">        return purchaseMapper.toResponse(purchaseRepository.save(purchase));</span>
+<span class="fc" id="L350">        purchase.setStatus(&quot;CONFIRMED&quot;);</span>
+<span class="fc" id="L351">        return purchaseMapper.toResponse(purchaseRepository.save(purchase));</span>
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void deletePurchase(Long id, Long tenantId) {
-<span class="nc" id="L355">        Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)</span>
-<span class="nc" id="L356">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Purchase not found&quot;));</span>
+<span class="nc" id="L356">        Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)</span>
+<span class="nc" id="L357">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Purchase not found&quot;));</span>
             
-<span class="nc bnc" id="L358" title="All 2 branches missed.">        if (!&quot;DRAFT&quot;.equals(purchase.getStatus())) {</span>
-<span class="nc" id="L359">            throw new BusinessRuleViolationException(&quot;Only DRAFT purchases can be deleted&quot;);</span>
+<span class="nc bnc" id="L359" title="All 2 branches missed.">        if (!&quot;DRAFT&quot;.equals(purchase.getStatus())) {</span>
+<span class="nc" id="L360">            throw new BusinessRuleViolationException(&quot;Only DRAFT purchases can be deleted&quot;);</span>
         }
         
-<span class="nc" id="L362">        purchaseRepository.delete(purchase);</span>
-<span class="nc" id="L363">    }</span>
-
-    private int convertToEachItems(int quantity, String unitType) {
-        int divisor;
-<span class="pc bpc" id="L367" title="3 of 5 branches missed.">        switch (unitType != null ? unitType.toUpperCase() : &quot;EA&quot;) {</span>
-            case &quot;DZ&quot;:  
-<span class="nc" id="L369">                divisor = 12;   </span>
-<span class="nc" id="L370">                break;</span>
-            case &quot;MC&quot;:  
-<span class="nc" id="L372">                divisor = 1000; </span>
-<span class="nc" id="L373">                break;</span>
-            default:    
-<span class="fc" id="L375">                divisor = 1;    </span>
-                break; // EA
-        }
-<span class="fc" id="L378">        return quantity * divisor;</span>
-    }
+<span class="nc" id="L363">        purchaseRepository.delete(purchase);</span>
+<span class="nc" id="L364">    }</span>
 }
 
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

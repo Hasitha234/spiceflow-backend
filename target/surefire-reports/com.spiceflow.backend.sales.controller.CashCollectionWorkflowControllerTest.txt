@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.spiceflow.backend.sales.controller.CashCollectionWorkflowControllerTest
 -------------------------------------------------------------------------------
-Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.042 s -- in com.spiceflow.backend.sales.controller.CashCollectionWorkflowControllerTest
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.248 s -- in com.spiceflow.backend.sales.controller.CashCollectionWorkflowControllerTest

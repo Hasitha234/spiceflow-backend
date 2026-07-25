@@ -1,5 +1,8 @@
 package com.spiceflow.backend.auth.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -61,6 +64,7 @@ public class Tenant extends BaseEntity {
     private LocalDate trialEndDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "business_type_id", nullable = false)
     private BusinessType businessType;
 

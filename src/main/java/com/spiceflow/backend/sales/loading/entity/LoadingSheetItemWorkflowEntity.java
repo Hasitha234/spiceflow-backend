@@ -1,5 +1,8 @@
 package com.spiceflow.backend.sales.loading.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -20,6 +23,7 @@ public class LoadingSheetItemWorkflowEntity {
     private @Nullable Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "loading_sheet_id", nullable = false)
     private @Nullable LoadingSheetWorkflowEntity loadingSheet;
 

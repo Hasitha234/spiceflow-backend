@@ -1,5 +1,8 @@
 package com.spiceflow.backend.inventory.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.common.entity.BaseEntity;
 import jakarta.persistence.Column;
@@ -30,6 +33,7 @@ import org.hibernate.annotations.SQLRestriction;
 public class InventoryTransaction extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "inventory_item_id", nullable = false)
     private InventoryItem inventoryItem;
 
@@ -46,6 +50,7 @@ public class InventoryTransaction extends BaseEntity {
     private String notes;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 }

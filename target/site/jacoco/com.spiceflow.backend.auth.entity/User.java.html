@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>User.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.spiceflow.backend.auth.entity</a> &gt; <span class="el_source">User.java</span></div><h1>User.java</h1><pre class="source lang-java linenums">package com.spiceflow.backend.auth.entity;
 
+
 import org.hibernate.annotations.NotFound;
 import org.hibernate.annotations.NotFoundAction;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -54,6 +54,7 @@ import org.hibernate.annotations.SQLRestriction;
 public class User extends BaseEntity implements UserDetails {
     
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = &quot;tenant_id&quot;, nullable = true)
     private Tenant tenant;
 
@@ -74,19 +75,20 @@ public class User extends BaseEntity implements UserDetails {
     @Override
     public Collection&lt;? extends GrantedAuthority&gt; getAuthorities() {
       // Return permissions + role name
-<span class="fc bfc" id="L77" title="All 2 branches covered.">      if (assignedRole != null) {</span>
-<span class="fc" id="L78">        List&lt;GrantedAuthority&gt; authorities = assignedRole.getPermissions()</span>
-<span class="fc" id="L79">            .stream()</span>
-<span class="fc" id="L80">            .map(p -&gt; new SimpleGrantedAuthority(p.getCode()))</span>
-<span class="fc" id="L81">            .collect(Collectors.toList());</span>
-<span class="fc" id="L82">        authorities.add(new SimpleGrantedAuthority(&quot;ROLE_&quot; + assignedRole.getName().toUpperCase(java.util.Locale.ROOT).replace(&quot; &quot;, &quot;_&quot;)));</span>
-<span class="fc" id="L83">        return authorities;</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">      if (assignedRole != null) {</span>
+<span class="fc" id="L79">        List&lt;GrantedAuthority&gt; authorities = assignedRole.getPermissions()</span>
+<span class="fc" id="L80">            .stream()</span>
+<span class="fc" id="L81">            .map(p -&gt; new SimpleGrantedAuthority(p.getCode()))</span>
+<span class="fc" id="L82">            .collect(Collectors.toList());</span>
+<span class="fc" id="L83">        authorities.add(new SimpleGrantedAuthority(&quot;ROLE_&quot; + assignedRole.getName().toUpperCase(java.util.Locale.ROOT).replace(&quot; &quot;, &quot;_&quot;)));</span>
+<span class="fc" id="L84">        return authorities;</span>
       }
-<span class="fc" id="L85">      return List.of(); // Should never happen for valid users</span>
+<span class="fc" id="L86">      return List.of(); // Should never happen for valid users</span>
     }
 
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = &quot;role_id&quot;)
     private Role assignedRole;
 
@@ -107,27 +109,27 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public String getPassword() {
-<span class="nc" id="L110">        return passwordHash;</span>
+<span class="nc" id="L112">        return passwordHash;</span>
     }
 
     @Override
     public String getUsername() {
-<span class="nc" id="L115">        return email;</span>
+<span class="nc" id="L117">        return email;</span>
     }
 
     @Override
     public boolean isAccountNonLocked() {
-<span class="pc bpc" id="L120" title="1 of 4 branches missed.">        return lockedUntil == null || lockedUntil.isBefore(OffsetDateTime.now(java.time.ZoneId.systemDefault()));</span>
+<span class="pc bpc" id="L122" title="1 of 4 branches missed.">        return lockedUntil == null || lockedUntil.isBefore(OffsetDateTime.now(java.time.ZoneId.systemDefault()));</span>
     }
 
     @Override
     public boolean isEnabled() {
-<span class="fc bfc" id="L125" title="All 2 branches covered.">        return getDeletedAt() == null;</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        return getDeletedAt() == null;</span>
     }
 
     /** Convenience method - returns the tenant's ID without loading the full Tenant object. */
     public @org.jspecify.annotations.Nullable Long getTenantId() {
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        return tenant != null ? tenant.getId() : null;</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        return tenant != null ? tenant.getId() : null;</span>
     }
 }
 

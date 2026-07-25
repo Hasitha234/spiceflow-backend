@@ -1,5 +1,8 @@
 package com.spiceflow.backend.sales.delivery.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -23,6 +26,7 @@ public class DeliveryShopItemWorkflowEntity {
     private Long tenantId;
 
     @ManyToOne
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "delivery_shop_id", nullable = false)
     private DeliveryShopWorkflowEntity deliveryShop;
 

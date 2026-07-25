@@ -1,5 +1,8 @@
 package com.spiceflow.backend.sales.order.entity;
 
+
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -25,6 +28,7 @@ public class ShopReturnWorkflowEntity {
     private Long tenantId;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "rep_order_shop_id")
     private @Nullable RepOrderShopWorkflowEntity repOrderShop;
 
