@@ -126,4 +126,43 @@ class RepOrderServiceTest {
 
         assertNotNull(result);
     }
+
+    @Test
+    void getNextOrderNumber_NoPreviousOrder() {
+        when(repOrderRepository.findTopByTenantIdOrderByCreatedAtDesc(1L)).thenReturn(Optional.empty());
+
+        String nextNumber = repOrderService.getNextOrderNumber(1L);
+
+        assertEquals("RO-001", nextNumber);
+    }
+
+    @Test
+    void getNextOrderNumber_WithPreviousOrder() {
+        repOrder.setOrderNumber("RO-011");
+        when(repOrderRepository.findTopByTenantIdOrderByCreatedAtDesc(1L)).thenReturn(Optional.of(repOrder));
+
+        String nextNumber = repOrderService.getNextOrderNumber(1L);
+
+        assertEquals("RO-012", nextNumber);
+    }
+
+    @Test
+    void getNextOrderNumber_WithInvalidPreviousOrder() {
+        repOrder.setOrderNumber("RO-ABC");
+        when(repOrderRepository.findTopByTenantIdOrderByCreatedAtDesc(1L)).thenReturn(Optional.of(repOrder));
+
+        String nextNumber = repOrderService.getNextOrderNumber(1L);
+
+        assertEquals("RO-001", nextNumber);
+    }
+
+    @Test
+    void getNextOrderNumber_WithNoPrefix() {
+        repOrder.setOrderNumber("123");
+        when(repOrderRepository.findTopByTenantIdOrderByCreatedAtDesc(1L)).thenReturn(Optional.of(repOrder));
+
+        String nextNumber = repOrderService.getNextOrderNumber(1L);
+
+        assertEquals("RO-001", nextNumber);
+    }
 }

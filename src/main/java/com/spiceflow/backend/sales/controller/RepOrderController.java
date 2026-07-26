@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import com.spiceflow.backend.sales.dto.request.CreateRepOrderRequest;
 import com.spiceflow.backend.sales.dto.response.RepOrderResponse;
+import com.spiceflow.backend.sales.dto.response.NextOrderNumberResponse;
 import com.spiceflow.backend.sales.service.RepOrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -63,6 +64,16 @@ public class RepOrderController {
         log.info("User {} getting rep order {}", currentUser.getId(), id);
         RepOrderResponse response = repOrderService.getRepOrder(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/next-order-number")
+    @PreAuthorize("hasAuthority('ORDER_VIEW') or hasAuthority('ORDER_CREATE')")
+    @Operation(summary = "Get next rep order number", description = "Returns the next available auto-generated rep order number", operationId = "getNextRepOrderNumber")
+    public ResponseEntity<NextOrderNumberResponse> getNextRepOrderNumber(
+            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+        log.info("User {} getting next rep order number", currentUser.getId());
+        String nextOrderNumber = repOrderService.getNextOrderNumber(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
+        return ResponseEntity.ok(new NextOrderNumberResponse(nextOrderNumber));
     }
 }
 
