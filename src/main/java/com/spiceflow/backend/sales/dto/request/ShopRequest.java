@@ -8,7 +8,8 @@ import java.math.BigDecimal;
 public record ShopRequest(
     @NotBlank(message = "Name is required")
     String name,
-    String ownerName,
+    @NotBlank(message = "Outlet ID is required")
+    String outletId,
     String phone,
     String address,
     String area,

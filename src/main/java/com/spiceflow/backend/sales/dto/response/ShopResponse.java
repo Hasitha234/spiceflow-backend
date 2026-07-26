@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
 public record ShopResponse(
     Long id,
     String name,
-    String ownerName,
+    String outletId,
     String phone,
     String address,
     String area,
