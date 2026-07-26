@@ -103,9 +103,22 @@ public class PurchaseService {
                 throw new BusinessRuleViolationException("Product '" + product.getName() + "' (SKU: " + product.getSku() + ") does not belong to the selected supplier.");
             }
             
+            int itemsPerSoldUnit = product.getItemsPerSoldUnit() != null ? product.getItemsPerSoldUnit() : 1;
+            int soldUnitsPerBox = product.getSoldUnitsPerBox() != null ? product.getSoldUnitsPerBox() : 1;
+            
+            // Recalculate soldQuantity on the backend for data integrity
+            int totalItems = itemReq.noOfBoxes() * itemsPerSoldUnit * soldUnitsPerBox;
+            int unitDivisor = 1; // Default EA
+            if ("DZ".equalsIgnoreCase(itemReq.unitType())) {
+                unitDivisor = 12;
+            } else if ("MC".equalsIgnoreCase(itemReq.unitType())) {
+                unitDivisor = 1000;
+            }
+            int calculatedSoldQuantity = totalItems / unitDivisor;
+
             BigDecimal amount = itemReq.amount() != null 
                 ? itemReq.amount() 
-                : itemReq.rate().multiply(BigDecimal.valueOf(itemReq.soldQuantity()));
+                : itemReq.rate().multiply(BigDecimal.valueOf(calculatedSoldQuantity));
 
             
             PurchaseLineItem lineItem = PurchaseLineItem.builder()
@@ -113,7 +126,7 @@ public class PurchaseService {
                 .purchase(purchase)
                 .product(product)
                 .noOfBoxes(itemReq.noOfBoxes())
-                .soldQuantity(itemReq.soldQuantity())
+                .soldQuantity(calculatedSoldQuantity)
                 .unitType(itemReq.unitType())
                 .rate(itemReq.rate())
                 .amount(amount)
@@ -203,16 +216,29 @@ public class PurchaseService {
                 throw new BusinessRuleViolationException("Product '" + product.getName() + "' (SKU: " + product.getSku() + ") does not belong to the selected supplier.");
             }
             
+            int itemsPerSoldUnit = product.getItemsPerSoldUnit() != null ? product.getItemsPerSoldUnit() : 1;
+            int soldUnitsPerBox = product.getSoldUnitsPerBox() != null ? product.getSoldUnitsPerBox() : 1;
+            
+            // Recalculate soldQuantity on the backend for data integrity
+            int totalItems = itemReq.noOfBoxes() * itemsPerSoldUnit * soldUnitsPerBox;
+            int unitDivisor = 1; // Default EA
+            if ("DZ".equalsIgnoreCase(itemReq.unitType())) {
+                unitDivisor = 12;
+            } else if ("MC".equalsIgnoreCase(itemReq.unitType())) {
+                unitDivisor = 1000;
+            }
+            int calculatedSoldQuantity = totalItems / unitDivisor;
+            
             BigDecimal amount = itemReq.amount() != null 
                 ? itemReq.amount() 
-                : itemReq.rate().multiply(BigDecimal.valueOf(itemReq.soldQuantity()));
+                : itemReq.rate().multiply(BigDecimal.valueOf(calculatedSoldQuantity));
             
             PurchaseLineItem lineItem = PurchaseLineItem.builder()
                 .tenant(purchase.getTenant())
                 .purchase(purchase)
                 .product(product)
                 .noOfBoxes(itemReq.noOfBoxes())
-                .soldQuantity(itemReq.soldQuantity())
+                .soldQuantity(calculatedSoldQuantity)
                 .unitType(itemReq.unitType())
                 .rate(itemReq.rate())
                 .amount(amount)

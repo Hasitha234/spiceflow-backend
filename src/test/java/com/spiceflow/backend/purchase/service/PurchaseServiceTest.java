@@ -105,6 +105,32 @@ class PurchaseServiceTest {
     }
 
     @Test
+    void createPurchase_Success_WithUnitDivisor() {
+        product.setItemsPerSoldUnit(12);
+        product.setSoldUnitsPerBox(2);
+        
+        PurchaseLineItemRequest lineItemDZ = PurchaseLineItemRequest.builder()
+                .productId(1L).soldQuantity(10).rate(java.math.BigDecimal.TEN).noOfBoxes(2).unitType("DZ").build();
+                
+        PurchaseLineItemRequest lineItemMC = PurchaseLineItemRequest.builder()
+                .productId(1L).soldQuantity(10).rate(java.math.BigDecimal.TEN).noOfBoxes(2).unitType("MC").build();
+                
+        CreatePurchaseRequest request = CreatePurchaseRequest.builder()
+                .invoiceNo("INV-124").supplierId(1L).lineItems(java.util.List.of(lineItemDZ, lineItemMC)).build();
+                
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
+        when(supplierService.getSupplierEntity(1L, 1L)).thenReturn(supplier);
+        when(productService.getProductEntity(1L, 1L)).thenReturn(product);
+        when(purchaseRepository.save(any(Purchase.class))).thenReturn(purchase);
+        when(purchaseMapper.toResponse(purchase)).thenReturn(purchaseResponse);
+
+        PurchaseResponse response = purchaseService.createPurchase(1L, request);
+
+        assertNotNull(response);
+        verify(purchaseRepository).save(any(Purchase.class));
+    }
+
+    @Test
     void createPurchase_TenantNotFound() {
         when(tenantRepository.findById(1L)).thenReturn(Optional.empty());
 
