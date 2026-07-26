@@ -24,6 +24,8 @@ spring:
       logging: "slf4j"
       outagedetection: true
       outagedetectioninterval: 1
+  flyway:
+    out-of-order: true
   jpa:
     properties:
       hibernate:
