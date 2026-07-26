@@ -10,16 +10,11 @@ public class FixFlyway {
         String password = "password";
 
         try (Connection conn = DriverManager.getConnection(url, user, password)) {
-            try (PreparedStatement check = conn.prepareStatement("SELECT * FROM \"flyway_schema_history\" WHERE \"version\" = '37'")) {
+            try (PreparedStatement check = conn.prepareStatement("SELECT * FROM \"flyway_schema_history\" ORDER BY \"installed_rank\"")) {
                 ResultSet rs = check.executeQuery();
-                if (rs.next()) {
-                    System.out.println("Found V37 row. Description: " + rs.getString("description"));
+                while (rs.next()) {
+                    System.out.println("V" + rs.getString("version") + " | " + rs.getString("description") + " | Success: " + rs.getBoolean("success"));
                 }
-            }
-            
-            try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM \"flyway_schema_history\" WHERE \"version\" = '37'")) {
-                int rows = pstmt.executeUpdate();
-                System.out.println("Deleted " + rows + " rows from flyway_schema_history.");
             }
         }
     }
