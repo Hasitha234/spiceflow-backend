@@ -207,7 +207,7 @@ class SalesMasterDataServiceTest {
 
     @Test
     void createShop_Success() {
-        ShopRequest request = ShopRequest.builder().name("Shop").ownerName("Owner").phone("077").address("Addr").area("Area").route("Route").assignedRepId(1L).outstandingLoan(java.math.BigDecimal.ZERO).build();
+        ShopRequest request = ShopRequest.builder().name("Shop").outletId("OUTLET-01").phone("077").address("Addr").area("Area").route("Route").assignedRepId(1L).outstandingLoan(java.math.BigDecimal.ZERO).build();
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(repRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(rep));
