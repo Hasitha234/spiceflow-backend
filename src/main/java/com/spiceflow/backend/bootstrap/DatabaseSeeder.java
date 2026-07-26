@@ -100,6 +100,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             User user = User.builder()
                 .email("user@spiceflow.com")
+                .name("Default User")
                 .passwordHash(java.util.Objects.requireNonNull(passwordEncoder.encode("password"), "Password hash cannot be null"))
                 .userType("TENANT_OWNER")
                 .assignedRole(ownerRole)
