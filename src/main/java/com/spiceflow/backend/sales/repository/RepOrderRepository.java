@@ -18,4 +18,6 @@ public interface RepOrderRepository extends JpaRepository<RepOrder, Long> {
     Page<RepOrder> findByTenantIdAndRepIdAndOrderDate(Long tenantId, Long repId, LocalDate orderDate, Pageable pageable);
     
     java.util.List<RepOrder> findByTenantIdAndOrderDateBetween(Long tenantId, LocalDate startDate, LocalDate endDate);
+
+    Optional<RepOrder> findTopByTenantIdOrderByCreatedAtDesc(Long tenantId);
 }

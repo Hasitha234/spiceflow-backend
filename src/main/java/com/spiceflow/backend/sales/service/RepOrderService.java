@@ -180,4 +180,26 @@ public class RepOrderService {
             .orElseThrow(() -> new ResourceNotFoundException("RepOrder not found"));
         return repOrderMapper.toResponse(repOrder);
     }
+
+    @Transactional
+    public void deleteRepOrder(Long id, Long tenantId) {
+        RepOrder order = repOrderRepository.findByIdAndTenantId(id, tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("RepOrder not found"));
+        repOrderRepository.delete(order);
+    }
+
+    public String getNextOrderNumber(Long tenantId) {
+        return repOrderRepository.findTopByTenantIdOrderByCreatedAtDesc(tenantId)
+            .map(RepOrder::getOrderNumber)
+            .filter(num -> num != null && num.startsWith("RO-"))
+            .map(num -> {
+                try {
+                    int nextNum = Integer.parseInt(num.substring(3)) + 1;
+                    return String.format("RO-%03d", nextNum);
+                } catch (NumberFormatException e) {
+                    return "RO-001";
+                }
+            })
+            .orElse("RO-001");
+    }
 }
