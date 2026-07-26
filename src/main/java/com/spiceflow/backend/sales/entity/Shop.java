@@ -34,9 +34,8 @@ public class Shop extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(name = "owner_name", length = 100)
-    @org.jspecify.annotations.Nullable
-    private String ownerName;
+    @Column(name = "outlet_id", nullable = false, length = 100)
+    private String outletId;
 
     @Column(length = 50)
     @org.jspecify.annotations.Nullable

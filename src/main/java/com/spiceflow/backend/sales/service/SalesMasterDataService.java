@@ -199,7 +199,7 @@ public class SalesMasterDataService {
         Shop shop = Shop.builder()
             .tenant(tenant)
             .name(request.name())
-            .ownerName(request.ownerName())
+            .outletId(request.outletId())
             .phone(request.phone())
             .address(request.address())
             .area(request.area())
@@ -239,7 +239,7 @@ public class SalesMasterDataService {
         }
 
         shop.setName(request.name());
-        shop.setOwnerName(request.ownerName());
+        shop.setOutletId(request.outletId());
         shop.setPhone(request.phone());
         shop.setAddress(request.address());
         shop.setArea(request.area());
