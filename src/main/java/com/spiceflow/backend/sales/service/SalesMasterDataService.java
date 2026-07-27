@@ -3,6 +3,7 @@ package com.spiceflow.backend.sales.service;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.common.exception.ResourceConflictException;
 import com.spiceflow.backend.inventory.entity.Warehouse;
 import com.spiceflow.backend.inventory.repository.WarehouseRepository;
 import com.spiceflow.backend.sales.dto.request.DriverRequest;
@@ -196,6 +197,12 @@ public class SalesMasterDataService {
                 .orElseThrow(() -> new ResourceNotFoundException("Rep not found"));
         }
             
+        if (request.outletId() != null && !request.outletId().isBlank()) {
+            if (shopRepository.existsByTenantIdAndOutletIdIgnoreCase(tenantId, request.outletId())) {
+                throw new ResourceConflictException("A shop with Outlet ID '" + request.outletId() + "' already exists.");
+            }
+        }
+
         Shop shop = Shop.builder()
             .tenant(tenant)
             .name(request.name())
@@ -236,6 +243,12 @@ public class SalesMasterDataService {
         if (request.assignedRepId() != null) {
             assignedRep = repRepository.findByIdAndTenantId(request.assignedRepId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Rep not found"));
+        }
+
+        if (request.outletId() != null && !request.outletId().isBlank()) {
+            if (shopRepository.existsByTenantIdAndOutletIdIgnoreCaseAndIdNot(tenantId, request.outletId(), id)) {
+                throw new ResourceConflictException("A shop with Outlet ID '" + request.outletId() + "' already exists.");
+            }
         }
 
         shop.setName(request.name());
