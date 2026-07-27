@@ -26,6 +26,7 @@ public abstract class LoadingSheetMapper {
     }
 
     @Mapping(source = "repOrder.id", target = "repOrderId")
+    @Mapping(source = "repOrder.orderNumber", target = "repOrderNumber")
     @Mapping(source = "repOrder.rep.id", target = "repId")
     @Mapping(source = "repOrder.rep.name", target = "repName")
     @Mapping(source = "driver.id", target = "driverId")

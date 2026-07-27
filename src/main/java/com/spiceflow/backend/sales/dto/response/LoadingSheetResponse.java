@@ -12,6 +12,7 @@ public record LoadingSheetResponse(
     Long id,
     
     Long repOrderId,
+    String repOrderNumber,
     Long repId,
     String repName,
     
