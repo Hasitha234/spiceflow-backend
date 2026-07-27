@@ -96,6 +96,39 @@ class RepOrderServiceTest {
     }
 
     @Test
+    void updateRepOrder_Success() {
+        repOrder.setStatus("DRAFT");
+        
+        RepOrderItemRequest itemReq = RepOrderItemRequest.builder().productId(1L).quantity(10).unitType("BOX").rate(java.math.BigDecimal.TEN).isFreeItem(false).boxesNeeded(1).build();
+        ShopReturnRequest returnReq = ShopReturnRequest.builder().productId(1L).quantity(1).returnType("DAMAGED").creditValue(java.math.BigDecimal.TEN).unitType("BOX").build();
+        RepOrderShopRequest shopReq = RepOrderShopRequest.builder().shopId(1L).items(List.of(itemReq)).returns(List.of(returnReq)).build();
+        CreateRepOrderRequest request = CreateRepOrderRequest.builder().repId(1L).orderNumber("RO-1002").orderDate(java.time.LocalDate.now()).routeArea("Colombo").shops(List.of(shopReq)).build();
+
+        when(repOrderRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(repOrder));
+        when(salesMasterDataService.getRepEntity(1L, 1L)).thenReturn(rep);
+        when(salesMasterDataService.getShopEntity(1L, 1L)).thenReturn(shop);
+        when(productService.getProductEntity(1L, 1L)).thenReturn(product);
+        when(repOrderRepository.save(any(RepOrder.class))).thenReturn(repOrder);
+        when(repOrderMapper.toResponse(repOrder)).thenReturn(response);
+
+        RepOrderResponse result = repOrderService.updateRepOrder(1L, 1L, request);
+
+        assertNotNull(result);
+        verify(repOrderRepository).save(any(RepOrder.class));
+    }
+    
+    @Test
+    void updateRepOrder_NotDraft() {
+        repOrder.setStatus("APPROVED");
+        CreateRepOrderRequest request = CreateRepOrderRequest.builder().repId(1L).orderNumber("RO-1002").orderDate(java.time.LocalDate.now()).routeArea("Colombo").shops(List.of()).build();
+
+        when(repOrderRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(repOrder));
+
+        assertThrows(com.spiceflow.backend.common.exception.BusinessRuleViolationException.class, 
+            () -> repOrderService.updateRepOrder(1L, 1L, request));
+    }
+
+    @Test
     void getRepOrders_WithoutRepId() {
         Page<RepOrder> page = new PageImpl<>(List.of(repOrder));
         when(repOrderRepository.findByTenantId(eq(1L), any(PageRequest.class))).thenReturn(page);

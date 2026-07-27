@@ -161,6 +161,121 @@ public class RepOrderService {
         return repOrderMapper.toResponse(savedOrder);
     }
     
+    @Transactional(rollbackFor = Exception.class)
+    public RepOrderResponse updateRepOrder(Long id, Long tenantId, CreateRepOrderRequest request) {
+        log.debug("Updating rep order id: {} in tenantId: {}", id, tenantId);
+
+        RepOrder repOrder = repOrderRepository.findByIdAndTenantId(id, tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("RepOrder not found"));
+            
+        if (!"DRAFT".equals(repOrder.getStatus())) {
+            throw new BusinessRuleViolationException("Only DRAFT rep orders can be edited");
+        }
+
+        Rep rep = salesMasterDataService.getRepEntity(request.repId(), tenantId);
+        
+        repOrder.setRep(rep);
+        repOrder.setOrderNumber(request.orderNumber());
+        repOrder.setOrderDate(request.orderDate());
+        repOrder.setRouteArea(request.routeArea());
+        
+        repOrder.getShops().clear();
+        
+        BigDecimal totalGrossAmount = BigDecimal.ZERO;
+        BigDecimal totalReturnsValue = BigDecimal.ZERO;
+        repOrder.setNetAmount(BigDecimal.ZERO);
+
+        List<RepOrderShop> shops = new ArrayList<>();
+
+        for (RepOrderShopRequest shopReq : request.shops()) {
+            Shop shop = salesMasterDataService.getShopEntity(shopReq.shopId(), tenantId);
+
+            Warehouse returnWarehouse = null;
+            if (shopReq.returnWarehouseId() != null) {
+                returnWarehouse = warehouseService.getWarehouseEntity(tenantId, shopReq.returnWarehouseId());
+            }
+
+            RepOrderShop orderShop = RepOrderShop.builder()
+                .tenant(repOrder.getTenant())
+                .repOrder(repOrder)
+                .shop(shop)
+                .discountAmount(shopReq.discountAmount() != null ? shopReq.discountAmount() : BigDecimal.ZERO)
+                .skuDiscountAmount(shopReq.skuDiscountAmount() != null ? shopReq.skuDiscountAmount() : BigDecimal.ZERO)
+                .reverseGrts(shopReq.reverseGrts() != null ? shopReq.reverseGrts() : BigDecimal.ZERO)
+                .returns(new ArrayList<>())
+                .build();
+            
+            if (returnWarehouse != null) {
+                orderShop.setReturnWarehouse(returnWarehouse);
+            }
+            BigDecimal shopGross = BigDecimal.ZERO;
+            BigDecimal shopReturns = BigDecimal.ZERO;
+
+            List<RepOrderItem> items = new ArrayList<>();
+            for (RepOrderItemRequest itemReq : shopReq.items()) {
+                Product product = productService.getProductEntity(itemReq.productId(), tenantId);
+
+                RepOrderItem item = RepOrderItem.builder()
+                    .tenant(repOrder.getTenant())
+                    .repOrderShop(orderShop)
+                    .product(product)
+                    .quantity(itemReq.quantity())
+                    .unitType(itemReq.unitType())
+                    .rate(itemReq.rate())
+                    .grossAmount(itemReq.rate().multiply(BigDecimal.valueOf(itemReq.quantity())))
+                    .isFreeItem(itemReq.isFreeItem() != null ? itemReq.isFreeItem() : false)
+                    .boxesNeeded(itemReq.boxesNeeded())
+                    .build();
+                
+                item.setNetAmount(item.getGrossAmount());
+                
+                shopGross = shopGross.add(item.getNetAmount());
+                items.add(item);
+            }
+
+            List<ShopReturn> returns = new ArrayList<>();
+            if (shopReq.returns() != null) {
+                for (ShopReturnRequest returnReq : shopReq.returns()) {
+                    Product product = productService.getProductEntity(returnReq.productId(), tenantId);
+
+                    ShopReturn sr = ShopReturn.builder()
+                        .tenant(repOrder.getTenant())
+                        .repOrderShop(orderShop)
+                        .product(product)
+                        .quantity(returnReq.quantity())
+                        .unitType(returnReq.unitType())
+                        .creditValue(returnReq.creditValue())
+                        .returnType(returnReq.returnType())
+                        .status("PENDING")
+                        .build();
+
+                    shopReturns = shopReturns.add(sr.getCreditValue());
+                    returns.add(sr);
+                }
+            }
+
+            orderShop.setGrossOrderAmount(shopGross);
+            orderShop.setReturnsValue(shopReturns);
+            BigDecimal effectiveReturns = shopReturns.subtract(orderShop.getReverseGrts()).max(BigDecimal.ZERO);
+            orderShop.setNetAmount(shopGross.subtract(effectiveReturns).subtract(orderShop.getDiscountAmount()).subtract(orderShop.getSkuDiscountAmount()));
+            
+            orderShop.setItems(items);
+            orderShop.setReturns(returns);
+            
+            shops.add(orderShop);
+            
+            totalGrossAmount = totalGrossAmount.add(shopGross);
+            totalReturnsValue = totalReturnsValue.add(shopReturns);
+            repOrder.setNetAmount(repOrder.getNetAmount().add(orderShop.getNetAmount()));
+        }
+
+        repOrder.getShops().addAll(shops);
+        repOrder.setTotalGrossAmount(totalGrossAmount);
+        repOrder.setTotalReturnsValue(totalReturnsValue);
+
+        RepOrder savedOrder = repOrderRepository.save(repOrder);
+        return repOrderMapper.toResponse(savedOrder);
+    }    
     public Page<RepOrderResponse> getRepOrders(Long tenantId, Long repId, java.time.LocalDate date, Pageable pageable) {
         Page<RepOrder> repOrders;
         if (repId != null && date != null) {

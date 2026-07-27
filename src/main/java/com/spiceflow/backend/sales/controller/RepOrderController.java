@@ -42,6 +42,18 @@ public class RepOrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_TENANT_OWNER')")
+    @Operation(summary = "Update rep order", description = "Updates an existing rep order (only if DRAFT)", operationId = "updateRepOrder")
+    public ResponseEntity<RepOrderResponse> updateRepOrder(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @Valid @RequestBody CreateRepOrderRequest request) {
+        log.info("User {} updating rep order {}", currentUser.getId(), id);
+        RepOrderResponse response = repOrderService.updateRepOrder(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping
     @PreAuthorize("hasAuthority('ORDER_VIEW')")
     @Operation(summary = "List rep orders", description = "Returns a paginated list of rep orders", operationId = "getRepOrders")
