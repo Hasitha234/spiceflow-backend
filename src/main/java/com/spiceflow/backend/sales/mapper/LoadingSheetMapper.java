@@ -34,10 +34,22 @@ public abstract class LoadingSheetMapper {
     @Mapping(source = "driver.assignedVehicle", target = "driverVehicleNo")
     @Mapping(target = "hasActiveDelivery", ignore = true)
     @Mapping(target = "activeDeliveryId", ignore = true)
+    @Mapping(target = "shopNames", ignore = true)
     public abstract LoadingSheetResponse toResponse(LoadingSheet sheet);
 
     @AfterMapping
     protected void enrichDeliveryInfo(LoadingSheet sheet, @MappingTarget LoadingSheetResponse.LoadingSheetResponseBuilder builder) {
+        if (sheet != null && sheet.getRepOrder() != null && sheet.getRepOrder().getShops() != null) {
+            java.util.List<String> shopNames = sheet.getRepOrder().getShops().stream()
+                .map(s -> {
+                    String name = s.getShop().getName() != null ? s.getShop().getName() : "Unknown Shop";
+                    String outlet = s.getShop().getOutletId() != null ? "-" + s.getShop().getOutletId() : "";
+                    return name + outlet;
+                })
+                .collect(java.util.stream.Collectors.toList());
+            builder.shopNames(shopNames);
+        }
+        
         if (sheet != null && sheet.getId() != null && deliveryRepository != null) {
             try {
                 Long tenantId = sheet.getTenant() != null ? sheet.getTenant().getId() : null;
