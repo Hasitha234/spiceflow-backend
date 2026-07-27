@@ -12,6 +12,7 @@ public record RepOrderShopResponse(
     Long id,
     Long shopId,
     String shopName,
+    String outletId,
     
     BigDecimal grossOrderAmount,
     BigDecimal discountAmount,
