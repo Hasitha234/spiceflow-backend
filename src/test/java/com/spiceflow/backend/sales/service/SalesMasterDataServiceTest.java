@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.common.exception.ResourceConflictException;
 import com.spiceflow.backend.sales.dto.request.DriverRequest;
 import com.spiceflow.backend.sales.dto.request.RepRequest;
 import com.spiceflow.backend.sales.dto.request.ShopRequest;
@@ -220,6 +221,26 @@ class SalesMasterDataServiceTest {
     }
 
     @Test
+    void createShop_Conflict() {
+        ShopRequest request = ShopRequest.builder().name("Shop").outletId("OUTLET-01").build();
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
+        when(shopRepository.existsByTenantIdAndOutletIdIgnoreCase(1L, "OUTLET-01")).thenReturn(true);
+
+        assertThrows(ResourceConflictException.class, () -> salesMasterDataService.createShop(1L, request));
+    }
+    
+    @Test
+    void createShop_NullOutletId() {
+        ShopRequest request = ShopRequest.builder().name("Shop").outletId(null).build();
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
+        when(shopRepository.save(any(Shop.class))).thenReturn(shop);
+        when(salesMapper.toShopResponse(shop)).thenReturn(shopResponse);
+
+        ShopResponse result = salesMasterDataService.createShop(1L, request);
+        assertNotNull(result);
+    }
+
+    @Test
     void getShops_Success() {
         Page<Shop> page = new PageImpl<>(List.of(shop));
         when(shopRepository.findByTenantId(eq(1L), any(PageRequest.class))).thenReturn(page);
@@ -228,6 +249,26 @@ class SalesMasterDataServiceTest {
         Page<ShopResponse> result = salesMasterDataService.getShops(1L, null, PageRequest.of(0, 10));
 
         assertEquals(1, result.getContent().size());
+    }
+
+    @Test
+    void updateShop_Conflict() {
+        ShopRequest request = ShopRequest.builder().name("Shop").outletId("OUTLET-01").build();
+        when(shopRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(shop));
+        when(shopRepository.existsByTenantIdAndOutletIdIgnoreCaseAndIdNot(1L, "OUTLET-01", 1L)).thenReturn(true);
+
+        assertThrows(ResourceConflictException.class, () -> salesMasterDataService.updateShop(1L, 1L, request));
+    }
+
+    @Test
+    void updateShop_NullOutletId() {
+        ShopRequest request = ShopRequest.builder().name("Shop").outletId(null).build();
+        when(shopRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(shop));
+        when(shopRepository.save(any(Shop.class))).thenReturn(shop);
+        when(salesMapper.toShopResponse(shop)).thenReturn(shopResponse);
+
+        ShopResponse result = salesMasterDataService.updateShop(1L, 1L, request);
+        assertNotNull(result);
     }
 
     @Test
