@@ -21,4 +21,7 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
     List<Object[]> countShopsByAssignedRepId(@Param("tenantId") Long tenantId);
 
     Optional<Shop> findByQrCodeTokenAndTenantId(String qrCodeToken, Long tenantId);
+
+    boolean existsByTenantIdAndOutletIdIgnoreCase(Long tenantId, String outletId);
+    boolean existsByTenantIdAndOutletIdIgnoreCaseAndIdNot(Long tenantId, String outletId, Long id);
 }
