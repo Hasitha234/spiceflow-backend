@@ -90,6 +90,18 @@ public class PurchaseController {
         PurchaseResponse response = purchaseService.confirmPurchase(id, warehouseId, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAuthority('ROLE_TENANT_OWNER')")
+    @Operation(summary = "Cancel confirmed purchase", description = "Reverts a confirmed purchase to DRAFT and undoes inventory updates", operationId = "cancelPurchase")
+    public ResponseEntity<PurchaseResponse> cancelPurchase(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        log.info("User {} cancelling/reverting purchase {}", currentUser.getId(), id);
+        PurchaseResponse response = purchaseService.cancelPurchase(id, java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"));
+        return ResponseEntity.ok(response);
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('PURCHASE_DELETE')")
     @Operation(summary = "Delete purchase", description = "Deletes a draft purchase", operationId = "deletePurchase")
