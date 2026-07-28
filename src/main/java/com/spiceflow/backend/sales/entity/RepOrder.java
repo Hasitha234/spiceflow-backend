@@ -66,6 +66,7 @@ public class RepOrder extends BaseEntity {
     private String orderNumber;
 
     @OneToMany(mappedBy = "repOrder", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
+    @OrderBy("id ASC")
     @Builder.Default
     private List<RepOrderShop> shops = new ArrayList<>();
 }
