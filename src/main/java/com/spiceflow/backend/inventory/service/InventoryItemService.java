@@ -217,10 +217,17 @@ public class InventoryItemService {
 
         InventoryItem sourceItem = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
             request.productId(), request.fromWarehouseId(), tenantId)
-            .orElseThrow(() -> new BusinessRuleViolationException("Product not found in source warehouse"));
+            .orElseThrow(() -> {
+                String productName = productService.getProductEntity(request.productId(), tenantId).getName();
+                return new BusinessRuleViolationException("Product '" + productName + "' not found in source warehouse");
+            });
             
         if (sourceItem.getQuantityAvailable() < request.quantity()) {
-            throw new BusinessRuleViolationException("Insufficient quantity in source warehouse");
+            throw new BusinessRuleViolationException(
+                "Insufficient quantity for product '" + sourceItem.getProduct().getName() + 
+                "' in source warehouse (Available: " + sourceItem.getQuantityAvailable() + 
+                ", Requested: " + request.quantity() + ")"
+            );
         }
         
         // Deduct from source
