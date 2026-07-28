@@ -77,7 +77,7 @@ public class LoadingSheetService {
             .build();
 
         // 1. Aggregate required quantities (items)
-        Map<Long, LoadingSheetItem> aggregatedItems = new HashMap<>();
+        Map<Long, LoadingSheetItem> aggregatedItems = new java.util.LinkedHashMap<>();
         for (RepOrderShop shop : repOrder.getShops()) {
             for (RepOrderItem item : shop.getItems()) {
                 Long productId = item.getProduct().getId();
@@ -94,7 +94,7 @@ public class LoadingSheetService {
         loadingSheet.setItems(new ArrayList<>(aggregatedItems.values()));
 
         // 2. Aggregate expected returns
-        Map<String, LoadingSheetReturn> aggregatedReturns = new HashMap<>();
+        Map<String, LoadingSheetReturn> aggregatedReturns = new java.util.LinkedHashMap<>();
         for (RepOrderShop shop : repOrder.getShops()) {
             if (shop.getReturns() != null) {
                 for (ShopReturn sr : shop.getReturns()) {
