@@ -314,7 +314,7 @@ public class PurchaseService {
         }
         
         Warehouse mainStore = warehouseRepository.findByIdAndTenantId(warehouseId, tenantId)
-            .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"));
+            .orElseThrow(() -> new BusinessRuleViolationException("Warehouse not found"));
             
         for (PurchaseLineItem lineItem : purchase.getLineItems()) {
             Optional<InventoryItem> invOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
