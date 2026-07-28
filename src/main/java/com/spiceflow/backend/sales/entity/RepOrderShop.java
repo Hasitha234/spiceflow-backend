@@ -80,10 +80,12 @@ public class RepOrderShop {
     private OffsetDateTime createdAt;
 
     @OneToMany(mappedBy = "repOrderShop", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
+    @OrderBy("id ASC")
     @Builder.Default
     private List<RepOrderItem> items = new ArrayList<>();
 
     @OneToMany(mappedBy = "repOrderShop", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
+    @OrderBy("id ASC")
     @Builder.Default
     private List<ShopReturn> returns = new ArrayList<>();
 }
