@@ -378,6 +378,37 @@ public class PurchaseService {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    public PurchaseResponse cancelPurchase(Long id, Long tenantId) {
+        Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("Purchase not found"));
+            
+        if (!"CONFIRMED".equals(purchase.getStatus())) {
+            throw new BusinessRuleViolationException("Only CONFIRMED purchases can be cancelled/reverted to DRAFT");
+        }
+        
+        // Find and process PURCHASE_IN transactions
+        List<InventoryTransaction> inTransactions = inventoryTransactionRepository.findByReferenceIdAndTenantId("PUR-" + purchase.getInvoiceNo(), tenantId);
+        for (InventoryTransaction tx : inTransactions) {
+            InventoryItem item = tx.getInventoryItem();
+            item.setQuantityAvailable(item.getQuantityAvailable() - tx.getQuantity());
+            inventoryItemRepository.save(item);
+        }
+        inventoryTransactionRepository.deleteAll(inTransactions);
+        
+        // Find and process PURCHASE_RETURN_OUT transactions
+        List<InventoryTransaction> outTransactions = inventoryTransactionRepository.findByReferenceIdAndTenantId("PUR-RET-" + purchase.getInvoiceNo(), tenantId);
+        for (InventoryTransaction tx : outTransactions) {
+            InventoryItem item = tx.getInventoryItem();
+            item.setQuantityAvailable(item.getQuantityAvailable() + tx.getQuantity()); // add back what was deducted for returns
+            inventoryItemRepository.save(item);
+        }
+        inventoryTransactionRepository.deleteAll(outTransactions);
+        
+        purchase.setStatus("DRAFT");
+        return purchaseMapper.toResponse(purchaseRepository.save(purchase));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
     public void deletePurchase(Long id, Long tenantId) {
         Purchase purchase = purchaseRepository.findByIdAndTenantId(id, tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("Purchase not found"));
