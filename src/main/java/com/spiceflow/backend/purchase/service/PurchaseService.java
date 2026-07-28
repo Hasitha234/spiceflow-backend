@@ -307,9 +307,14 @@ public class PurchaseService {
             throw new BusinessRuleViolationException("Purchase is already confirmed");
         }
         
-        // Find designated store
+        // Prevent double-confirmation if inventory for this invoice was already processed
+        List<InventoryTransaction> existingInTransactions = inventoryTransactionRepository.findByReferenceIdAndTenantId("PUR-" + purchase.getInvoiceNo(), tenantId);
+        if (!existingInTransactions.isEmpty()) {
+            throw new BusinessRuleViolationException("Inventory for this purchase invoice has already been added.");
+        }
+        
         Warehouse mainStore = warehouseRepository.findByIdAndTenantId(warehouseId, tenantId)
-            .orElseThrow(() -> new BusinessRuleViolationException("Warehouse not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"));
             
         for (PurchaseLineItem lineItem : purchase.getLineItems()) {
             Optional<InventoryItem> invOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
