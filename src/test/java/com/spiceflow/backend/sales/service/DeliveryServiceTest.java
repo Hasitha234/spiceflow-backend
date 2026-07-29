@@ -191,4 +191,22 @@ class DeliveryServiceTest {
         DeliveryResponse result = deliveryService.getDelivery(1L, 1L);
         assertNotNull(result);
     }
+    @Test
+    void reverseShopDelivery_Success() {
+        DeliveryShop deliveryShop = new DeliveryShop();
+        deliveryShop.setId(1L);
+        deliveryShop.setTenant(tenant);
+        
+        Delivery testDelivery = new Delivery();
+        testDelivery.setId(1L);
+        testDelivery.setStatus("IN_PROGRESS");
+        
+        when(deliveryRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(testDelivery));
+        when(deliveryShopRepository.findByDeliveryIdAndShopIdAndTenantId(1L, 1L, 1L))
+                .thenReturn(Optional.of(deliveryShop));
+        
+        deliveryService.reverseShopDelivery(1L, 1L, 1L);
+        
+        verify(deliveryShopRepository).delete(deliveryShop);
+    }
 }

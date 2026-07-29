@@ -67,6 +67,18 @@ public class DeliveryController {
         return ResponseEntity.ok(response);
     }
 
+    @DeleteMapping("/{id}/shops/{shopId}")
+    @PreAuthorize("hasAuthority('DELIVERY_UPDATE')")
+    @Operation(summary = "Reverse shop delivery", description = "Deletes a recorded shop delivery to revert it back to pending", operationId = "reverseShopDelivery")
+    public ResponseEntity<Void> reverseShopDelivery(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @PathVariable Long shopId) {
+        log.info("User {} reversing delivery {} for shop {}", currentUser.getId(), id, shopId);
+        deliveryService.reverseShopDelivery(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), id, shopId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     @PreAuthorize("hasAuthority('DELIVERY_VIEW')")
     @Operation(summary = "List deliveries", description = "Returns a paginated list of deliveries", operationId = "getDeliveries")
