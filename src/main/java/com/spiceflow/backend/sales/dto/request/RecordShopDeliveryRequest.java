@@ -22,6 +22,12 @@ public record RecordShopDeliveryRequest(
     @jakarta.validation.constraints.Min(0)
     java.math.BigDecimal discountAmount,
     
+    @jakarta.validation.constraints.Min(0)
+    java.math.BigDecimal skuDiscountAmount,
+    
+    @jakarta.validation.constraints.Min(0)
+    java.math.BigDecimal reverseGrts,
+    
     Double latitude,
     
     Double longitude,
