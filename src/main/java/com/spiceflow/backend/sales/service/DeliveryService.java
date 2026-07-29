@@ -360,7 +360,7 @@ public class DeliveryService {
                     }
                 }
             }
-        }
+        
         Delivery savedDelivery = deliveryRepository.save(delivery);
         log.debug("Successfully completed delivery {}. Total Sales: {}, Total Collected: {}", 
             deliveryId, totalSalesValue, totalCollectedAmount);
