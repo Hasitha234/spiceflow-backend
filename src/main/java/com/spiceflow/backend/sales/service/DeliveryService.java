@@ -307,20 +307,41 @@ public class DeliveryService {
                 }
             }
 
-            if (mainStoreOpt.isPresent()) {
-                for (DeliveryShopReturn returnItem : shop.getReturns()) {
-                    if (returnItem.getQuantityReturned() != null && returnItem.getQuantityReturned() > 0) {
-                        InventoryItem invItem = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
-                                returnItem.getProduct().getId(), mainStoreOpt.get().getId(), tenantId)
-                            .orElseGet(() -> {
-                                InventoryItem newItem = InventoryItem.builder()
-                                    .product(returnItem.getProduct())
-                                    .warehouse(mainStoreOpt.get())
-                                    .quantityAvailable(0)
-                                    .tenant(returnItem.getTenant())
-                                    .build();
-                                return inventoryItemRepository.save(newItem);
-                            });
+            for (DeliveryShopReturn returnItem : shop.getReturns()) {
+                if (returnItem.getQuantityReturned() != null && returnItem.getQuantityReturned() > 0) {
+                    
+                    Warehouse targetWarehouse = mainStoreOpt.orElse(null);
+                    
+                    // Override target warehouse with the one from RepOrderShop if it exists
+                    if (delivery.getLoadingSheet() != null && delivery.getLoadingSheet().getRepOrder() != null) {
+                        for (com.spiceflow.backend.sales.entity.RepOrderShop ros : delivery.getLoadingSheet().getRepOrder().getShops()) {
+                            if (ros.getShop() != null && shop.getShop() != null && 
+                                ros.getShop().getId().equals(shop.getShop().getId()) && 
+                                ros.getReturnWarehouse() != null) {
+                                targetWarehouse = ros.getReturnWarehouse();
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (targetWarehouse == null) {
+                        log.warn("No target warehouse found for returns in shop: {}", shop.getShop().getName());
+                        continue;
+                    }
+                    
+                    final Warehouse finalWarehouse = targetWarehouse;
+
+                    InventoryItem invItem = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
+                            returnItem.getProduct().getId(), finalWarehouse.getId(), tenantId)
+                        .orElseGet(() -> {
+                            InventoryItem newItem = InventoryItem.builder()
+                                .product(returnItem.getProduct())
+                                .warehouse(finalWarehouse)
+                                .quantityAvailable(0)
+                                .tenant(returnItem.getTenant())
+                                .build();
+                            return inventoryItemRepository.save(newItem);
+                        });
 
                         int eachReturned = UnitConversionUtil.toEachItems(returnItem.getQuantityReturned(), returnItem.getUnitType());
                         
@@ -339,7 +360,6 @@ public class DeliveryService {
                     }
                 }
             }
-        }
         
         Delivery savedDelivery = deliveryRepository.save(delivery);
         log.debug("Successfully completed delivery {}. Total Sales: {}, Total Collected: {}", 
