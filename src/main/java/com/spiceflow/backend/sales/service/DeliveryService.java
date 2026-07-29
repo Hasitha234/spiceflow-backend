@@ -248,6 +248,23 @@ public class DeliveryService {
     }
     
     @Transactional(rollbackFor = Exception.class)
+    public void reverseShopDelivery(Long tenantId, Long deliveryId, Long shopId) {
+        log.info("Reversing delivery for deliveryId: {}, shopId: {}", deliveryId, shopId);
+        
+        Delivery delivery = deliveryRepository.findByIdAndTenantId(deliveryId, tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("Delivery not found"));
+            
+        if (!"IN_PROGRESS".equals(delivery.getStatus())) {
+            throw new BusinessRuleViolationException("Cannot reverse shop delivery for a non in-progress delivery");
+        }
+        
+        DeliveryShop deliveryShop = deliveryShopRepository.findByDeliveryIdAndShopIdAndTenantId(deliveryId, shopId, tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("Delivery shop record not found"));
+            
+        deliveryShopRepository.delete(deliveryShop);
+        log.debug("Successfully reversed delivery {} for shop {}", deliveryId, shopId);
+    }
+    @Transactional(rollbackFor = Exception.class)
     public DeliveryResponse completeDelivery(Long tenantId, Long deliveryId) {
         log.info("Completing delivery for deliveryId: {}", deliveryId);
         
