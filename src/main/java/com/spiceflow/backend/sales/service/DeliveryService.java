@@ -145,6 +145,9 @@ public class DeliveryService {
             
         BigDecimal grossBillAmount = BigDecimal.ZERO;
         BigDecimal totalDiscount = request.discountAmount() != null ? request.discountAmount() : BigDecimal.ZERO;
+        if (request.skuDiscountAmount() != null) {
+            totalDiscount = totalDiscount.add(request.skuDiscountAmount());
+        }
         
         List<DeliveryShopItem> items = new ArrayList<>();
         for (DeliveryShopItemRequest itemReq : request.items()) {
@@ -188,6 +191,10 @@ public class DeliveryService {
                 returnsDeducted = returnsDeducted.add(ret.getCreditValue());
                 returns.add(ret);
             }
+        }
+
+        if (request.reverseGrts() != null) {
+            returnsDeducted = returnsDeducted.subtract(request.reverseGrts()).max(BigDecimal.ZERO);
         }
         
         BigDecimal netPayable = grossBillAmount.subtract(totalDiscount).subtract(returnsDeducted);
