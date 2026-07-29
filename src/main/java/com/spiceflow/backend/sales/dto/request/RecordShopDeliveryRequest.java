@@ -19,6 +19,9 @@ public record RecordShopDeliveryRequest(
     @Valid
     List<DeliveryPaymentRequest> payments,
     
+    @jakarta.validation.constraints.Min(0)
+    java.math.BigDecimal discountAmount,
+    
     Double latitude,
     
     Double longitude,

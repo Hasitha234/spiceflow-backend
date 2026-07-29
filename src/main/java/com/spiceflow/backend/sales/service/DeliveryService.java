@@ -144,7 +144,7 @@ public class DeliveryService {
         }
             
         BigDecimal grossBillAmount = BigDecimal.ZERO;
-        BigDecimal totalDiscount = BigDecimal.ZERO;
+        BigDecimal totalDiscount = request.discountAmount() != null ? request.discountAmount() : BigDecimal.ZERO;
         
         List<DeliveryShopItem> items = new ArrayList<>();
         for (DeliveryShopItemRequest itemReq : request.items()) {
