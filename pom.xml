@@ -331,7 +331,7 @@
           <effort>Max</effort>
           <threshold>High</threshold>
           <!-- only fail on High severity bugs. Medium/Low are warnings only.-->
-          <failsOnError>true</failsOnError>
+          <failOnError>true</failOnError>
         </configuration>
         <executions>
           <execution>
