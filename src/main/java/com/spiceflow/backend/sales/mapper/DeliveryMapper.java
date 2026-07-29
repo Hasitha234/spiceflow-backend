@@ -18,7 +18,29 @@ import org.mapstruct.Mapping;
 public interface DeliveryMapper {
     
     @Mapping(source = "loadingSheet.id", target = "loadingSheetId")
+    @Mapping(target = "targetShopNames", expression = "java(buildTargetShopNames(delivery))")
+    @Mapping(target = "targetOutletIds", expression = "java(buildTargetOutletIds(delivery))")
     DeliveryResponse toResponse(Delivery delivery);
+    
+    default String buildTargetShopNames(Delivery delivery) {
+        if (delivery.getLoadingSheet() != null && delivery.getLoadingSheet().getRepOrder() != null && delivery.getLoadingSheet().getRepOrder().getShops() != null) {
+            return delivery.getLoadingSheet().getRepOrder().getShops().stream()
+                .map(s -> s.getShop() != null ? s.getShop().getName() : null)
+                .filter(name -> name != null && !name.isEmpty())
+                .collect(java.util.stream.Collectors.joining(", "));
+        }
+        return null;
+    }
+    
+    default String buildTargetOutletIds(Delivery delivery) {
+        if (delivery.getLoadingSheet() != null && delivery.getLoadingSheet().getRepOrder() != null && delivery.getLoadingSheet().getRepOrder().getShops() != null) {
+            return delivery.getLoadingSheet().getRepOrder().getShops().stream()
+                .map(s -> s.getShop() != null ? s.getShop().getOutletId() : null)
+                .filter(id -> id != null && !id.isEmpty())
+                .collect(java.util.stream.Collectors.joining(", "));
+        }
+        return null;
+    }
     
     @Mapping(source = "shop.id", target = "shopId")
     @Mapping(source = "shop.name", target = "shopName")

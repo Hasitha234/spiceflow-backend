@@ -23,6 +23,9 @@ public record DeliveryResponse(
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,
     
+    String targetShopNames,
+    String targetOutletIds,
+    
     List<DeliveryShopResponse> shops
 
 
