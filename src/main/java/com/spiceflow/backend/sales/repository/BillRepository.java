@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import java.util.List;
+
 @Repository
 public interface BillRepository extends JpaRepository<Bill, Long> {
 
@@ -34,4 +36,6 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     Optional<Bill> findFirstByTenantIdOrderByCreatedAtDesc(Long tenantId);
 
     boolean existsByTenantIdAndShopIdAndBillDate(Long tenantId, Long shopId, LocalDate billDate);
+
+    List<Bill> findByTenantIdAndRepIdAndBillDate(Long tenantId, Long repId, LocalDate billDate);
 }

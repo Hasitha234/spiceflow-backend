@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import java.util.List;
+
 @Repository
 public interface CancelSummaryRepository extends JpaRepository<CancelSummary, Long> {
 
@@ -40,4 +42,6 @@ public interface CancelSummaryRepository extends JpaRepository<CancelSummary, Lo
            "AND summary_date = :date " +
            "AND summary_number LIKE 'CS-%'", nativeQuery = true)
     int findMaxSequenceNumberForDate(@Param("tenantId") Long tenantId, @Param("date") LocalDate date);
+
+    List<CancelSummary> findByTenantIdAndRepIdAndSummaryDate(Long tenantId, Long repId, LocalDate summaryDate);
 }

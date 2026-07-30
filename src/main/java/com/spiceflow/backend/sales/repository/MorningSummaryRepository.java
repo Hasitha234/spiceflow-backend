@@ -9,6 +9,8 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import java.util.List;
+
 @Repository
 public interface MorningSummaryRepository extends JpaRepository<MorningSummary, Long> {
     Optional<MorningSummary> findByIdAndTenantId(Long id, Long tenantId);
@@ -19,4 +21,6 @@ public interface MorningSummaryRepository extends JpaRepository<MorningSummary, 
     
     // For auto-generating numbers, get the latest
     Optional<MorningSummary> findFirstByTenantIdOrderByCreatedAtDesc(Long tenantId);
+    
+    List<MorningSummary> findByTenantIdAndRepIdAndSummaryDate(Long tenantId, Long repId, LocalDate summaryDate);
 }
