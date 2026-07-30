@@ -11,9 +11,11 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import com.spiceflow.backend.auth.dto.AuthenticatedUser;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -29,15 +31,16 @@ public class CancelSummaryController {
     @PostMapping
     @Operation(summary = "Create a new cancel summary")
     public ResponseEntity<CancelSummaryResponse> createCancelSummary(
-            @Parameter(hidden = true) @RequestAttribute("tenantId") Long tenantId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody CancelSummaryRequest request) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
         return new ResponseEntity<>(cancelSummaryService.createCancelSummary(tenantId, request), HttpStatus.CREATED);
     }
 
     @GetMapping
     @Operation(summary = "Get all cancel summaries with filtering and pagination")
     public ResponseEntity<Page<CancelSummaryResponse>> getCancelSummaries(
-            @Parameter(hidden = true) @RequestAttribute("tenantId") Long tenantId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Long repId,
             @RequestParam(required = false) Long driverId,
@@ -45,23 +48,26 @@ public class CancelSummaryController {
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) String status,
             @ParameterObject @PageableDefault(size = 10) Pageable pageable) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
         return ResponseEntity.ok(cancelSummaryService.getCancelSummaries(tenantId, search, repId, driverId, startDate, endDate, status, pageable));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get cancel summary by ID")
     public ResponseEntity<CancelSummaryResponse> getCancelSummaryById(
-            @Parameter(hidden = true) @RequestAttribute("tenantId") Long tenantId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
         return ResponseEntity.ok(cancelSummaryService.getCancelSummaryById(tenantId, id));
     }
 
     @PatchMapping("/{id}/status")
     @Operation(summary = "Update cancel summary status")
     public ResponseEntity<CancelSummaryResponse> updateCancelSummaryStatus(
-            @Parameter(hidden = true) @RequestAttribute("tenantId") Long tenantId,
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable Long id,
             @RequestParam String status) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
         return ResponseEntity.ok(cancelSummaryService.updateCancelSummaryStatus(tenantId, id, status));
     }
 }
