@@ -8,13 +8,19 @@ import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "cancel_summary_items")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Builder
+@SQLDelete(sql = "UPDATE cancel_summary_items SET deleted_at = NOW() WHERE id=?")
+@SQLRestriction("deleted_at IS NULL")
 public class CancelSummaryItem extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

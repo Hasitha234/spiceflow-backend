@@ -13,13 +13,20 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 @Entity
 @Table(name = "cancel_summaries")
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Builder
+@SQLDelete(sql = "UPDATE cancel_summaries SET deleted_at = NOW() WHERE id=?")
+@SQLRestriction("deleted_at IS NULL")
 public class CancelSummary extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -41,11 +48,12 @@ public class CancelSummary extends BaseEntity {
     private String summaryNumber;
 
     @Column(name = "final_estimate_value", nullable = false, precision = 12, scale = 2)
-    private BigDecimal finalEstimateValue;
+    @Builder.Default
+    private BigDecimal finalEstimateValue = BigDecimal.ZERO;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private SummaryStatus status;
+    @Builder.Default
+    private String status = "PENDING";
 
     @OneToMany(mappedBy = "cancelSummary", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -56,6 +64,7 @@ public class CancelSummary extends BaseEntity {
         item.setCancelSummary(this);
     }
 
+    @SuppressWarnings("NullAway")
     public void removeItem(CancelSummaryItem item) {
         items.remove(item);
         item.setCancelSummary(null);
