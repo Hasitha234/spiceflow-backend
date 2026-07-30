@@ -51,7 +51,7 @@ public class MorningSummaryService {
                 .tenant(tenant)
                 .rep(rep)
                 .driver(driver)
-                .summaryDate(LocalDate.now(ZoneId.systemDefault()))
+                .summaryDate(request.summaryDate())
                 .summaryNumber(generateSummaryNumber(tenantId))
                 .status("PENDING")
                 .build();

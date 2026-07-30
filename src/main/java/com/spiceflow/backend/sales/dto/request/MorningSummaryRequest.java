@@ -2,6 +2,7 @@ package com.spiceflow.backend.sales.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public record MorningSummaryRequest(
@@ -10,6 +11,9 @@ public record MorningSummaryRequest(
     
     @NotNull(message = "Driver ID is required")
     Long driverId,
+    
+    @NotNull(message = "Summary Date is required")
+    LocalDate summaryDate,
     
     @NotNull(message = "Items are required")
     List<MorningSummaryItemRequest> items
