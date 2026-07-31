@@ -58,6 +58,10 @@ public class MorningSummary extends BaseEntity {
     @Builder.Default
     private List<MorningSummaryItem> items = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deducted_warehouse_id")
+    private com.spiceflow.backend.inventory.entity.Warehouse deductedWarehouse;
+
     public void addItem(MorningSummaryItem item) {
         items.add(item);
         item.setMorningSummary(this);
