@@ -19,11 +19,11 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     Optional<Bill> findByIdAndTenantId(Long id, Long tenantId);
 
     @Query("SELECT b FROM Bill b WHERE b.tenant.id = :tenantId AND " +
-           "(:billDate IS NULL OR b.billDate = :billDate) AND " +
-           "(:repId IS NULL OR b.rep.id = :repId) AND " +
-           "(:shopId IS NULL OR b.shop.id = :shopId) AND " +
-           "(:status IS NULL OR b.status = :status) AND " +
-           "(:search IS NULL OR LOWER(b.billNumber) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "(cast(:billDate as date) IS NULL OR b.billDate = :billDate) AND " +
+           "(cast(:repId as long) IS NULL OR b.rep.id = :repId) AND " +
+           "(cast(:shopId as long) IS NULL OR b.shop.id = :shopId) AND " +
+           "(cast(:status as string) IS NULL OR b.status = :status) AND " +
+           "(cast(:search as string) IS NULL OR LOWER(b.billNumber) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Bill> findBillsWithFilters(
             @Param("tenantId") Long tenantId,
             @Param("billDate") LocalDate billDate,
