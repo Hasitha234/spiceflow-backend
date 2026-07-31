@@ -27,9 +27,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
            "LEFT JOIN p.supplier s " +
            "LEFT JOIN p.category c " +
            "WHERE p.tenant.id = :tenantId AND " +
-           "(:supplierId IS NULL OR s.id = :supplierId) AND " +
-           "(:categoryId IS NULL OR c.id = :categoryId) AND " +
-           "(:search IS NULL OR :search = '' OR " +
+           "(cast(:supplierId as long) IS NULL OR s.id = :supplierId) AND " +
+           "(cast(:categoryId as long) IS NULL OR c.id = :categoryId) AND " +
+           "(cast(:search as string) IS NULL OR :search = '' OR " +
            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(p.sku) LIKE LOWER(CONCAT('%', :search, '%'))))")
     Page<Product> findByFilters(@Param("tenantId") Long tenantId,

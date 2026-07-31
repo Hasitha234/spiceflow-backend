@@ -11,17 +11,19 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import org.springframework.lang.Nullable;
+
 @Repository
 public interface FinalBalanceRepository extends JpaRepository<FinalBalance, Long> {
 
     @Query("SELECT f FROM FinalBalance f " +
            "WHERE f.tenant.id = :tenantId " +
-           "AND (:repId IS NULL OR f.rep.id = :repId) " +
-           "AND (CAST(:balanceDate AS date) IS NULL OR f.balanceDate = :balanceDate)")
+           "AND (cast(:repId as long) IS NULL OR f.rep.id = :repId) " +
+           "AND (cast(:balanceDate as date) IS NULL OR f.balanceDate = :balanceDate)")
     Page<FinalBalance> findByTenantAndFilters(
             @Param("tenantId") Long tenantId,
-            @Param("repId") Long repId,
-            @Param("balanceDate") LocalDate balanceDate,
+            @Nullable @Param("repId") Long repId,
+            @Nullable @Param("balanceDate") LocalDate balanceDate,
             Pageable pageable);
 
     boolean existsByTenantIdAndRepIdAndBalanceDate(Long tenantId, Long repId, LocalDate balanceDate);
