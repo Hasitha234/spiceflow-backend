@@ -155,6 +155,8 @@ public class MorningSummaryService {
                 .driverName(summary.getDriver().getName())
                 .deductedWarehouseId(summary.getDeductedWarehouse() != null ? summary.getDeductedWarehouse().getId() : null)
                 .deductedWarehouseName(summary.getDeductedWarehouse() != null ? summary.getDeductedWarehouse().getName() : null)
+                .returnWarehouseId(summary.getReturnWarehouse() != null ? summary.getReturnWarehouse().getId() : null)
+                .returnWarehouseName(summary.getReturnWarehouse() != null ? summary.getReturnWarehouse().getName() : null)
                 .items(itemResponses)
                 .build();
     }
@@ -184,7 +186,8 @@ public class MorningSummaryService {
                     item.getProduct().getName(),
                     required,
                     available,
-                    sufficient
+                    sufficient,
+                    item.getExpectedReturnAmount() != null ? item.getExpectedReturnAmount() : 0
             ));
         }
 
@@ -193,7 +196,7 @@ public class MorningSummaryService {
 
     @Transactional
     @SuppressWarnings("NullAway")
-    public void deductFromInventory(Long tenantId, Long summaryId, Long warehouseId) {
+    public void deductFromInventory(Long tenantId, Long summaryId, Long warehouseId, Long returnWarehouseId) {
         MorningSummary summary = morningSummaryRepository.findByIdAndTenantId(summaryId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Morning Summary not found"));
 
@@ -203,6 +206,9 @@ public class MorningSummaryService {
 
         Warehouse warehouse = warehouseRepository.findByIdAndTenantId(warehouseId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"));
+                
+        Warehouse returnWarehouse = warehouseRepository.findByIdAndTenantId(returnWarehouseId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Return Warehouse not found"));
 
         DeductInventoryPreCheckResponse preCheck = preCheckDeduction(tenantId, summaryId, warehouseId);
         if (!preCheck.canDeduct()) {
@@ -214,40 +220,84 @@ public class MorningSummaryService {
         }
 
         for (MorningSummaryItem item : summary.getItems()) {
-            InventoryItem inventoryItem = inventoryItemRepository
-                    .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), warehouseId, tenantId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
+            if (item.getQuantity() > 0) {
+                InventoryItem inventoryItem = inventoryItemRepository
+                        .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), warehouseId, tenantId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
 
-            inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() - item.getQuantity());
-            inventoryItemRepository.save(inventoryItem);
+                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() - item.getQuantity());
+                inventoryItemRepository.save(inventoryItem);
 
-            inventoryLedgerService.recordMovement(
-                    tenantId,
-                    warehouseId,
-                    item.getProduct().getId(),
-                    InventoryMovementType.MORNING_DISPATCH,
-                    BigDecimal.valueOf(item.getQuantity()),
-                    item.getUnitPrice(),
-                    summary.getSummaryNumber(),
-                    "",
-                    null,
-                    Instant.now(),
-                    "system"
-            );
+                inventoryLedgerService.recordMovement(
+                        tenantId,
+                        warehouseId,
+                        item.getProduct().getId(),
+                        InventoryMovementType.MORNING_DISPATCH,
+                        BigDecimal.valueOf(item.getQuantity()),
+                        item.getUnitPrice(),
+                        summary.getSummaryNumber(),
+                        "",
+                        null,
+                        Instant.now(),
+                        "system"
+                );
 
-            InventoryTransaction tx = InventoryTransaction.builder()
-                    .inventoryItem(inventoryItem)
-                    .transactionType("MORNING_DISPATCH")
-                    .quantity(-item.getQuantity())
-                    .referenceId(summary.getSummaryNumber())
-                    .notes("Deducted for morning summary")
-                    .tenant(summary.getTenant())
-                    .build();
-            inventoryTransactionRepository.save(tx);
+                InventoryTransaction tx = InventoryTransaction.builder()
+                        .inventoryItem(inventoryItem)
+                        .transactionType("MORNING_DISPATCH")
+                        .quantity(-item.getQuantity())
+                        .referenceId(summary.getSummaryNumber())
+                        .notes("Deducted for morning summary")
+                        .tenant(summary.getTenant())
+                        .build();
+                inventoryTransactionRepository.save(tx);
+            }
+            
+            if (item.getExpectedReturnAmount() != null && item.getExpectedReturnAmount() > 0) {
+                InventoryItem returnInventoryItem = inventoryItemRepository
+                        .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), returnWarehouseId, tenantId)
+                        .orElseGet(() -> {
+                            InventoryItem newItem = InventoryItem.builder()
+                                    .tenant(summary.getTenant())
+                                    .warehouse(returnWarehouse)
+                                    .product(item.getProduct())
+                                    .quantityAvailable(0)
+                                    .build();
+                            return inventoryItemRepository.save(newItem);
+                        });
+
+                returnInventoryItem.setQuantityAvailable(returnInventoryItem.getQuantityAvailable() + item.getExpectedReturnAmount());
+                inventoryItemRepository.save(returnInventoryItem);
+
+                inventoryLedgerService.recordMovement(
+                        tenantId,
+                        returnWarehouseId,
+                        item.getProduct().getId(),
+                        InventoryMovementType.MORNING_RETURN_RECEIPT,
+                        BigDecimal.valueOf(item.getExpectedReturnAmount()),
+                        item.getUnitPrice(),
+                        summary.getSummaryNumber(),
+                        "",
+                        null,
+                        Instant.now(),
+                        "system"
+                );
+
+                InventoryTransaction tx = InventoryTransaction.builder()
+                        .inventoryItem(returnInventoryItem)
+                        .transactionType("MORNING_RETURN_RECEIPT")
+                        .quantity(item.getExpectedReturnAmount())
+                        .referenceId(summary.getSummaryNumber())
+                        .notes("Added return for morning summary")
+                        .tenant(summary.getTenant())
+                        .build();
+                inventoryTransactionRepository.save(tx);
+            }
         }
 
         summary.setStatus("SETTLED");
         summary.setDeductedWarehouse(warehouse);
+        summary.setReturnWarehouse(returnWarehouse);
         morningSummaryRepository.save(summary);
     }
 
@@ -264,44 +314,85 @@ public class MorningSummaryService {
         if (summary.getDeductedWarehouse() == null) {
             throw new BusinessRuleViolationException("Cannot undo: deducted warehouse is unknown");
         }
+        
+        if (summary.getReturnWarehouse() == null) {
+            throw new BusinessRuleViolationException("Cannot undo: return warehouse is unknown");
+        }
 
         Long warehouseId = summary.getDeductedWarehouse().getId();
+        Long returnWarehouseId = summary.getReturnWarehouse().getId();
 
         for (MorningSummaryItem item : summary.getItems()) {
-            InventoryItem inventoryItem = inventoryItemRepository
-                    .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), warehouseId, tenantId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
+            if (item.getQuantity() > 0) {
+                InventoryItem inventoryItem = inventoryItemRepository
+                        .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), warehouseId, tenantId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
 
-            inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() + item.getQuantity());
-            inventoryItemRepository.save(inventoryItem);
+                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() + item.getQuantity());
+                inventoryItemRepository.save(inventoryItem);
 
-            inventoryLedgerService.recordMovement(
-                    tenantId,
-                    warehouseId,
-                    item.getProduct().getId(),
-                    InventoryMovementType.MORNING_DISPATCH_REVERSAL,
-                    BigDecimal.valueOf(item.getQuantity()),
-                    item.getUnitPrice(),
-                    summary.getSummaryNumber() + "-REVERSAL",
-                    "",
-                    null,
-                    Instant.now(),
-                    "system"
-            );
+                inventoryLedgerService.recordMovement(
+                        tenantId,
+                        warehouseId,
+                        item.getProduct().getId(),
+                        InventoryMovementType.MORNING_DISPATCH_REVERSAL,
+                        BigDecimal.valueOf(item.getQuantity()),
+                        item.getUnitPrice(),
+                        summary.getSummaryNumber() + "-REVERSAL",
+                        "",
+                        null,
+                        Instant.now(),
+                        "system"
+                );
 
-            InventoryTransaction tx = InventoryTransaction.builder()
-                    .inventoryItem(inventoryItem)
-                    .transactionType("MORNING_DISPATCH_REVERSAL")
-                    .quantity(item.getQuantity())
-                    .referenceId(summary.getSummaryNumber() + "-REVERSAL")
-                    .notes("Undone morning summary deduction")
-                    .tenant(summary.getTenant())
-                    .build();
-            inventoryTransactionRepository.save(tx);
+                InventoryTransaction tx = InventoryTransaction.builder()
+                        .inventoryItem(inventoryItem)
+                        .transactionType("MORNING_DISPATCH_REVERSAL")
+                        .quantity(item.getQuantity())
+                        .referenceId(summary.getSummaryNumber() + "-REVERSAL")
+                        .notes("Undone morning summary deduction")
+                        .tenant(summary.getTenant())
+                        .build();
+                inventoryTransactionRepository.save(tx);
+            }
+            
+            if (item.getExpectedReturnAmount() != null && item.getExpectedReturnAmount() > 0) {
+                InventoryItem returnInventoryItem = inventoryItemRepository
+                        .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), returnWarehouseId, tenantId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Return inventory item not found"));
+
+                returnInventoryItem.setQuantityAvailable(returnInventoryItem.getQuantityAvailable() - item.getExpectedReturnAmount());
+                inventoryItemRepository.save(returnInventoryItem);
+
+                inventoryLedgerService.recordMovement(
+                        tenantId,
+                        returnWarehouseId,
+                        item.getProduct().getId(),
+                        InventoryMovementType.MORNING_RETURN_REVERSAL,
+                        BigDecimal.valueOf(item.getExpectedReturnAmount()),
+                        item.getUnitPrice(),
+                        summary.getSummaryNumber() + "-REVERSAL",
+                        "",
+                        null,
+                        Instant.now(),
+                        "system"
+                );
+
+                InventoryTransaction tx = InventoryTransaction.builder()
+                        .inventoryItem(returnInventoryItem)
+                        .transactionType("MORNING_RETURN_REVERSAL")
+                        .quantity(-item.getExpectedReturnAmount())
+                        .referenceId(summary.getSummaryNumber() + "-REVERSAL")
+                        .notes("Undone morning summary return")
+                        .tenant(summary.getTenant())
+                        .build();
+                inventoryTransactionRepository.save(tx);
+            }
         }
 
         summary.setStatus("PENDING");
         summary.setDeductedWarehouse(null);
+        summary.setReturnWarehouse(null);
         morningSummaryRepository.save(summary);
     }
 }

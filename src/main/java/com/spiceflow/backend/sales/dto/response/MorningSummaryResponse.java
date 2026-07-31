@@ -24,6 +24,12 @@ public class MorningSummaryResponse {
     
     @org.jspecify.annotations.Nullable
     private String deductedWarehouseName;
+
+    @org.jspecify.annotations.Nullable
+    private Long returnWarehouseId;
+    
+    @org.jspecify.annotations.Nullable
+    private String returnWarehouseName;
     
     private List<MorningSummaryItemResponse> items;
 

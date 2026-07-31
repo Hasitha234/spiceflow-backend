@@ -11,6 +11,7 @@ public record DeductInventoryPreCheckResponse(
         String productName,
         int requiredQuantity,
         int availableQuantity,
-        boolean sufficient
+        boolean sufficient,
+        int expectedReturnQuantity
     ) {}
 }

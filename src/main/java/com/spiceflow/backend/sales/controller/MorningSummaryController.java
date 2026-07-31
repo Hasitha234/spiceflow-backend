@@ -60,7 +60,7 @@ public class MorningSummaryController {
             @PathVariable Long id,
             @Valid @RequestBody com.spiceflow.backend.sales.dto.request.DeductInventoryRequest request) {
         Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
-        morningSummaryService.deductFromInventory(tenantId, id, request.warehouseId());
+        morningSummaryService.deductFromInventory(tenantId, id, request.warehouseId(), request.returnWarehouseId());
         return ResponseEntity.ok().build();
     }
 
