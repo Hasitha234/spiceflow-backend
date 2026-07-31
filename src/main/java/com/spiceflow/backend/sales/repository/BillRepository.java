@@ -13,6 +13,8 @@ import java.util.Optional;
 
 import java.util.List;
 
+import org.springframework.lang.Nullable;
+
 @Repository
 public interface BillRepository extends JpaRepository<Bill, Long> {
 
@@ -26,11 +28,11 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
            "(cast(:search as string) IS NULL OR LOWER(b.billNumber) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Bill> findBillsWithFilters(
             @Param("tenantId") Long tenantId,
-            @Param("billDate") LocalDate billDate,
-            @Param("repId") Long repId,
-            @Param("shopId") Long shopId,
-            @Param("status") String status,
-            @Param("search") String search,
+            @Nullable @Param("billDate") LocalDate billDate,
+            @Nullable @Param("repId") Long repId,
+            @Nullable @Param("shopId") Long shopId,
+            @Nullable @Param("status") String status,
+            @Nullable @Param("search") String search,
             Pageable pageable);
 
     Optional<Bill> findFirstByTenantIdOrderByCreatedAtDesc(Long tenantId);
