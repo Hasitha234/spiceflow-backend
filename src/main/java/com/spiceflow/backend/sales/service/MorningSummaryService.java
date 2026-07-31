@@ -80,6 +80,9 @@ public class MorningSummaryService {
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + itemRequest.productId()));
 
             BigDecimal unitPrice = product.getRatePerSoldUnit();
+            if (unitPrice == null || unitPrice.compareTo(BigDecimal.ZERO) == 0) {
+                unitPrice = product.getBasePrice() != null ? product.getBasePrice() : BigDecimal.ZERO;
+            }
             BigDecimal estimateValue = unitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
 
             MorningSummaryItem item = MorningSummaryItem.builder()
