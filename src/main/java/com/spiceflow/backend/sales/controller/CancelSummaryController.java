@@ -70,4 +70,29 @@ public class CancelSummaryController {
         Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
         return ResponseEntity.ok(cancelSummaryService.updateCancelSummaryStatus(tenantId, id, status));
     }
+
+    @PostMapping("/{id}/proceed")
+    @Operation(summary = "Proceed with a cancel summary (adds inventory to return warehouse)")
+    public ResponseEntity<Void> proceedCancelSummary(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, Long> payload) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
+        Long returnWarehouseId = payload.get("returnWarehouseId");
+        if (returnWarehouseId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        cancelSummaryService.proceedCancelSummary(tenantId, id, returnWarehouseId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/undo-proceed")
+    @Operation(summary = "Undo a processed cancel summary (removes inventory from return warehouse)")
+    public ResponseEntity<Void> undoProceedCancelSummary(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
+        cancelSummaryService.undoProceedCancelSummary(tenantId, id);
+        return ResponseEntity.ok().build();
+    }
 }

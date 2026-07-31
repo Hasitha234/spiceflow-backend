@@ -16,6 +16,8 @@ public record CancelSummaryResponse(
     String summaryNumber,
     BigDecimal finalEstimateValue,
     String status,
+    Long returnWarehouseId,
+    String returnWarehouseName,
     List<CancelSummaryItemResponse> items,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,

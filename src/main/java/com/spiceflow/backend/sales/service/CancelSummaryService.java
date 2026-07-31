@@ -22,6 +22,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.spiceflow.backend.inventory.entity.InventoryItem;
+import com.spiceflow.backend.inventory.entity.InventoryTransaction;
+import com.spiceflow.backend.inventory.entity.Warehouse;
+import com.spiceflow.backend.inventory.repository.InventoryItemRepository;
+import com.spiceflow.backend.inventory.repository.InventoryTransactionRepository;
+import com.spiceflow.backend.inventory.repository.WarehouseRepository;
+import com.spiceflow.backend.inventory.ledger.service.InventoryLedgerService;
+import com.spiceflow.backend.inventory.ledger.InventoryMovementType;
+import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
+import java.time.Instant;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -36,6 +47,11 @@ public class CancelSummaryService {
     private final DriverRepository driverRepository;
     private final ProductRepository productRepository;
     private final CancelSummaryMapper cancelSummaryMapper;
+    
+    private final InventoryItemRepository inventoryItemRepository;
+    private final InventoryTransactionRepository inventoryTransactionRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final InventoryLedgerService inventoryLedgerService;
 
     @Transactional
     public CancelSummaryResponse createCancelSummary(Long tenantId, CancelSummaryRequest request) {
@@ -102,6 +118,123 @@ public class CancelSummaryService {
         summary.setStatus(status);
         CancelSummary savedSummary = cancelSummaryRepository.save(summary);
         return cancelSummaryMapper.toResponse(savedSummary);
+    }
+
+    @Transactional
+    @SuppressWarnings("NullAway")
+    public void proceedCancelSummary(Long tenantId, Long id, Long returnWarehouseId) {
+        CancelSummary summary = cancelSummaryRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cancel Summary not found"));
+
+        if (!"PENDING".equals(summary.getStatus())) {
+            throw new BusinessRuleViolationException("Only PENDING cancel summaries can be processed");
+        }
+
+        Warehouse returnWarehouse = warehouseRepository.findByIdAndTenantId(returnWarehouseId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"));
+
+        for (CancelSummaryItem item : summary.getItems()) {
+            if (item.getQuantity() > 0) {
+                InventoryItem inventoryItem = inventoryItemRepository
+                        .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), returnWarehouseId, tenantId)
+                        .orElseGet(() -> {
+                            InventoryItem newItem = InventoryItem.builder()
+                                    .tenant(summary.getTenant())
+                                    .warehouse(returnWarehouse)
+                                    .product(item.getProduct())
+                                    .quantityAvailable(0)
+                                    .build();
+                            return inventoryItemRepository.save(newItem);
+                        });
+
+                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() + item.getQuantity());
+                inventoryItemRepository.save(inventoryItem);
+
+                inventoryLedgerService.recordMovement(
+                        tenantId,
+                        returnWarehouseId,
+                        item.getProduct().getId(),
+                        InventoryMovementType.CANCEL_RETURN_RECEIPT,
+                        BigDecimal.valueOf(item.getQuantity()),
+                        item.getUnitPrice(),
+                        summary.getSummaryNumber(),
+                        "",
+                        null,
+                        Instant.now(),
+                        "system"
+                );
+
+                InventoryTransaction tx = InventoryTransaction.builder()
+                        .inventoryItem(inventoryItem)
+                        .transactionType("CANCEL_RETURN_RECEIPT")
+                        .quantity(item.getQuantity())
+                        .referenceId(summary.getSummaryNumber())
+                        .notes("Added return for cancel summary")
+                        .tenant(summary.getTenant())
+                        .build();
+                inventoryTransactionRepository.save(tx);
+            }
+        }
+
+        summary.setStatus("SETTLED");
+        summary.setReturnWarehouse(returnWarehouse);
+        cancelSummaryRepository.save(summary);
+    }
+
+    @Transactional
+    @SuppressWarnings("NullAway")
+    public void undoProceedCancelSummary(Long tenantId, Long id) {
+        CancelSummary summary = cancelSummaryRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cancel Summary not found"));
+
+        if (!"SETTLED".equals(summary.getStatus())) {
+            throw new BusinessRuleViolationException("Only SETTLED cancel summaries can be undone");
+        }
+
+        if (summary.getReturnWarehouse() == null) {
+            throw new BusinessRuleViolationException("Cannot undo: return warehouse is unknown");
+        }
+
+        Long returnWarehouseId = summary.getReturnWarehouse().getId();
+
+        for (CancelSummaryItem item : summary.getItems()) {
+            if (item.getQuantity() > 0) {
+                InventoryItem inventoryItem = inventoryItemRepository
+                        .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), returnWarehouseId, tenantId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
+
+                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() - item.getQuantity());
+                inventoryItemRepository.save(inventoryItem);
+
+                inventoryLedgerService.recordMovement(
+                        tenantId,
+                        returnWarehouseId,
+                        item.getProduct().getId(),
+                        InventoryMovementType.CANCEL_RETURN_REVERSAL,
+                        BigDecimal.valueOf(item.getQuantity()),
+                        item.getUnitPrice(),
+                        summary.getSummaryNumber() + "-REVERSAL",
+                        "",
+                        null,
+                        Instant.now(),
+                        "system"
+                );
+
+                InventoryTransaction tx = InventoryTransaction.builder()
+                        .inventoryItem(inventoryItem)
+                        .transactionType("CANCEL_RETURN_REVERSAL")
+                        .quantity(-item.getQuantity())
+                        .referenceId(summary.getSummaryNumber() + "-REVERSAL")
+                        .notes("Undone cancel summary return")
+                        .tenant(summary.getTenant())
+                        .build();
+                inventoryTransactionRepository.save(tx);
+            }
+        }
+
+        summary.setStatus("PENDING");
+        summary.setReturnWarehouse(null);
+        cancelSummaryRepository.save(summary);
     }
 
     private String generateSummaryNumber(Long tenantId, LocalDate date) {
