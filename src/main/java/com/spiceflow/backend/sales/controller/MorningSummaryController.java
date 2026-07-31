@@ -44,4 +44,32 @@ public class MorningSummaryController {
         Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
         return ResponseEntity.ok(morningSummaryService.getSummaryById(tenantId, id));
     }
+
+    @PostMapping("/{id}/pre-check-deduction")
+    public ResponseEntity<com.spiceflow.backend.sales.dto.response.DeductInventoryPreCheckResponse> preCheckDeduction(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @Valid @RequestBody com.spiceflow.backend.sales.dto.request.DeductInventoryRequest request) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
+        return ResponseEntity.ok(morningSummaryService.preCheckDeduction(tenantId, id, request.warehouseId()));
+    }
+
+    @PostMapping("/{id}/deduct")
+    public ResponseEntity<Void> deductFromInventory(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @Valid @RequestBody com.spiceflow.backend.sales.dto.request.DeductInventoryRequest request) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
+        morningSummaryService.deductFromInventory(tenantId, id, request.warehouseId());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/undo-deduct")
+    public ResponseEntity<Void> undoDeduction(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
+        morningSummaryService.undoDeduction(tenantId, id);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -18,6 +18,13 @@ public class MorningSummaryResponse {
     private String repName;
     private Long driverId;
     private String driverName;
+    
+    @org.jspecify.annotations.Nullable
+    private Long deductedWarehouseId;
+    
+    @org.jspecify.annotations.Nullable
+    private String deductedWarehouseName;
+    
     private List<MorningSummaryItemResponse> items;
 
     @Data
