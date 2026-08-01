@@ -72,6 +72,10 @@ public class Bill extends BaseEntity {
     @Builder.Default
     private BigDecimal skuDiscount = BigDecimal.ZERO;
 
+    @Column(name = "return_amount", nullable = false, precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal returnAmount = BigDecimal.ZERO;
+
     @Column(name = "final_total", nullable = false, precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal finalTotal = BigDecimal.ZERO;

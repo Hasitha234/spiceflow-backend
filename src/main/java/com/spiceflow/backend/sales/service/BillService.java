@@ -55,7 +55,8 @@ public class BillService {
                 .orElseThrow(() -> new ResourceNotFoundException("Shop not found"));
 
         BigDecimal finalTotal = request.netTotal().add(request.reverseGrts())
-                .subtract(request.discount()).subtract(request.skuDiscount());
+                .subtract(request.discount()).subtract(request.skuDiscount())
+                .subtract(request.returnAmount());
 
         if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Final total cannot be negative");
@@ -73,6 +74,7 @@ public class BillService {
                 .freeItemsValue(request.freeItemsValue())
                 .discount(request.discount())
                 .skuDiscount(request.skuDiscount())
+                .returnAmount(request.returnAmount())
                 .finalTotal(finalTotal)
                 .status("PENDING")
                 .build();
@@ -184,6 +186,7 @@ public class BillService {
                 .freeItemsValue(bill.getFreeItemsValue())
                 .discount(bill.getDiscount())
                 .skuDiscount(bill.getSkuDiscount())
+                .returnAmount(bill.getReturnAmount())
                 .finalTotal(bill.getFinalTotal())
                 .status(bill.getStatus())
                 .cashCollected(bill.getCashCollected())
