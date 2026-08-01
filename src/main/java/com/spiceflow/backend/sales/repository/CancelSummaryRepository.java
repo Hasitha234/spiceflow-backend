@@ -21,12 +21,13 @@ public interface CancelSummaryRepository extends JpaRepository<CancelSummary, Lo
     Optional<CancelSummary> findByIdAndTenantId(Long id, Long tenantId);
 
     @Query("SELECT cs FROM CancelSummary cs WHERE cs.tenant.id = :tenantId " +
-           "AND (cast(:search as string) IS NULL OR cs.summaryNumber LIKE %:search%) " +
-           "AND (cast(:repId as long) IS NULL OR cs.rep.id = :repId) " +
-           "AND (cast(:driverId as long) IS NULL OR cs.driver.id = :driverId) " +
-           "AND (cast(:startDate as date) IS NULL OR cs.summaryDate >= :startDate) " +
-           "AND (cast(:endDate as date) IS NULL OR cs.summaryDate <= :endDate) " +
-           "AND (cast(:status as string) IS NULL OR cs.status = :status)")
+           "AND (cast(:search as text) IS NULL OR LOWER(cs.summaryNumber) LIKE LOWER(CONCAT('%', cast(:search as text), '%'))) " +
+           "AND (:repId IS NULL OR cs.rep.id = :repId) " +
+           "AND (:driverId IS NULL OR cs.driver.id = :driverId) " +
+           "AND (:startDate IS NULL OR cs.summaryDate >= :startDate) " +
+           "AND (:endDate IS NULL OR cs.summaryDate <= :endDate) " +
+           "AND (:status IS NULL OR cs.status = :status) " +
+           "ORDER BY cs.summaryDate DESC")
     Page<CancelSummary> findByFilters(
         @Param("tenantId") Long tenantId,
         @Nullable @Param("search") String search,

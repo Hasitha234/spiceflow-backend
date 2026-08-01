@@ -24,8 +24,8 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
            "(cast(:billDate as date) IS NULL OR b.billDate = :billDate) AND " +
            "(cast(:repId as long) IS NULL OR b.rep.id = :repId) AND " +
            "(cast(:shopId as long) IS NULL OR b.shop.id = :shopId) AND " +
-           "(cast(:status as string) IS NULL OR b.status = :status) AND " +
-           "(cast(:search as string) IS NULL OR LOWER(b.billNumber) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "(cast(:status as text) IS NULL OR b.status = :status) AND " +
+           "(cast(:search as text) IS NULL OR LOWER(b.billNumber) LIKE LOWER(CONCAT('%', cast(:search as text), '%')))")
     Page<Bill> findBillsWithFilters(
             @Param("tenantId") Long tenantId,
             @Nullable @Param("billDate") LocalDate billDate,
