@@ -59,6 +59,10 @@ public class CancelSummary extends BaseEntity {
     @Builder.Default
     private List<CancelSummaryItem> items = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "return_warehouse_id")
+    private com.spiceflow.backend.inventory.entity.Warehouse returnWarehouse;
+
     public void addItem(CancelSummaryItem item) {
         items.add(item);
         item.setCancelSummary(this);

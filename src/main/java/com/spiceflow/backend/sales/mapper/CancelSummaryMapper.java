@@ -16,6 +16,8 @@ public interface CancelSummaryMapper {
     @Mapping(source = "rep.name", target = "repName")
     @Mapping(source = "driver.id", target = "driverId")
     @Mapping(source = "driver.name", target = "driverName")
+    @Mapping(source = "returnWarehouse.id", target = "returnWarehouseId")
+    @Mapping(source = "returnWarehouse.name", target = "returnWarehouseName")
     CancelSummaryResponse toResponse(CancelSummary summary);
 
     @Mapping(source = "product.id", target = "productId")
