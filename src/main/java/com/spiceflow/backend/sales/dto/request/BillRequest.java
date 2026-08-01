@@ -35,5 +35,9 @@ public record BillRequest(
 
         @NotNull(message = "SKU Discount is required")
         @Min(value = 0, message = "SKU Discount cannot be negative")
-        BigDecimal skuDiscount
+        BigDecimal skuDiscount,
+
+        @NotNull(message = "Return Amount is required")
+        @Min(value = 0, message = "Return Amount cannot be negative")
+        BigDecimal returnAmount
 ) {}

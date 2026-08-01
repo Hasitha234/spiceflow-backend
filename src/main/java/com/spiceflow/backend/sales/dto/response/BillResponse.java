@@ -25,6 +25,7 @@ public record BillResponse(
         BigDecimal freeItemsValue,
         BigDecimal discount,
         BigDecimal skuDiscount,
+        BigDecimal returnAmount,
         BigDecimal finalTotal,
         
         String status,
