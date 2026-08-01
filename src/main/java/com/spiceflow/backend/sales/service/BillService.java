@@ -54,7 +54,9 @@ public class BillService {
         Shop shop = shopRepository.findByIdAndTenantId(request.shopId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Shop not found"));
 
-        BigDecimal finalTotal = request.netTotal().add(request.reverseGrts())
+        BigDecimal reverseGrts = request.reverseGrts() != null ? request.reverseGrts() : BigDecimal.ZERO;
+
+        BigDecimal finalTotal = request.netTotal().add(reverseGrts)
                 .subtract(request.discount()).subtract(request.skuDiscount())
                 .subtract(request.returnAmount());
 
@@ -70,7 +72,7 @@ public class BillService {
                 .billNumber(generateBillNumber(tenantId))
                 .billDate(request.billDate())
                 .netTotal(request.netTotal())
-                .reverseGrts(request.reverseGrts())
+                .reverseGrts(reverseGrts)
                 .freeItemsValue(request.freeItemsValue())
                 .discount(request.discount())
                 .skuDiscount(request.skuDiscount())
