@@ -21,7 +21,7 @@ public record BillRequest(
         @Min(value = 0, message = "Net Total cannot be negative")
         BigDecimal netTotal,
 
-        @NotNull(message = "Reverse GRTs is required")
+        @org.jspecify.annotations.Nullable
         @Min(value = 0, message = "Reverse GRTs cannot be negative")
         BigDecimal reverseGrts,
 
