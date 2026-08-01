@@ -29,9 +29,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
            "WHERE p.tenant.id = :tenantId AND " +
            "(cast(:supplierId as long) IS NULL OR s.id = :supplierId) AND " +
            "(cast(:categoryId as long) IS NULL OR c.id = :categoryId) AND " +
-           "(cast(:search as string) IS NULL OR :search = '' OR " +
-           "(LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(p.sku) LIKE LOWER(CONCAT('%', :search, '%'))))")
+           "(cast(:search as text) IS NULL OR cast(:search as text) = '' OR " +
+           "(LOWER(p.name) LIKE LOWER(CONCAT('%', cast(:search as text), '%')) OR " +
+           "LOWER(p.sku) LIKE LOWER(CONCAT('%', cast(:search as text), '%'))))")
     Page<Product> findByFilters(@Param("tenantId") Long tenantId,
                                 @Nullable @Param("search") String search,
                                 @Nullable @Param("categoryId") Long categoryId,
