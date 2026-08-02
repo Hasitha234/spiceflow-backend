@@ -84,6 +84,58 @@ public class BillService {
         Bill savedBill = billRepository.save(bill);
         return mapToResponse(savedBill);
     }
+    @Transactional
+    public BillResponse updateBill(Long tenantId, Long id, BillRequest request) {
+        Bill bill = billRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bill not found"));
+
+        if (!"PENDING".equals(bill.getStatus())) {
+            throw new IllegalArgumentException("Only PENDING bills can be updated.");
+        }
+
+        // Check if date or shop changed and another bill exists
+        if ((!bill.getBillDate().equals(request.billDate()) || !bill.getShop().getId().equals(request.shopId())) &&
+            billRepository.existsByTenantIdAndShopIdAndBillDate(tenantId, request.shopId(), request.billDate())) {
+            throw new IllegalArgumentException("A bill already exists for this shop on this date.");
+        }
+
+        Rep rep = repRepository.findByIdAndTenantId(request.repId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Rep not found"));
+
+        Driver driver = null;
+        if (request.driverId() != null) {
+            driver = driverRepository.findByIdAndTenantId(request.driverId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Driver not found"));
+        }
+
+        Shop shop = shopRepository.findByIdAndTenantId(request.shopId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shop not found"));
+
+        BigDecimal reverseGrts = request.reverseGrts() != null ? request.reverseGrts() : BigDecimal.ZERO;
+
+        BigDecimal finalTotal = request.netTotal().add(reverseGrts)
+                .subtract(request.discount()).subtract(request.skuDiscount())
+                .subtract(request.returnAmount());
+
+        if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Final total cannot be negative");
+        }
+
+        bill.setRep(rep);
+        bill.setDriver(driver);
+        bill.setShop(shop);
+        bill.setBillDate(request.billDate());
+        bill.setNetTotal(request.netTotal());
+        bill.setReverseGrts(reverseGrts);
+        bill.setFreeItemsValue(request.freeItemsValue());
+        bill.setDiscount(request.discount());
+        bill.setSkuDiscount(request.skuDiscount());
+        bill.setReturnAmount(request.returnAmount());
+        bill.setFinalTotal(finalTotal);
+
+        Bill savedBill = billRepository.save(bill);
+        return mapToResponse(savedBill);
+    }
 
     @Transactional
     public BillResponse collectBill(Long tenantId, Long billId, BillCollectionRequest request) {
