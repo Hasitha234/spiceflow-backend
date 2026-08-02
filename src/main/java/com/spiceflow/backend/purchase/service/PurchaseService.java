@@ -295,6 +295,9 @@ public class PurchaseService {
             .orElseThrow(() -> new BusinessRuleViolationException("Warehouse not found"));
             
         for (PurchaseLineItem lineItem : purchase.getLineItems()) {
+            log.info("DEBUG confirmPurchase: Processing lineItem ID={}, Product={}, noOfBoxes={}, soldQuantity={}, unitType={}", 
+                lineItem.getId(), lineItem.getProduct().getName(), lineItem.getNoOfBoxes(), lineItem.getSoldQuantity(), lineItem.getUnitType());
+                
             Optional<InventoryItem> invOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
                 lineItem.getProduct().getId(), mainStore.getId(), tenantId);
                 
@@ -304,11 +307,15 @@ public class PurchaseService {
             Product product = lineItem.getProduct();
             int itemsPerSoldUnit = product.getItemsPerSoldUnit() != null ? product.getItemsPerSoldUnit() : 1;
             int soldUnitsPerBox = product.getSoldUnitsPerBox() != null ? product.getSoldUnitsPerBox() : 1;
+            log.info("DEBUG confirmPurchase: Product {} has itemsPerSoldUnit={}, soldUnitsPerBox={}", product.getName(), itemsPerSoldUnit, soldUnitsPerBox);
+            
             int eachQuantity = lineItem.getNoOfBoxes()
                 .multiply(BigDecimal.valueOf(itemsPerSoldUnit))
                 .multiply(BigDecimal.valueOf(soldUnitsPerBox))
                 .setScale(0, java.math.RoundingMode.HALF_UP)
                 .intValue();
+            
+            log.info("DEBUG confirmPurchase: Calculated eachQuantity={} for lineItem ID={}", eachQuantity, lineItem.getId());
                 
             InventoryItem inventoryItem;
             if (invOpt.isPresent()) {
