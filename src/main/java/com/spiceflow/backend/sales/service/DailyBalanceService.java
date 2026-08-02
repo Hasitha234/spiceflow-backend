@@ -72,7 +72,7 @@ public class DailyBalanceService {
                         .netDispatchTotal(netDispatch)
                         .billsTotal(billsTotal)
                         .isBalanced(isBalanced)
-                        .status(null)
+                        .status("PENDING")
                         .build());
     }
 

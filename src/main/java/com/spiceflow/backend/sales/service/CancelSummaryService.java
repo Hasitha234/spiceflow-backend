@@ -98,8 +98,9 @@ public class CancelSummaryService {
     }
     @Transactional
     public CancelSummaryResponse updateCancelSummary(Long tenantId, Long id, CancelSummaryRequest request) {
-        Tenant tenant = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+        if (!tenantRepository.existsById(tenantId)) {
+            throw new ResourceNotFoundException("Tenant not found");
+        }
 
         CancelSummary cancelSummary = cancelSummaryRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cancel Summary not found"));
