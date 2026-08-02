@@ -27,7 +27,7 @@ public class DailyBalanceController {
     private final DailyBalanceService dailyBalanceService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('TENANT_OWNER') or hasAuthority('DATA_ENTRY')")
+    @PreAuthorize("hasAuthority('ROLE_TENANT_OWNER') or hasAuthority('ROLE_DATA_ENTRY')")
     @Operation(summary = "Get daily balance for a date", operationId = "getDailyBalance")
     public ResponseEntity<DailyBalanceResponse> getDailyBalance(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -38,7 +38,7 @@ public class DailyBalanceController {
     }
 
     @PostMapping("/proceed")
-    @PreAuthorize("hasAuthority('TENANT_OWNER') or hasAuthority('DATA_ENTRY')")
+    @PreAuthorize("hasAuthority('ROLE_TENANT_OWNER') or hasAuthority('ROLE_DATA_ENTRY')")
     @Operation(summary = "Proceed daily balance for a date", operationId = "proceedDailyBalance")
     public ResponseEntity<DailyBalanceResponse> proceedDailyBalance(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
@@ -49,7 +49,7 @@ public class DailyBalanceController {
     }
 
     @PostMapping("/undo")
-    @PreAuthorize("hasAuthority('TENANT_OWNER')")
+    @PreAuthorize("hasAuthority('ROLE_TENANT_OWNER')")
     @Operation(summary = "Undo daily balance for a date", operationId = "undoDailyBalance")
     public ResponseEntity<DailyBalanceResponse> undoDailyBalance(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
