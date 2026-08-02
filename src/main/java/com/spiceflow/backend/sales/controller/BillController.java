@@ -37,6 +37,16 @@ public class BillController {
         return new ResponseEntity<>(billService.createBill(tenantId, request), HttpStatus.CREATED);
     }
 
+    @PutMapping("/{id}")
+    @Operation(summary = "Update an existing bill")
+    public ResponseEntity<BillResponse> updateBill(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @Valid @RequestBody BillRequest request) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
+        return ResponseEntity.ok(billService.updateBill(tenantId, id, request));
+    }
+
     @GetMapping
     @Operation(summary = "Get all bills with filtering and pagination")
     public ResponseEntity<Page<BillResponse>> getBills(
