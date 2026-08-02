@@ -106,10 +106,12 @@ public class Purchase extends BaseEntity {
     private Warehouse returnWarehouse;
 
     @OneToMany(mappedBy = "purchase", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
+    @OrderBy("id ASC")
     @Builder.Default
     private List<PurchaseLineItem> lineItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "purchase", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
+    @OrderBy("id ASC")
     @Builder.Default
     private List<PurchaseReturnItem> returnItems = new ArrayList<>();
 }
