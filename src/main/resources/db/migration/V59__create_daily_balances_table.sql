@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS daily_balances (
-    id UUID PRIMARY KEY,
-    tenant_id UUID NOT NULL REFERENCES tenants(id),
+    id BIGSERIAL PRIMARY KEY,
+    tenant_id BIGINT NOT NULL REFERENCES tenants(id),
     balance_date DATE NOT NULL,
     morning_summary_total DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     cancel_summary_total DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS daily_balances (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    created_by UUID REFERENCES users(id),
-    last_modified_by UUID REFERENCES users(id),
+    created_by VARCHAR(255),
+    last_modified_by VARCHAR(255),
 
     CONSTRAINT uq_daily_balance_date UNIQUE (tenant_id, balance_date)
 );
