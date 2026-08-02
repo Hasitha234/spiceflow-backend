@@ -29,6 +29,16 @@ public class MorningSummaryController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<MorningSummaryResponse> updateMorningSummary(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @Valid @RequestBody MorningSummaryRequest request) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
+        MorningSummaryResponse response = morningSummaryService.updateMorningSummary(tenantId, id, request);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping
     public ResponseEntity<Page<MorningSummaryResponse>> getAllMorningSummaries(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
