@@ -37,6 +37,16 @@ public class CancelSummaryController {
         return new ResponseEntity<>(cancelSummaryService.createCancelSummary(tenantId, request), HttpStatus.CREATED);
     }
 
+    @PutMapping("/{id}")
+    @Operation(summary = "Update an existing cancel summary")
+    public ResponseEntity<CancelSummaryResponse> updateCancelSummary(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id,
+            @Valid @RequestBody CancelSummaryRequest request) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
+        return ResponseEntity.ok(cancelSummaryService.updateCancelSummary(tenantId, id, request));
+    }
+
     @GetMapping
     @Operation(summary = "Get all cancel summaries with filtering and pagination")
     public ResponseEntity<Page<CancelSummaryResponse>> getCancelSummaries(
