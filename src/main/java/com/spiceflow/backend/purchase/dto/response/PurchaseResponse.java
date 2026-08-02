@@ -18,7 +18,7 @@ public record PurchaseResponse(
     String orderNo,
     String lcNo,
     
-    Integer totalBoxes,
+    BigDecimal totalBoxes,
     BigDecimal grossWeightKg,
     BigDecimal totalOrderValue,
     BigDecimal discountAmount,

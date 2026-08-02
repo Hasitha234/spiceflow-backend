@@ -14,11 +14,11 @@ public record PurchaseLineItemRequest(
     
     @NotNull
     @PositiveOrZero
-    Integer noOfBoxes,
+    BigDecimal noOfBoxes,
     
     @NotNull
     @PositiveOrZero
-    Integer soldQuantity,
+    BigDecimal soldQuantity,
     
     String unitType,
     
