@@ -40,4 +40,6 @@ public interface BillRepository extends JpaRepository<Bill, Long> {
     boolean existsByTenantIdAndShopIdAndBillDate(Long tenantId, Long shopId, LocalDate billDate);
 
     List<Bill> findByTenantIdAndRepIdAndBillDate(Long tenantId, Long repId, LocalDate billDate);
+    
+    List<Bill> findByTenantIdAndBillDate(Long tenantId, LocalDate billDate);
 }

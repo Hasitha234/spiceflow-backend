@@ -23,4 +23,6 @@ public interface MorningSummaryRepository extends JpaRepository<MorningSummary, 
     Optional<MorningSummary> findFirstByTenantIdOrderByCreatedAtDesc(Long tenantId);
     
     List<MorningSummary> findByTenantIdAndRepIdAndSummaryDate(Long tenantId, Long repId, LocalDate summaryDate);
+    
+    List<MorningSummary> findByTenantIdAndSummaryDate(Long tenantId, LocalDate summaryDate);
 }

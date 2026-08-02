@@ -15,7 +15,11 @@ public record MonthSummaryResponse(
     int deliveryCount,
     int repOrderCount,
     int purchaseOrderCount,
-    List<ExpenseBreakdown> expenseBreakdown
+    List<ExpenseBreakdown> expenseBreakdown,
+    @org.jspecify.annotations.Nullable BigDecimal totalMorningDispatch,
+    @org.jspecify.annotations.Nullable BigDecimal totalCancelReturns,
+    @org.jspecify.annotations.Nullable BigDecimal totalBilledAmount,
+    int balancedDaysCount
 ) {
     @Builder
     public record ExpenseBreakdown(
