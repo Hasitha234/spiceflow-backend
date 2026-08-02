@@ -44,13 +44,13 @@ public class PurchaseLineItem {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column(name = "no_of_boxes", nullable = false)
+    @Column(name = "no_of_boxes", nullable = false, precision = 15, scale = 2)
     @Builder.Default
-    private Integer noOfBoxes = 0;
+    private BigDecimal noOfBoxes = BigDecimal.ZERO;
 
-    @Column(name = "sold_quantity", nullable = false)
+    @Column(name = "sold_quantity", nullable = false, precision = 15, scale = 2)
     @Builder.Default
-    private Integer soldQuantity = 0;
+    private BigDecimal soldQuantity = BigDecimal.ZERO;
 
     @Column(name = "unit_type", length = 10)
     private String unitType;

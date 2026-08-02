@@ -12,8 +12,8 @@ public record PurchaseLineItemResponse(
     String productName,
     String productSku,
     
-    Integer noOfBoxes,
-    Integer soldQuantity,
+    BigDecimal noOfBoxes,
+    BigDecimal soldQuantity,
     String unitType,
     BigDecimal rate,
     BigDecimal amount

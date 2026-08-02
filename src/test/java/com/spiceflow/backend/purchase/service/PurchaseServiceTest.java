@@ -81,7 +81,7 @@ class PurchaseServiceTest {
         
         PurchaseLineItem item = new PurchaseLineItem();
         item.setProduct(product);
-        item.setSoldQuantity(10);
+        item.setSoldQuantity(BigDecimal.valueOf(10));
         purchase.setLineItems(new java.util.ArrayList<>(List.of(item)));
         purchase.setReturnItems(new java.util.ArrayList<>());
 
@@ -90,7 +90,7 @@ class PurchaseServiceTest {
 
     @Test
     void createPurchase_Success() {
-        PurchaseLineItemRequest lineItem = PurchaseLineItemRequest.builder().productId(1L).soldQuantity(10).rate(java.math.BigDecimal.TEN).noOfBoxes(1).build();
+        PurchaseLineItemRequest lineItem = PurchaseLineItemRequest.builder().productId(1L).soldQuantity(BigDecimal.valueOf(10)).rate(java.math.BigDecimal.TEN).noOfBoxes(BigDecimal.valueOf(1)).build();
         CreatePurchaseRequest request = CreatePurchaseRequest.builder().invoiceNo("INV-123").supplierId(1L).lineItems(java.util.List.of(lineItem)).build();
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
         when(supplierService.getSupplierEntity(1L, 1L)).thenReturn(supplier);
@@ -110,10 +110,10 @@ class PurchaseServiceTest {
         product.setSoldUnitsPerBox(2);
         
         PurchaseLineItemRequest lineItemDZ = PurchaseLineItemRequest.builder()
-                .productId(1L).soldQuantity(10).rate(java.math.BigDecimal.TEN).noOfBoxes(2).unitType("DZ").build();
+                .productId(1L).soldQuantity(BigDecimal.valueOf(10)).rate(java.math.BigDecimal.TEN).noOfBoxes(BigDecimal.valueOf(2)).unitType("DZ").build();
                 
         PurchaseLineItemRequest lineItemMC = PurchaseLineItemRequest.builder()
-                .productId(1L).soldQuantity(10).rate(java.math.BigDecimal.TEN).noOfBoxes(2).unitType("MC").build();
+                .productId(1L).soldQuantity(BigDecimal.valueOf(10)).rate(java.math.BigDecimal.TEN).noOfBoxes(BigDecimal.valueOf(2)).unitType("MC").build();
                 
         CreatePurchaseRequest request = CreatePurchaseRequest.builder()
                 .invoiceNo("INV-124").supplierId(1L).lineItems(java.util.List.of(lineItemDZ, lineItemMC)).build();
@@ -172,7 +172,7 @@ class PurchaseServiceTest {
     @Test
     void updatePurchase_Success() {
         PurchaseLineItemRequest lineItem = PurchaseLineItemRequest.builder()
-                .productId(1L).soldQuantity(10).rate(java.math.BigDecimal.TEN).noOfBoxes(1).build();
+                .productId(1L).soldQuantity(BigDecimal.valueOf(10)).rate(java.math.BigDecimal.TEN).noOfBoxes(BigDecimal.valueOf(1)).build();
         CreatePurchaseRequest request = CreatePurchaseRequest.builder()
                 .invoiceNo("INV-123-NEW").supplierId(1L).lineItems(java.util.List.of(lineItem))
                 .returnItems(java.util.List.of())

@@ -55,9 +55,9 @@ public class Purchase extends BaseEntity {
     @Column(name = "lc_no", length = 100)
     private String lcNo;
 
-    @Column(name = "total_boxes", nullable = false)
+    @Column(name = "total_boxes", nullable = false, precision = 15, scale = 2)
     @Builder.Default
-    private Integer totalBoxes = 0;
+    private BigDecimal totalBoxes = BigDecimal.ZERO;
 
     @Column(name = "gross_weight_kg", precision = 10, scale = 2)
     private BigDecimal grossWeightKg;
