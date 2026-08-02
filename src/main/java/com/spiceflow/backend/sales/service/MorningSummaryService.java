@@ -104,6 +104,61 @@ public class MorningSummaryService {
         MorningSummary savedSummary = morningSummaryRepository.save(morningSummary);
         return mapToResponse(savedSummary);
     }
+    @Transactional
+    public MorningSummaryResponse updateMorningSummary(Long tenantId, Long summaryId, MorningSummaryRequest request) {
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+
+        MorningSummary morningSummary = morningSummaryRepository.findByIdAndTenantId(summaryId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Morning Summary not found"));
+
+        if (!"PENDING".equals(morningSummary.getStatus())) {
+            throw new BusinessRuleViolationException("Only PENDING morning summaries can be updated.");
+        }
+
+        Rep rep = repRepository.findByIdAndTenantId(request.repId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Rep not found"));
+
+        Driver driver = driverRepository.findByIdAndTenantId(request.driverId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found"));
+
+        morningSummary.setRep(rep);
+        morningSummary.setDriver(driver);
+        morningSummary.setSummaryDate(request.summaryDate());
+
+        morningSummary.getItems().clear();
+
+        BigDecimal finalEstimateValue = BigDecimal.ZERO;
+
+        for (MorningSummaryRequest.MorningSummaryItemRequest itemRequest : request.items()) {
+            Product product = productRepository.findByIdAndTenantId(itemRequest.productId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + itemRequest.productId()));
+
+            BigDecimal unitPrice = product.getRatePerSoldUnit();
+            if (unitPrice == null || unitPrice.compareTo(BigDecimal.ZERO) == 0) {
+                unitPrice = product.getBasePrice() != null ? product.getBasePrice() : BigDecimal.ZERO;
+            }
+            BigDecimal estimateValue = unitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
+
+            MorningSummaryItem item = MorningSummaryItem.builder()
+                    .tenant(tenant)
+                    .product(product)
+                    .quantity(itemRequest.quantity())
+                    .unitPrice(unitPrice)
+                    .estimateValue(estimateValue)
+                    .expectedReturnAmount(itemRequest.expectedReturnAmount() != null ? itemRequest.expectedReturnAmount() : 0)
+                    .expectedReturnPrice(itemRequest.expectedReturnPrice() != null ? itemRequest.expectedReturnPrice() : BigDecimal.ZERO)
+                    .build();
+
+            morningSummary.addItem(item);
+            finalEstimateValue = finalEstimateValue.add(estimateValue);
+        }
+
+        morningSummary.setFinalEstimateValue(finalEstimateValue);
+        
+        MorningSummary savedSummary = morningSummaryRepository.save(morningSummary);
+        return mapToResponse(savedSummary);
+    }
 
     @Transactional(readOnly = true)
     public Page<MorningSummaryResponse> getAllSummaries(Long tenantId, Pageable pageable) {
