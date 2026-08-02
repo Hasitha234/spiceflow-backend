@@ -96,6 +96,53 @@ public class CancelSummaryService {
         CancelSummary savedSummary = cancelSummaryRepository.save(cancelSummary);
         return cancelSummaryMapper.toResponse(savedSummary);
     }
+    @Transactional
+    public CancelSummaryResponse updateCancelSummary(Long tenantId, Long id, CancelSummaryRequest request) {
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+
+        CancelSummary cancelSummary = cancelSummaryRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cancel Summary not found"));
+
+        if (!"PENDING".equals(cancelSummary.getStatus())) {
+            throw new BusinessRuleViolationException("Only PENDING cancel summaries can be updated.");
+        }
+
+        Rep rep = repRepository.findByIdAndTenantId(request.repId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Rep not found"));
+
+        Driver driver = driverRepository.findByIdAndTenantId(request.driverId(), tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found"));
+
+        cancelSummary.setRep(rep);
+        cancelSummary.setDriver(driver);
+        cancelSummary.setSummaryDate(request.summaryDate());
+
+        cancelSummary.getItems().clear();
+
+        BigDecimal finalEstimateValue = BigDecimal.ZERO;
+
+        for (CancelSummaryItemRequest itemRequest : request.items()) {
+            Product product = productRepository.findByIdAndTenantId(itemRequest.productId(), tenantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + itemRequest.productId()));
+
+            CancelSummaryItem item = CancelSummaryItem.builder()
+                    .cancelSummary(cancelSummary)
+                    .product(product)
+                    .quantity(itemRequest.quantity())
+                    .unitPrice(itemRequest.unitPrice())
+                    .estimateValue(itemRequest.estimateValue())
+                    .build();
+
+            cancelSummary.addItem(item);
+            finalEstimateValue = finalEstimateValue.add(itemRequest.estimateValue());
+        }
+
+        cancelSummary.setFinalEstimateValue(finalEstimateValue);
+
+        CancelSummary savedSummary = cancelSummaryRepository.save(cancelSummary);
+        return cancelSummaryMapper.toResponse(savedSummary);
+    }
 
     @Transactional(readOnly = true)
     public Page<CancelSummaryResponse> getCancelSummaries(Long tenantId, String search, Long repId, Long driverId, LocalDate startDate, LocalDate endDate, String status, Pageable pageable) {
