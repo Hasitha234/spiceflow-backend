@@ -47,4 +47,6 @@ public interface CancelSummaryRepository extends JpaRepository<CancelSummary, Lo
     int findMaxSequenceNumberForDate(@Param("tenantId") Long tenantId, @Param("date") LocalDate date);
 
     List<CancelSummary> findByTenantIdAndRepIdAndSummaryDate(Long tenantId, Long repId, LocalDate summaryDate);
+    
+    List<CancelSummary> findByTenantIdAndSummaryDate(Long tenantId, LocalDate summaryDate);
 }

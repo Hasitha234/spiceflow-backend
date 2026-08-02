@@ -19,7 +19,12 @@ public record EndOfDaySummaryResponse(
     int shopsVisited,
     List<ChequeDetail> chequeDetails,
     List<DeliverySummary> deliveries,
-    List<CancelledOrderSummary> cancelledOrders
+    List<CancelledOrderSummary> cancelledOrders,
+    @Nullable BigDecimal morningSummaryTotal,
+    @Nullable BigDecimal cancelSummaryTotal,
+    @Nullable BigDecimal netDispatchTotal,
+    @Nullable BigDecimal billsTotal,
+    @Nullable String balanceStatus
 ) {
     @Builder
     public record ChequeDetail(

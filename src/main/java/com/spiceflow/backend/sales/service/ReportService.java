@@ -16,6 +16,8 @@ import com.spiceflow.backend.purchase.repository.PurchaseRepository;
 import com.spiceflow.backend.finance.repository.ExpenseRepository;
 import com.spiceflow.backend.finance.entity.Expense;
 import com.spiceflow.backend.sales.dto.response.MonthSummaryResponse;
+import com.spiceflow.backend.sales.repository.DailyBalanceRepository;
+import com.spiceflow.backend.sales.entity.DailyBalance;
 import java.time.YearMonth;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -41,6 +43,7 @@ public class ReportService {
     private final RepOrderRepository repOrderRepository;
     private final PurchaseRepository purchaseRepository;
     private final ExpenseRepository expenseRepository;
+    private final DailyBalanceRepository dailyBalanceRepository;
 
     @Async
     public CompletableFuture<SalesSummaryResponse> getSalesSummary(Long tenantId, LocalDate startDate, LocalDate endDate) {
@@ -245,6 +248,8 @@ public class ReportService {
                 .build())
             .collect(Collectors.toList());
 
+        var dailyBalanceOpt = dailyBalanceRepository.findByTenantIdAndBalanceDate(tenantId, date);
+
         return EndOfDaySummaryResponse.builder()
             .date(date)
             .totalSalesValue(totalSales)
@@ -258,6 +263,11 @@ public class ReportService {
             .chequeDetails(chequeDetails)
             .deliveries(deliverySummaries)
             .cancelledOrders(cancelledSummaries)
+            .morningSummaryTotal(dailyBalanceOpt.map(DailyBalance::getMorningSummaryTotal).orElse(null))
+            .cancelSummaryTotal(dailyBalanceOpt.map(DailyBalance::getCancelSummaryTotal).orElse(null))
+            .netDispatchTotal(dailyBalanceOpt.map(DailyBalance::getNetDispatchTotal).orElse(null))
+            .billsTotal(dailyBalanceOpt.map(DailyBalance::getBillsTotal).orElse(null))
+            .balanceStatus(dailyBalanceOpt.map(DailyBalance::getStatus).orElse(null))
             .build();
     }
 
@@ -301,6 +311,20 @@ public class ReportService {
                         .build())
                 .collect(Collectors.toList());
 
+        List<DailyBalance> dailyBalances = dailyBalanceRepository.findByTenantIdAndBalanceDateBetween(tenantId, startDate, endDate);
+        
+        BigDecimal totalMorningDispatch = dailyBalances.stream()
+                .map(DailyBalance::getMorningSummaryTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+        BigDecimal totalCancelReturns = dailyBalances.stream()
+                .map(DailyBalance::getCancelSummaryTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+        BigDecimal totalBilledAmount = dailyBalances.stream()
+                .map(DailyBalance::getBillsTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         return MonthSummaryResponse.builder()
                 .yearMonth(yearMonth)
                 .totalSalesValue(totalSales)
@@ -311,6 +335,10 @@ public class ReportService {
                 .repOrderCount(repOrders.size())
                 .purchaseOrderCount(purchases.size())
                 .expenseBreakdown(expenseBreakdown)
+                .totalMorningDispatch(dailyBalances.isEmpty() ? null : totalMorningDispatch)
+                .totalCancelReturns(dailyBalances.isEmpty() ? null : totalCancelReturns)
+                .totalBilledAmount(dailyBalances.isEmpty() ? null : totalBilledAmount)
+                .balancedDaysCount(dailyBalances.size())
                 .build();
     }
 }
