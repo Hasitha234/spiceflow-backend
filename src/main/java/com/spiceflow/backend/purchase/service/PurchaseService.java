@@ -298,7 +298,17 @@ public class PurchaseService {
             Optional<InventoryItem> invOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
                 lineItem.getProduct().getId(), mainStore.getId(), tenantId);
                 
-            int eachQuantity = UnitConversionUtil.toEachItems(lineItem.getSoldQuantity().intValue(), lineItem.getUnitType());
+            // Calculate EA items directly from boxes × product packaging
+            // DO NOT use soldQuantity here — it may have been manually overridden by the user
+            // and represents the "sold unit" view, not raw EA count.
+            Product product = lineItem.getProduct();
+            int itemsPerSoldUnit = product.getItemsPerSoldUnit() != null ? product.getItemsPerSoldUnit() : 1;
+            int soldUnitsPerBox = product.getSoldUnitsPerBox() != null ? product.getSoldUnitsPerBox() : 1;
+            int eachQuantity = lineItem.getNoOfBoxes()
+                .multiply(BigDecimal.valueOf(itemsPerSoldUnit))
+                .multiply(BigDecimal.valueOf(soldUnitsPerBox))
+                .setScale(0, java.math.RoundingMode.HALF_UP)
+                .intValue();
                 
             InventoryItem inventoryItem;
             if (invOpt.isPresent()) {
