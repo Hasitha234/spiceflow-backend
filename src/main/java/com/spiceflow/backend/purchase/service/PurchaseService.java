@@ -103,18 +103,20 @@ public class PurchaseService {
                 throw new BusinessRuleViolationException("Product '" + product.getName() + "' (SKU: " + product.getSku() + ") does not belong to the selected supplier.");
             }
             
-            BigDecimal itemsPerSoldUnit = BigDecimal.valueOf(product.getItemsPerSoldUnit() != null ? product.getItemsPerSoldUnit() : 1);
-            BigDecimal soldUnitsPerBox = BigDecimal.valueOf(product.getSoldUnitsPerBox() != null ? product.getSoldUnitsPerBox() : 1);
-            
-            // Recalculate soldQuantity on the backend for data integrity
-            BigDecimal totalItems = itemReq.noOfBoxes().multiply(itemsPerSoldUnit).multiply(soldUnitsPerBox);
-            BigDecimal unitDivisor = BigDecimal.ONE; // Default EA
-            if ("DZ".equalsIgnoreCase(itemReq.unitType())) {
-                unitDivisor = BigDecimal.valueOf(12);
-            } else if ("MC".equalsIgnoreCase(itemReq.unitType())) {
-                unitDivisor = BigDecimal.valueOf(1000);
+            BigDecimal calculatedSoldQuantity;
+            // MC = Master Carton = 1 box, so soldQty always equals noOfBoxes
+            if ("MC".equalsIgnoreCase(itemReq.unitType())) {
+                calculatedSoldQuantity = itemReq.noOfBoxes();
+            } else {
+                BigDecimal itemsPerSoldUnit = BigDecimal.valueOf(product.getItemsPerSoldUnit() != null ? product.getItemsPerSoldUnit() : 1);
+                BigDecimal soldUnitsPerBox = BigDecimal.valueOf(product.getSoldUnitsPerBox() != null ? product.getSoldUnitsPerBox() : 1);
+                BigDecimal totalItems = itemReq.noOfBoxes().multiply(itemsPerSoldUnit).multiply(soldUnitsPerBox);
+                BigDecimal unitDivisor = BigDecimal.ONE; // Default EA
+                if ("DZ".equalsIgnoreCase(itemReq.unitType())) {
+                    unitDivisor = BigDecimal.valueOf(12);
+                }
+                calculatedSoldQuantity = totalItems.divide(unitDivisor, 2, java.math.RoundingMode.HALF_UP);
             }
-            BigDecimal calculatedSoldQuantity = totalItems.divide(unitDivisor, 2, java.math.RoundingMode.HALF_UP);
 
             BigDecimal amount = itemReq.amount() != null 
                 ? itemReq.amount() 
@@ -216,18 +218,20 @@ public class PurchaseService {
                 throw new BusinessRuleViolationException("Product '" + product.getName() + "' (SKU: " + product.getSku() + ") does not belong to the selected supplier.");
             }
             
-            BigDecimal itemsPerSoldUnit = BigDecimal.valueOf(product.getItemsPerSoldUnit() != null ? product.getItemsPerSoldUnit() : 1);
-            BigDecimal soldUnitsPerBox = BigDecimal.valueOf(product.getSoldUnitsPerBox() != null ? product.getSoldUnitsPerBox() : 1);
-            
-            // Recalculate soldQuantity on the backend for data integrity
-            BigDecimal totalItems = itemReq.noOfBoxes().multiply(itemsPerSoldUnit).multiply(soldUnitsPerBox);
-            BigDecimal unitDivisor = BigDecimal.ONE; // Default EA
-            if ("DZ".equalsIgnoreCase(itemReq.unitType())) {
-                unitDivisor = BigDecimal.valueOf(12);
-            } else if ("MC".equalsIgnoreCase(itemReq.unitType())) {
-                unitDivisor = BigDecimal.valueOf(1000);
+            BigDecimal calculatedSoldQuantity;
+            // MC = Master Carton = 1 box, so soldQty always equals noOfBoxes
+            if ("MC".equalsIgnoreCase(itemReq.unitType())) {
+                calculatedSoldQuantity = itemReq.noOfBoxes();
+            } else {
+                BigDecimal itemsPerSoldUnit = BigDecimal.valueOf(product.getItemsPerSoldUnit() != null ? product.getItemsPerSoldUnit() : 1);
+                BigDecimal soldUnitsPerBox = BigDecimal.valueOf(product.getSoldUnitsPerBox() != null ? product.getSoldUnitsPerBox() : 1);
+                BigDecimal totalItems = itemReq.noOfBoxes().multiply(itemsPerSoldUnit).multiply(soldUnitsPerBox);
+                BigDecimal unitDivisor = BigDecimal.ONE; // Default EA
+                if ("DZ".equalsIgnoreCase(itemReq.unitType())) {
+                    unitDivisor = BigDecimal.valueOf(12);
+                }
+                calculatedSoldQuantity = totalItems.divide(unitDivisor, 2, java.math.RoundingMode.HALF_UP);
             }
-            BigDecimal calculatedSoldQuantity = totalItems.divide(unitDivisor, 2, java.math.RoundingMode.HALF_UP);
             
             BigDecimal amount = itemReq.amount() != null 
                 ? itemReq.amount() 
