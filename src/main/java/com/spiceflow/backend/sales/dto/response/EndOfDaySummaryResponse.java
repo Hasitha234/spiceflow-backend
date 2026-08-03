@@ -26,7 +26,8 @@ public record EndOfDaySummaryResponse(
     @Nullable BigDecimal billsTotal,
     @Nullable String balanceStatus,
     List<RepOrderBillSummary> repOrderBills,
-    int totalRepOrderBillsCount
+    int totalRepOrderBillsCount,
+    BigDecimal totalRepOrderBillsAmount
 ) {
     @Builder
     public record ChequeDetail(

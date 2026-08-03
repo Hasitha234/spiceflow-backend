@@ -212,10 +212,7 @@ public class ReportService {
 
                 if (shop.getPayments() != null) {
                     for (var payment : shop.getPayments()) {
-                        if ("CASH".equals(payment.getPaymentMethod())) {
-                            totalCash = totalCash.add(payment.getAmount());
-                        } else if ("CHEQUE".equals(payment.getPaymentMethod())) {
-                            totalCheque = totalCheque.add(payment.getAmount());
+                        if ("CHEQUE".equals(payment.getPaymentMethod())) {
                             chequeDetails.add(EndOfDaySummaryResponse.ChequeDetail.builder()
                                 .chequeNo(payment.getChequeNo())
                                 .bankName(payment.getChequeBankName())
@@ -226,8 +223,6 @@ public class ReportService {
                         }
                     }
                 }
-
-                totalLoan = totalLoan.add(shop.getCreditAmount());
             }
 
             deliverySummaries.add(EndOfDaySummaryResponse.DeliverySummary.builder()
@@ -255,6 +250,27 @@ public class ReportService {
 
         List<Bill> bills = billRepository.findByTenantIdAndBillDate(tenantId, date);
         int totalRepOrderBillsCount = bills.size();
+        
+        BigDecimal totalRepOrderBillsAmount = bills.stream()
+            .map(Bill::getFinalTotal)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Calculate totals from bills that are not cancelled
+        List<Bill> validBills = bills.stream()
+            .filter(b -> !"CANCELLED".equals(b.getStatus()))
+            .toList();
+
+        totalCash = validBills.stream()
+            .map(Bill::getFinalTotal)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        totalCheque = validBills.stream()
+            .map(Bill::getCheckCollected)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        totalLoan = validBills.stream()
+            .map(Bill::getLoanAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<EndOfDaySummaryResponse.RepOrderBillSummary> repOrderBills = bills.stream()
             .collect(Collectors.groupingBy(b -> b.getRep().getName()))
@@ -305,6 +321,7 @@ public class ReportService {
             .balanceStatus(dailyBalanceOpt.map(DailyBalance::getStatus).orElse(null))
             .repOrderBills(repOrderBills)
             .totalRepOrderBillsCount(totalRepOrderBillsCount)
+            .totalRepOrderBillsAmount(totalRepOrderBillsAmount)
             .build();
     }
 
