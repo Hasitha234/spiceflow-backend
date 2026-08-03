@@ -18,6 +18,8 @@ import com.spiceflow.backend.finance.entity.Expense;
 import com.spiceflow.backend.sales.dto.response.MonthSummaryResponse;
 import com.spiceflow.backend.sales.repository.DailyBalanceRepository;
 import com.spiceflow.backend.sales.entity.DailyBalance;
+import com.spiceflow.backend.sales.repository.BillRepository;
+import com.spiceflow.backend.sales.entity.Bill;
 import java.time.YearMonth;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -44,6 +46,7 @@ public class ReportService {
     private final PurchaseRepository purchaseRepository;
     private final ExpenseRepository expenseRepository;
     private final DailyBalanceRepository dailyBalanceRepository;
+    private final BillRepository billRepository;
 
     @Async
     public CompletableFuture<SalesSummaryResponse> getSalesSummary(Long tenantId, LocalDate startDate, LocalDate endDate) {
@@ -250,6 +253,38 @@ public class ReportService {
 
         var dailyBalanceOpt = dailyBalanceRepository.findByTenantIdAndBalanceDate(tenantId, date);
 
+        List<Bill> bills = billRepository.findByTenantIdAndBillDate(tenantId, date);
+        int totalRepOrderBillsCount = bills.size();
+
+        List<EndOfDaySummaryResponse.RepOrderBillSummary> repOrderBills = bills.stream()
+            .collect(Collectors.groupingBy(b -> b.getRep().getName()))
+            .entrySet().stream()
+            .map(entry -> {
+                String repName = entry.getKey();
+                List<Bill> repBills = entry.getValue();
+                
+                BigDecimal totalAmount = repBills.stream()
+                    .map(Bill::getFinalTotal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    
+                List<EndOfDaySummaryResponse.RepOrderBillShop> shops = repBills.stream()
+                    .map(b -> EndOfDaySummaryResponse.RepOrderBillShop.builder()
+                        .shopName(b.getShop().getName())
+                        .driverName(b.getDriver() != null ? b.getDriver().getName() : "N/A")
+                        .amount(b.getFinalTotal())
+                        .status(b.getStatus())
+                        .build())
+                    .collect(Collectors.toList());
+                    
+                return EndOfDaySummaryResponse.RepOrderBillSummary.builder()
+                    .repName(repName)
+                    .orderCount(repBills.size())
+                    .totalAmount(totalAmount)
+                    .shops(shops)
+                    .build();
+            })
+            .collect(Collectors.toList());
+
         return EndOfDaySummaryResponse.builder()
             .date(date)
             .totalSalesValue(totalSales)
@@ -268,6 +303,8 @@ public class ReportService {
             .netDispatchTotal(dailyBalanceOpt.map(DailyBalance::getNetDispatchTotal).orElse(null))
             .billsTotal(dailyBalanceOpt.map(DailyBalance::getBillsTotal).orElse(null))
             .balanceStatus(dailyBalanceOpt.map(DailyBalance::getStatus).orElse(null))
+            .repOrderBills(repOrderBills)
+            .totalRepOrderBillsCount(totalRepOrderBillsCount)
             .build();
     }
 
