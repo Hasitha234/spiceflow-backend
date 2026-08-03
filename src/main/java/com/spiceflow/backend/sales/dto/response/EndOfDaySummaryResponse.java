@@ -24,7 +24,9 @@ public record EndOfDaySummaryResponse(
     @Nullable BigDecimal cancelSummaryTotal,
     @Nullable BigDecimal netDispatchTotal,
     @Nullable BigDecimal billsTotal,
-    @Nullable String balanceStatus
+    @Nullable String balanceStatus,
+    List<RepOrderBillSummary> repOrderBills,
+    int totalRepOrderBillsCount
 ) {
     @Builder
     public record ChequeDetail(
@@ -52,5 +54,21 @@ public record EndOfDaySummaryResponse(
         String driverName,
         String repName,
         String reason
+    ) {}
+
+    @Builder
+    public record RepOrderBillSummary(
+        String repName,
+        int orderCount,
+        BigDecimal totalAmount,
+        List<RepOrderBillShop> shops
+    ) {}
+
+    @Builder
+    public record RepOrderBillShop(
+        String shopName,
+        String driverName,
+        BigDecimal amount,
+        String status
     ) {}
 }
