@@ -2,6 +2,7 @@ package com.spiceflow.backend.sales.dto.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,7 @@ public class DailyBalanceResponse {
     private BigDecimal cancelSummaryTotal;
     private BigDecimal netDispatchTotal;
     private BigDecimal billsTotal;
+    @JsonProperty("isBalanced")
     private boolean isBalanced;
     private String status;
 }
