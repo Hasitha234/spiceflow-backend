@@ -238,6 +238,7 @@ class PurchaseServiceTest {
         when(purchaseRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(purchase));
         when(warehouseRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.empty());
 
-        assertThrows(BusinessRuleViolationException.class, () -> purchaseService.confirmPurchase(1L, 1L, 1L));
+        assertThrows(BusinessRuleViolationException.class, 
+            () -> purchaseService.confirmPurchase(1L, 1L, 1L));
     }
 }
