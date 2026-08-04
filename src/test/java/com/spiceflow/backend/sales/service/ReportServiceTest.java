@@ -93,27 +93,8 @@ class ReportServiceTest {
 
     @Test
     void getStockStatus_Success() {
-        Product product = new Product();
-        product.setId(1L);
-        product.setName("Product 1");
-
-        Warehouse mainWarehouse = new Warehouse();
-        mainWarehouse.setStoreType("MAIN");
-
-        Warehouse vehicleWarehouse = new Warehouse();
-        vehicleWarehouse.setStoreType("CUSTOM");
-
-        InventoryItem item1 = new InventoryItem();
-        item1.setProduct(product);
-        item1.setWarehouse(mainWarehouse);
-        item1.setQuantityAvailable(100);
-
-        InventoryItem item2 = new InventoryItem();
-        item2.setProduct(product);
-        item2.setWarehouse(vehicleWarehouse);
-        item2.setQuantityAvailable(50);
-
-        when(inventoryItemRepository.findByTenantId(eq(1L), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(item1, item2)));
+        StockStatusResponse response = new StockStatusResponse(1L, "Product 1", "P001", 100, 50, 150);
+        when(inventoryItemRepository.getStockStatusReport(1L)).thenReturn(List.of(response));
 
         List<StockStatusResponse> result = reportService.getStockStatus(1L);
 

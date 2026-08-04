@@ -111,36 +111,7 @@ public class ReportService {
     public List<StockStatusResponse> getStockStatus(Long tenantId) {
         log.info("Generating stock status report for tenant {}", tenantId);
         
-        // This is a naive implementation that loads everything in memory.
-        // In a real application, a custom JPQL query would be used.
-        List<StockStatusResponse> stockStatus = inventoryItemRepository.findByTenantId(tenantId, org.springframework.data.domain.Pageable.unpaged())
-            .stream()
-            .collect(Collectors.groupingBy(i -> i.getProduct()))
-            .entrySet().stream()
-            .map(e -> {
-                var product = e.getKey();
-                var items = e.getValue();
-                
-                int mainQuantity = items.stream()
-                    .filter(i -> "MAIN".equals(i.getWarehouse().getStoreType()))
-                    .mapToInt(i -> i.getQuantityAvailable())
-                    .sum();
-                    
-                int otherQuantity = items.stream()
-                    .filter(i -> !"MAIN".equals(i.getWarehouse().getStoreType()))
-                    .mapToInt(i -> i.getQuantityAvailable())
-                    .sum();
-                    
-                return new StockStatusResponse(
-                    product.getId(),
-                    product.getName(),
-                    product.getSku(),
-                    mainQuantity,
-                    otherQuantity,
-                    mainQuantity + otherQuantity
-                );
-            })
-            .collect(Collectors.toList());
+        List<StockStatusResponse> stockStatus = inventoryItemRepository.getStockStatusReport(tenantId);
             
         log.debug("Stock status calculated for {} distinct products for tenant {}", stockStatus.size(), tenantId);
         return stockStatus;
