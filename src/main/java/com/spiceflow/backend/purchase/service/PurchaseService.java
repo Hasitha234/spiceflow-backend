@@ -258,10 +258,14 @@ public class PurchaseService {
         return purchaseMapper.toResponse(savedPurchase);
     }
     
-    public Page<PurchaseResponse> getPurchases(Long tenantId, String invoiceNo, LocalDate date, Pageable pageable) {
+    public Page<PurchaseResponse> getPurchases(Long tenantId, String invoiceNo, LocalDate startDate, LocalDate endDate, Pageable pageable) {
         Page<Purchase> purchases;
-        if (date != null) {
-            purchases = purchaseRepository.findByTenantIdAndInvoiceDate(tenantId, date, pageable);
+        if (startDate != null && endDate != null) {
+            purchases = purchaseRepository.findByTenantIdAndInvoiceDateBetween(tenantId, startDate, endDate, pageable);
+        } else if (startDate != null) {
+            purchases = purchaseRepository.findByTenantIdAndInvoiceDateBetween(tenantId, startDate, java.time.LocalDate.now(java.time.ZoneId.systemDefault()).plusYears(100), pageable);
+        } else if (endDate != null) {
+            purchases = purchaseRepository.findByTenantIdAndInvoiceDateBetween(tenantId, LocalDate.of(1970, 1, 1), endDate, pageable);
         } else if (invoiceNo != null && !invoiceNo.isBlank()) {
             purchases = purchaseRepository.findByTenantIdAndInvoiceNoContainingIgnoreCase(tenantId, invoiceNo, pageable);
         } else {

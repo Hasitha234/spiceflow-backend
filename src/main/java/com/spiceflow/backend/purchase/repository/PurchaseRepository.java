@@ -21,4 +21,6 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
     Page<Purchase> findByTenantIdAndInvoiceDate(Long tenantId, LocalDate invoiceDate, Pageable pageable);
     
     java.util.List<Purchase> findByTenantIdAndInvoiceDateBetween(Long tenantId, LocalDate startDate, LocalDate endDate);
+    
+    Page<Purchase> findByTenantIdAndInvoiceDateBetween(Long tenantId, LocalDate startDate, LocalDate endDate, Pageable pageable);
 }

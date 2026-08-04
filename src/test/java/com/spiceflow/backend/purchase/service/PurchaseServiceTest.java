@@ -143,7 +143,7 @@ class PurchaseServiceTest {
         when(purchaseRepository.findByTenantId(eq(1L), any(PageRequest.class))).thenReturn(page);
         when(purchaseMapper.toResponse(purchase)).thenReturn(purchaseResponse);
 
-        Page<PurchaseResponse> responses = purchaseService.getPurchases(1L, null, null, PageRequest.of(0, 10));
+        Page<PurchaseResponse> responses = purchaseService.getPurchases(1L, null, null, null, PageRequest.of(0, 10));
 
         assertEquals(1, responses.getContent().size());
     }
@@ -154,7 +154,7 @@ class PurchaseServiceTest {
         when(purchaseRepository.findByTenantIdAndInvoiceNoContainingIgnoreCase(eq(1L), eq("INV"), any(PageRequest.class))).thenReturn(page);
         when(purchaseMapper.toResponse(purchase)).thenReturn(purchaseResponse);
 
-        Page<PurchaseResponse> responses = purchaseService.getPurchases(1L, "INV", null, PageRequest.of(0, 10));
+        Page<PurchaseResponse> responses = purchaseService.getPurchases(1L, "INV", null, null, PageRequest.of(0, 10));
 
         assertEquals(1, responses.getContent().size());
     }

@@ -61,10 +61,11 @@ public class PurchaseController {
     public ResponseEntity<Page<PurchaseResponse>> getPurchases(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @RequestParam(required = false) String invoiceNo,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
         log.info("User {} listing purchases", currentUser.getId());
-        Page<PurchaseResponse> response = purchaseService.getPurchases(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), invoiceNo, date, pageable);
+        Page<PurchaseResponse> response = purchaseService.getPurchases(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), invoiceNo, startDate, endDate, pageable);
         return ResponseEntity.ok(response);
     }
 
