@@ -53,7 +53,7 @@ public class ReportController {
     }
 
     @GetMapping("/stock-status")
-    @PreAuthorize("hasAuthority('REPORT_DAILY') or hasAuthority('REPORT_MONTHLY') or hasAuthority('REPORT_EXPORT')")
+    @PreAuthorize("hasAuthority('REPORT_DAILY') or hasAuthority('REPORT_MONTHLY') or hasAuthority('REPORT_EXPORT') or hasAuthority('ROLE_DATA_ENTRY') or hasAuthority('ROLE_TENANT_OWNER')")
     @Operation(summary = "Get stock status", description = "Returns the current status of product stocks across warehouses", operationId = "getStockStatus")
     public ResponseEntity<List<StockStatusResponse>> getStockStatus(
             @AuthenticationPrincipal AuthenticatedUser currentUser) {
@@ -73,7 +73,7 @@ public class ReportController {
     }
 
     @GetMapping("/end-of-day-summary")
-    @PreAuthorize("hasAuthority('REPORT_DAILY') or hasAuthority('REPORT_MONTHLY') or hasAuthority('REPORT_EXPORT')")
+    @PreAuthorize("hasAuthority('REPORT_DAILY') or hasAuthority('REPORT_MONTHLY') or hasAuthority('REPORT_EXPORT') or hasAuthority('ROLE_DATA_ENTRY') or hasAuthority('ROLE_TENANT_OWNER')")
     @Operation(summary = "Get end-of-day summary", description = "Returns a comprehensive summary of all cash, cheques, and loans collected for a specific date", operationId = "getEndOfDaySummary")
     public ResponseEntity<com.spiceflow.backend.sales.dto.response.EndOfDaySummaryResponse> getEndOfDaySummary(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
