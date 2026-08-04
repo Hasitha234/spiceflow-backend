@@ -5,6 +5,7 @@ import java.util.List;
 
 @Builder
 public record UpdateUserRequest(
+    String email,
     String name,
     String userType,
     Long tenantId,

@@ -311,6 +311,16 @@ public class AdminService {
           .orElseThrow(() -> new ResourceNotFoundException("User not found"));
       
       // Update basic details if present...
+      if (request.email() != null && !request.email().equals(user.getEmail())) {
+          if (userRepository.existsByEmailIncludingDeleted(request.email())) {
+              throw new ResourceConflictException("Email is already registered");
+          }
+          user.setEmail(request.email());
+      }
+      if (request.name() != null) {
+          user.setName(request.name());
+      }
+      
       // E.g., re-assigning tenants, changing userType. Simplified for now.
       
       if ("TENANT_OWNER".equals(request.userType()) && request.tenantIds() != null) {
