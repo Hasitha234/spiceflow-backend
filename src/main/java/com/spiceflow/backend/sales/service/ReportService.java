@@ -272,6 +272,59 @@ public class ReportService {
             .map(Bill::getLoanAmount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        BigDecimal cancelOrderAmount = bills.stream()
+            .filter(b -> "CANCELLED".equals(b.getStatus()))
+            .map(Bill::getFinalTotal)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        int cancelShopCount = (int) bills.stream()
+            .filter(b -> "CANCELLED".equals(b.getStatus()))
+            .count();
+
+        List<EndOfDaySummaryResponse.DriverSummary> driverSummaries = bills.stream()
+            .filter(b -> b.getDriver() != null)
+            .collect(Collectors.groupingBy(b -> b.getDriver().getName()))
+            .entrySet().stream()
+            .map(entry -> {
+                String driverName = entry.getKey();
+                List<Bill> driverBills = entry.getValue();
+
+                List<Bill> validDriverBills = driverBills.stream()
+                    .filter(b -> !"CANCELLED".equals(b.getStatus()))
+                    .toList();
+
+                BigDecimal dCash = validDriverBills.stream()
+                    .map(Bill::getFinalTotal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal dCheque = validDriverBills.stream()
+                    .map(Bill::getCheckCollected)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal dLoan = validDriverBills.stream()
+                    .map(Bill::getLoanAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal dCancel = driverBills.stream()
+                    .filter(b -> "CANCELLED".equals(b.getStatus()))
+                    .map(Bill::getFinalTotal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                int dCancelCount = (int) driverBills.stream()
+                    .filter(b -> "CANCELLED".equals(b.getStatus()))
+                    .count();
+
+                return EndOfDaySummaryResponse.DriverSummary.builder()
+                    .driverName(driverName)
+                    .totalCashCollected(dCash)
+                    .totalChequeAmount(dCheque)
+                    .totalLoanGiven(dLoan)
+                    .cancelOrderAmount(dCancel)
+                    .cancelShopCount(dCancelCount)
+                    .build();
+            })
+            .collect(Collectors.toList());
+
         List<EndOfDaySummaryResponse.RepOrderBillSummary> repOrderBills = bills.stream()
             .collect(Collectors.groupingBy(b -> b.getRep().getName()))
             .entrySet().stream()
@@ -320,8 +373,11 @@ public class ReportService {
             .billsTotal(dailyBalanceOpt.map(DailyBalance::getBillsTotal).orElse(null))
             .balanceStatus(dailyBalanceOpt.map(DailyBalance::getStatus).orElse(null))
             .repOrderBills(repOrderBills)
+            .driverSummaries(driverSummaries)
             .totalRepOrderBillsCount(totalRepOrderBillsCount)
             .totalRepOrderBillsAmount(totalRepOrderBillsAmount)
+            .cancelOrderAmount(cancelOrderAmount)
+            .cancelShopCount(cancelShopCount)
             .build();
     }
 
