@@ -23,4 +23,16 @@ public interface InventoryItemRepository extends JpaRepository<InventoryItem, Lo
     Page<InventoryItem> findByProductIdAndTenantId(Long productId, Long tenantId, Pageable pageable);
     
     boolean existsByProductIdAndTenantId(Long productId, Long tenantId);
+
+    @Query("SELECT new com.spiceflow.backend.sales.dto.response.StockStatusResponse(" +
+           "p.id, p.name, p.sku, " +
+           "CAST(COALESCE(SUM(CASE WHEN w.storeType = 'MAIN' THEN i.quantityAvailable ELSE 0 END), 0) AS integer), " +
+           "CAST(COALESCE(SUM(CASE WHEN w.storeType != 'MAIN' THEN i.quantityAvailable ELSE 0 END), 0) AS integer), " +
+           "CAST(COALESCE(SUM(i.quantityAvailable), 0) AS integer)) " +
+           "FROM InventoryItem i " +
+           "JOIN i.product p " +
+           "JOIN i.warehouse w " +
+           "WHERE i.tenant.id = :tenantId " +
+           "GROUP BY p.id, p.name, p.sku")
+    java.util.List<com.spiceflow.backend.sales.dto.response.StockStatusResponse> getStockStatusReport(@Param("tenantId") Long tenantId);
 }
