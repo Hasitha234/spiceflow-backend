@@ -25,4 +25,6 @@ public interface MorningSummaryRepository extends JpaRepository<MorningSummary, 
     List<MorningSummary> findByTenantIdAndRepIdAndSummaryDate(Long tenantId, Long repId, LocalDate summaryDate);
     
     List<MorningSummary> findByTenantIdAndSummaryDate(Long tenantId, LocalDate summaryDate);
+    
+    Page<MorningSummary> findByTenantIdAndSummaryDateBetween(Long tenantId, LocalDate startDate, LocalDate endDate, Pageable pageable);
 }
