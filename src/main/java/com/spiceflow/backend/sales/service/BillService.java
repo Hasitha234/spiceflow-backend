@@ -198,8 +198,8 @@ public class BillService {
     }
 
     @Transactional(readOnly = true)
-    public Page<BillResponse> getBills(Long tenantId, LocalDate billDate, Long repId, Long shopId, String status, String search, Pageable pageable) {
-        return billRepository.findBillsWithFilters(tenantId, billDate, repId, shopId, status, search, pageable)
+    public Page<BillResponse> getBills(Long tenantId, LocalDate startDate, LocalDate endDate, Long repId, Long shopId, String status, String search, Pageable pageable) {
+        return billRepository.findBillsWithFilters(tenantId, startDate, endDate, repId, shopId, status, search, pageable)
                 .map(this::mapToResponse);
     }
 

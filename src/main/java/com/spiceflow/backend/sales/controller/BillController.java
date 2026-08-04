@@ -51,14 +51,15 @@ public class BillController {
     @Operation(summary = "Get all bills with filtering and pagination")
     public ResponseEntity<Page<BillResponse>> getBills(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
-            @RequestParam(required = false) LocalDate billDate,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) Long repId,
             @RequestParam(required = false) Long shopId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String search,
             @ParameterObject @PageableDefault(size = 10) Pageable pageable) {
         Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
-        return ResponseEntity.ok(billService.getBills(tenantId, billDate, repId, shopId, status, search, pageable));
+        return ResponseEntity.ok(billService.getBills(tenantId, startDate, endDate, repId, shopId, status, search, pageable));
     }
 
     @GetMapping("/{id}")
