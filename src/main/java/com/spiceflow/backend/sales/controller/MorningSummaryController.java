@@ -42,9 +42,11 @@ public class MorningSummaryController {
     @GetMapping
     public ResponseEntity<Page<MorningSummaryResponse>> getAllMorningSummaries(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate endDate,
             Pageable pageable) {
         Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
-        return ResponseEntity.ok(morningSummaryService.getAllSummaries(tenantId, pageable));
+        return ResponseEntity.ok(morningSummaryService.getAllSummaries(tenantId, startDate, endDate, pageable));
     }
 
     @GetMapping("/{id}")

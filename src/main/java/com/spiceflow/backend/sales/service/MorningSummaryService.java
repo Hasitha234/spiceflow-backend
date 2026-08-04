@@ -161,9 +161,18 @@ public class MorningSummaryService {
     }
 
     @Transactional(readOnly = true)
-    public Page<MorningSummaryResponse> getAllSummaries(Long tenantId, Pageable pageable) {
-        return morningSummaryRepository.findByTenantId(tenantId, pageable)
-                .map(this::mapToResponse);
+    public Page<MorningSummaryResponse> getAllSummaries(Long tenantId, java.time.LocalDate startDate, java.time.LocalDate endDate, Pageable pageable) {
+        Page<MorningSummary> summaries;
+        if (startDate != null && endDate != null) {
+            summaries = morningSummaryRepository.findByTenantIdAndSummaryDateBetween(tenantId, startDate, endDate, pageable);
+        } else if (startDate != null) {
+            summaries = morningSummaryRepository.findByTenantIdAndSummaryDateBetween(tenantId, startDate, java.time.LocalDate.now(java.time.ZoneId.systemDefault()).plusYears(100), pageable);
+        } else if (endDate != null) {
+            summaries = morningSummaryRepository.findByTenantIdAndSummaryDateBetween(tenantId, java.time.LocalDate.of(1970, 1, 1), endDate, pageable);
+        } else {
+            summaries = morningSummaryRepository.findByTenantId(tenantId, pageable);
+        }
+        return summaries.map(this::mapToResponse);
     }
 
     @Transactional(readOnly = true)
