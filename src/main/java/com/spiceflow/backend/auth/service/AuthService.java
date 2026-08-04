@@ -50,6 +50,7 @@ public class AuthService {
   private final LoginAttemptService loginAttemptService;
   private final TokenBlacklistService tokenBlacklistService;
   private final com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository;
+  private final com.spiceflow.backend.auth.repository.TenantRepository tenantRepository;
 
 
   public AuthService(
@@ -60,7 +61,8 @@ public class AuthService {
     PlatformAdminRepository platformAdminRepository,
     LoginAttemptService loginAttemptService,
     TokenBlacklistService tokenBlacklistService,
-    com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository) {
+    com.spiceflow.backend.auth.repository.BusinessOwnerTenantRepository businessOwnerTenantRepository,
+    com.spiceflow.backend.auth.repository.TenantRepository tenantRepository) {
   this.userRepository = userRepository;
   this.refreshTokenRepository = refreshTokenRepository;
   this.jwtUtil = jwtUtil;
@@ -69,6 +71,7 @@ public class AuthService {
   this.loginAttemptService = loginAttemptService;
   this.tokenBlacklistService = tokenBlacklistService;
   this.businessOwnerTenantRepository = businessOwnerTenantRepository;
+  this.tenantRepository = tenantRepository;
 }
 
 
@@ -132,7 +135,7 @@ public LoginResponse login(LoginRequest request) {
   user.setLockedUntil(null);
   userRepository.save(user);
 
-  java.util.List<Object> assignedTenants = java.util.List.of();
+  java.util.List<Object> assignedTenants;
   if ("TENANT_OWNER".equals(user.getUserType())) {
       // Find assigned tenants
       assignedTenants = businessOwnerTenantRepository
@@ -140,6 +143,13 @@ public LoginResponse login(LoginRequest request) {
               .stream()
               .map(bt -> new com.spiceflow.backend.admin.dto.response.TenantAssignedResponse(bt.getTenant().getId(), bt.getTenant().getBusinessName(), bt.getTenant().getStatus()))
               .collect(java.util.stream.Collectors.toList());
+  } else if (user.getTenantId() != null) {
+      assignedTenants = tenantRepository.findById(user.getTenantId())
+              .map(tenant -> (Object) new com.spiceflow.backend.admin.dto.response.TenantAssignedResponse(tenant.getId(), tenant.getBusinessName(), tenant.getStatus()))
+              .map(java.util.List::of)
+              .orElse(java.util.List.of());
+  } else {
+      assignedTenants = java.util.List.of();
   }
 
   String accessToken = jwtUtil.generateAccessToken(user, assignedTenants);
@@ -193,13 +203,20 @@ public LoginResponse login(LoginRequest request) {
 
     // Fallback to regular Tenant User
     User user = storedToken.getUser();
-    java.util.List<Object> assignedTenants = java.util.List.of();
+    java.util.List<Object> assignedTenants;
     if ("TENANT_OWNER".equals(user.getUserType())) {
         assignedTenants = businessOwnerTenantRepository
                 .findByUserId(user.getId())
                 .stream()
                 .map(bt -> new com.spiceflow.backend.admin.dto.response.TenantAssignedResponse(bt.getTenant().getId(), bt.getTenant().getBusinessName(), bt.getTenant().getStatus()))
                 .collect(java.util.stream.Collectors.toList());
+    } else if (user.getTenantId() != null) {
+        assignedTenants = tenantRepository.findById(user.getTenantId())
+                .map(tenant -> (Object) new com.spiceflow.backend.admin.dto.response.TenantAssignedResponse(tenant.getId(), tenant.getBusinessName(), tenant.getStatus()))
+                .map(java.util.List::of)
+                .orElse(java.util.List.of());
+    } else {
+        assignedTenants = java.util.List.of();
     }
     String newAccessToken = jwtUtil.generateAccessToken(user, assignedTenants);
 
