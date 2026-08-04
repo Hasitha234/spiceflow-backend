@@ -6,7 +6,9 @@ import static org.mockito.Mockito.*;
 
 import com.spiceflow.backend.admin.dto.request.CreateTenantRequest;
 import com.spiceflow.backend.admin.dto.request.UpdateTenantRequest;
+import com.spiceflow.backend.admin.dto.request.UpdateUserRequest;
 import com.spiceflow.backend.admin.dto.response.TenantResponse;
+import com.spiceflow.backend.admin.dto.response.UserResponse;
 import com.spiceflow.backend.admin.entity.BusinessType;
 import com.spiceflow.backend.admin.repository.BusinessTypeRepository;
 import com.spiceflow.backend.auth.entity.Permission;
@@ -145,8 +147,50 @@ class AdminServiceTest {
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
 
         adminService.deleteTenant(1L);
-
         assertNotNull(tenant.getDeletedAt());
         verify(tenantRepository).save(tenant);
+    }
+    
+    @Test
+    void updateUser_Success() {
+        User user = new User();
+        user.setId(2L);
+        user.setEmail("old@test.com");
+        user.setName("Old Name");
+        user.setUserType("TENANT_OWNER");
+        
+        UpdateUserRequest request = UpdateUserRequest.builder()
+            .email("new@test.com")
+            .name("New Name")
+            .userType("TENANT_OWNER")
+            .build();
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmailIncludingDeleted("new@test.com")).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        UserResponse response = adminService.updateUser(2L, request);
+
+        assertNotNull(response);
+        assertEquals("new@test.com", user.getEmail());
+        assertEquals("New Name", user.getName());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateUser_EmailConflict() {
+        User user = new User();
+        user.setId(2L);
+        user.setEmail("old@test.com");
+        user.setName("Old Name");
+        
+        UpdateUserRequest request = UpdateUserRequest.builder()
+            .email("existing@test.com")
+            .build();
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmailIncludingDeleted("existing@test.com")).thenReturn(true);
+
+        assertThrows(ResourceConflictException.class, () -> adminService.updateUser(2L, request));
     }
 }
