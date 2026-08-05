@@ -50,6 +50,7 @@ public class DailyBalanceService {
         BigDecimal netDispatch = morningTotal.subtract(cancelTotal);
 
         BigDecimal billsTotal = bills.stream()
+                .filter(b -> !"CANCELLED".equals(b.getStatus()))
                 .map(b -> b.getNetTotal().add(b.getFreeItemsValue()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -99,6 +100,7 @@ public class DailyBalanceService {
         BigDecimal netDispatch = morningTotal.subtract(cancelTotal);
 
         BigDecimal billsTotal = bills.stream()
+                .filter(b -> !"CANCELLED".equals(b.getStatus()))
                 .map(b -> b.getNetTotal().add(b.getFreeItemsValue()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
