@@ -17,7 +17,9 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
-@Table(name = "morning_summaries")
+@Table(name = "morning_summaries", uniqueConstraints = {
+        @UniqueConstraint(name = "morning_summaries_tenant_summary_number_key", columnNames = {"tenant_id", "summary_number"})
+})
 @Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @Getter
 @Setter
@@ -43,7 +45,7 @@ public class MorningSummary extends BaseEntity {
     @Column(name = "summary_date", nullable = false)
     private LocalDate summaryDate;
 
-    @Column(name = "summary_number", length = 50, nullable = false, unique = true)
+    @Column(name = "summary_number", length = 50, nullable = false)
     private String summaryNumber;
 
     @Column(name = "final_estimate_value", nullable = false, precision = 15, scale = 2)
