@@ -105,4 +105,14 @@ public class CancelSummaryController {
         cancelSummaryService.undoProceedCancelSummary(tenantId, id);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a pending cancel summary")
+    public ResponseEntity<Void> deleteCancelSummary(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
+        cancelSummaryService.deleteCancelSummary(tenantId, id);
+        return ResponseEntity.noContent().build();
+    }
 }
