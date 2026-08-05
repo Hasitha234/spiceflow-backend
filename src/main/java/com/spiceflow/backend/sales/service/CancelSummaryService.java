@@ -285,6 +285,18 @@ public class CancelSummaryService {
         cancelSummaryRepository.save(summary);
     }
 
+    @Transactional
+    public void deleteCancelSummary(Long tenantId, Long id) {
+        CancelSummary summary = cancelSummaryRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cancel Summary not found"));
+
+        if (!"PENDING".equals(summary.getStatus())) {
+            throw new BusinessRuleViolationException("Only PENDING cancel summaries can be deleted");
+        }
+
+        cancelSummaryRepository.delete(summary);
+    }
+
     private String generateSummaryNumber(Long tenantId, LocalDate date) {
         int maxSeq = cancelSummaryRepository.findMaxSequenceNumberForDate(tenantId, date);
         String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
