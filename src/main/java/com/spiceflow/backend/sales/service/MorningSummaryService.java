@@ -184,9 +184,8 @@ public class MorningSummaryService {
     }
 
     private String generateSummaryNumber(Long tenantId) {
-        return morningSummaryRepository.findFirstByTenantIdOrderByCreatedAtDesc(tenantId)
-                .map(summary -> {
-                    String lastNumber = summary.getSummaryNumber();
+        return morningSummaryRepository.findLatestSummaryNumberByTenantId(tenantId)
+                .map(lastNumber -> {
                     try {
                         int num = Integer.parseInt(lastNumber.replace("MS-", ""));
                         return String.format("MS-%04d", num + 1);
