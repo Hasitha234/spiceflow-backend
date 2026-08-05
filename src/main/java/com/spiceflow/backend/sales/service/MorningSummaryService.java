@@ -3,6 +3,7 @@ package com.spiceflow.backend.sales.service;
 import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.common.exception.InvalidReferenceException;
 import com.spiceflow.backend.inventory.entity.Product;
 import com.spiceflow.backend.inventory.repository.ProductRepository;
 import com.spiceflow.backend.sales.dto.request.MorningSummaryRequest;
@@ -59,10 +60,10 @@ public class MorningSummaryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
         Rep rep = repRepository.findByIdAndTenantId(request.repId(), tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Rep not found"));
+                .orElseThrow(() -> new InvalidReferenceException("Rep not found"));
 
         Driver driver = driverRepository.findByIdAndTenantId(request.driverId(), tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Driver not found"));
+                .orElseThrow(() -> new InvalidReferenceException("Driver not found"));
 
         MorningSummary morningSummary = MorningSummary.builder()
                 .tenant(tenant)
@@ -77,7 +78,7 @@ public class MorningSummaryService {
 
         for (MorningSummaryRequest.MorningSummaryItemRequest itemRequest : request.items()) {
             Product product = productRepository.findByIdAndTenantId(itemRequest.productId(), tenantId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + itemRequest.productId()));
+                    .orElseThrow(() -> new InvalidReferenceException("Product not found: " + itemRequest.productId()));
 
             BigDecimal unitPrice = product.getRatePerSoldUnit();
             if (unitPrice == null || unitPrice.compareTo(BigDecimal.ZERO) == 0) {
@@ -117,10 +118,10 @@ public class MorningSummaryService {
         }
 
         Rep rep = repRepository.findByIdAndTenantId(request.repId(), tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Rep not found"));
+                .orElseThrow(() -> new InvalidReferenceException("Rep not found"));
 
         Driver driver = driverRepository.findByIdAndTenantId(request.driverId(), tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Driver not found"));
+                .orElseThrow(() -> new InvalidReferenceException("Driver not found"));
 
         morningSummary.setRep(rep);
         morningSummary.setDriver(driver);
@@ -132,7 +133,7 @@ public class MorningSummaryService {
 
         for (MorningSummaryRequest.MorningSummaryItemRequest itemRequest : request.items()) {
             Product product = productRepository.findByIdAndTenantId(itemRequest.productId(), tenantId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + itemRequest.productId()));
+                    .orElseThrow(() -> new InvalidReferenceException("Product not found: " + itemRequest.productId()));
 
             BigDecimal unitPrice = product.getRatePerSoldUnit();
             if (unitPrice == null || unitPrice.compareTo(BigDecimal.ZERO) == 0) {
@@ -272,10 +273,10 @@ public class MorningSummaryService {
         }
 
         Warehouse warehouse = warehouseRepository.findByIdAndTenantId(warehouseId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"));
+                .orElseThrow(() -> new InvalidReferenceException("Warehouse not found"));
                 
         Warehouse returnWarehouse = warehouseRepository.findByIdAndTenantId(returnWarehouseId, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Return Warehouse not found"));
+                .orElseThrow(() -> new InvalidReferenceException("Return Warehouse not found"));
 
         DeductInventoryPreCheckResponse preCheck = preCheckDeduction(tenantId, summaryId, warehouseId);
         if (!preCheck.canDeduct()) {

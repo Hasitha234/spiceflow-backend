@@ -64,6 +64,14 @@ public class GlobalExceptionHandler {
         .body(buildProblemDetail(HttpStatus.NOT_FOUND, "Resource Not Found", safe(ex.getMessage()), request, Collections.emptyList()));
   }
 
+  @ExceptionHandler(InvalidReferenceException.class)
+  public ResponseEntity<ProblemDetail> handleInvalidReference(
+      InvalidReferenceException ex, HttpServletRequest request) {
+    log.warn("Invalid reference at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+        .body(buildProblemDetail(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid Reference", safe(ex.getMessage()), request, Collections.emptyList()));
+  }
+
   @ExceptionHandler(ResourceConflictException.class)
   public ResponseEntity<ProblemDetail> handleConflict(
       ResourceConflictException ex, HttpServletRequest request) {
