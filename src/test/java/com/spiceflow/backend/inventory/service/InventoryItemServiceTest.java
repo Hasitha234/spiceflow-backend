@@ -223,7 +223,7 @@ class InventoryItemServiceTest {
         );
 
         InventoryBatchTransferRequest request = new InventoryBatchTransferRequest(
-            1L, 2L, List.of(itemRequest)
+            1L, 2L, List.of(itemRequest), "Test transfer notes"
         );
 
         when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
@@ -247,7 +247,7 @@ class InventoryItemServiceTest {
     @Test
     void batchTransfer_SameWarehouse_ThrowsException() {
         InventoryBatchTransferRequest request = new InventoryBatchTransferRequest(
-            1L, 1L, List.of()
+            1L, 1L, List.of(), "Test transfer notes"
         );
 
         assertThrows(BusinessRuleViolationException.class, () -> {
