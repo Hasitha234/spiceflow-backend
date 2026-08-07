@@ -158,9 +158,6 @@ public class ReportService {
         List<com.spiceflow.backend.sales.entity.Delivery> deliveries = deliveryRepository.findDeliveriesInDateRange(tenantId, date, date);
 
         BigDecimal totalSales = BigDecimal.ZERO;
-        BigDecimal totalCash = BigDecimal.ZERO;
-        BigDecimal totalCheque = BigDecimal.ZERO;
-        BigDecimal totalLoan = BigDecimal.ZERO;
         BigDecimal totalReturns = BigDecimal.ZERO;
         BigDecimal totalDiscounts = BigDecimal.ZERO;
         int shopsVisited = 0;
@@ -231,15 +228,15 @@ public class ReportService {
             .filter(b -> !"CANCELLED".equals(b.getStatus()))
             .toList();
 
-        totalCash = validBills.stream()
+        BigDecimal totalCash = validBills.stream()
             .map(Bill::getFinalTotal)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        totalCheque = validBills.stream()
+        BigDecimal totalCheque = validBills.stream()
             .map(Bill::getCheckCollected)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        totalLoan = validBills.stream()
+        BigDecimal totalLoan = validBills.stream()
             .map(Bill::getLoanAmount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 

@@ -8,6 +8,8 @@ import com.spiceflow.backend.auth.entity.Tenant;
 import com.spiceflow.backend.auth.repository.TenantRepository;
 import com.spiceflow.backend.common.exception.BusinessRuleViolationException;
 import com.spiceflow.backend.common.exception.ResourceNotFoundException;
+import com.spiceflow.backend.inventory.dto.request.InventoryBatchTransferRequest;
+import com.spiceflow.backend.inventory.dto.response.InventoryBatchTransferResponse;
 import com.spiceflow.backend.inventory.dto.request.InventoryItemRequest;
 import com.spiceflow.backend.inventory.dto.request.InventoryMarkDamagedRequest;
 import com.spiceflow.backend.inventory.dto.request.InventoryTransferRequest;
@@ -202,5 +204,54 @@ class InventoryItemServiceTest {
 
         assertEquals(80, inventoryItem.getQuantityAvailable());
         verify(inventoryTransactionRepository).save(any(InventoryTransaction.class));
+    }
+
+    @Test
+    void batchTransfer_Success() {
+        Warehouse toWarehouse = new Warehouse();
+        toWarehouse.setId(2L);
+
+        InventoryItem destItem = new InventoryItem();
+        destItem.setId(2L);
+        destItem.setTenant(tenant);
+        destItem.setProduct(product);
+        destItem.setWarehouse(toWarehouse);
+        destItem.setQuantityAvailable(50);
+
+        InventoryBatchTransferRequest.TransferLineItem itemRequest = new InventoryBatchTransferRequest.TransferLineItem(
+            1L, 10
+        );
+
+        InventoryBatchTransferRequest request = new InventoryBatchTransferRequest(
+            1L, 2L, List.of(itemRequest), "Test transfer notes"
+        );
+
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
+        when(warehouseService.getWarehouseEntity(1L, 1L)).thenReturn(warehouse);
+        when(warehouseService.getWarehouseEntity(1L, 2L)).thenReturn(toWarehouse);
+        when(productService.getProductEntity(1L, 1L)).thenReturn(product);
+        when(inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(1L, 1L, 1L))
+            .thenReturn(Optional.of(inventoryItem));
+        when(inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(1L, 2L, 1L))
+            .thenReturn(Optional.of(destItem));
+
+        InventoryBatchTransferResponse result = inventoryItemService.batchTransfer(1L, request);
+
+        assertNotNull(result);
+        assertEquals(1, result.transferredItems().size());
+        assertEquals(90, inventoryItem.getQuantityAvailable());
+        assertEquals(60, destItem.getQuantityAvailable());
+        verify(inventoryTransactionRepository, times(2)).save(any(InventoryTransaction.class));
+    }
+
+    @Test
+    void batchTransfer_SameWarehouse_ThrowsException() {
+        InventoryBatchTransferRequest request = new InventoryBatchTransferRequest(
+            1L, 1L, List.of(), "Test transfer notes"
+        );
+
+        assertThrows(BusinessRuleViolationException.class, () -> {
+            inventoryItemService.batchTransfer(1L, request);
+        });
     }
 }

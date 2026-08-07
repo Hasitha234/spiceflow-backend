@@ -15,6 +15,10 @@ import com.spiceflow.backend.inventory.repository.InventoryTransactionRepository
 import com.spiceflow.backend.inventory.mapper.InventoryItemMapper;
 import com.spiceflow.backend.inventory.dto.request.InventoryTransferRequest;
 import com.spiceflow.backend.inventory.dto.request.InventoryMarkDamagedRequest;
+import com.spiceflow.backend.inventory.dto.request.InventoryBatchTransferRequest;
+import com.spiceflow.backend.inventory.dto.response.InventoryBatchTransferResponse;
+import java.util.ArrayList;
+import java.util.List;
 import com.spiceflow.backend.inventory.ledger.InventoryMovementType;
 import com.spiceflow.backend.inventory.ledger.service.InventoryLedgerService;
 import java.math.BigDecimal;
@@ -275,6 +279,107 @@ public class InventoryItemService {
             .tenant(tenant)
             .build();
         inventoryTransactionRepository.save(inTx);
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public InventoryBatchTransferResponse batchTransfer(Long tenantId, InventoryBatchTransferRequest request) {
+        log.info("Batch transferring inventory from warehouse {} to warehouse {}", request.fromWarehouseId(), request.toWarehouseId());
+        
+        if (request.fromWarehouseId().equals(request.toWarehouseId())) {
+            throw new BusinessRuleViolationException("Source and destination warehouses cannot be the same");
+        }
+        
+        Tenant tenant = tenantRepository.findById(tenantId)
+            .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+
+        Warehouse fromWarehouse = warehouseService.getWarehouseEntity(tenantId, request.fromWarehouseId());
+        Warehouse toWarehouse = warehouseService.getWarehouseEntity(tenantId, request.toWarehouseId());
+
+        String referenceNumber = "BTX-" + Instant.now().toEpochMilli();
+        List<InventoryBatchTransferResponse.TransferItemDetail> transferredItems = new ArrayList<>();
+        int totalQuantity = 0;
+
+        for (InventoryBatchTransferRequest.TransferLineItem lineItem : request.items()) {
+            if (lineItem.quantity() <= 0) continue;
+
+            Product product = productService.getProductEntity(lineItem.productId(), tenantId);
+
+            InventoryItem sourceItem = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
+                lineItem.productId(), request.fromWarehouseId(), tenantId)
+                .orElseThrow(() -> new BusinessRuleViolationException("Product '" + product.getName() + "' not found in source warehouse"));
+                
+            if (sourceItem.getQuantityAvailable() < lineItem.quantity()) {
+                throw new BusinessRuleViolationException(
+                    "Insufficient quantity for product '" + product.getName() + 
+                    "' in source warehouse (Available: " + sourceItem.getQuantityAvailable() + 
+                    ", Requested: " + lineItem.quantity() + ")"
+                );
+            }
+            
+            // Deduct from source
+            sourceItem.setQuantityAvailable(sourceItem.getQuantityAvailable() - lineItem.quantity());
+            inventoryItemRepository.save(sourceItem);
+            
+            // Transaction OUT
+            InventoryTransaction outTx = InventoryTransaction.builder()
+                .inventoryItem(sourceItem)
+                .transactionType("TRANSFER_OUT")
+                .quantity(-lineItem.quantity())
+                .referenceId(referenceNumber)
+                .notes(request.notes())
+                .tenant(tenant)
+                .build();
+            inventoryTransactionRepository.save(outTx);
+            
+            // Add to dest
+            Optional<InventoryItem> destItemOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
+                lineItem.productId(), request.toWarehouseId(), tenantId);
+                
+            InventoryItem destItem;
+            if (destItemOpt.isPresent()) {
+                destItem = destItemOpt.get();
+                destItem.setQuantityAvailable(destItem.getQuantityAvailable() + lineItem.quantity());
+            } else {
+                destItem = InventoryItem.builder()
+                    .product(product)
+                    .warehouse(toWarehouse)
+                    .quantityAvailable(lineItem.quantity())
+                    .tenant(tenant)
+                    .build();
+            }
+            destItem = inventoryItemRepository.save(destItem);
+            
+            // Transaction IN
+            InventoryTransaction inTx = InventoryTransaction.builder()
+                .inventoryItem(destItem)
+                .transactionType("TRANSFER_IN")
+                .quantity(lineItem.quantity())
+                .referenceId(referenceNumber)
+                .notes(request.notes())
+                .tenant(tenant)
+                .build();
+            inventoryTransactionRepository.save(inTx);
+
+            transferredItems.add(new InventoryBatchTransferResponse.TransferItemDetail(
+                product.getId(),
+                product.getName(),
+                product.getSku(),
+                lineItem.quantity()
+            ));
+            totalQuantity += lineItem.quantity();
+        }
+
+        return new InventoryBatchTransferResponse(
+            referenceNumber,
+            fromWarehouse.getId(),
+            fromWarehouse.getName(),
+            toWarehouse.getId(),
+            toWarehouse.getName(),
+            transferredItems,
+            transferredItems.size(),
+            totalQuantity,
+            Instant.now()
+        );
     }
     
     @Transactional(rollbackFor = Exception.class)
