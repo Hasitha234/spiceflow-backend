@@ -106,4 +106,15 @@ public class InventoryItemController {
         inventoryItemService.markDamaged(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/batch-transfer")
+    @PreAuthorize("hasAuthority('INVENTORY_TRANSFER')")
+    @Operation(summary = "Batch transfer inventory", description = "Transfer multiple products between warehouses", operationId = "batchTransferInventory")
+    public ResponseEntity<com.spiceflow.backend.inventory.dto.response.InventoryBatchTransferResponse> batchTransfer(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @Valid @RequestBody com.spiceflow.backend.inventory.dto.request.InventoryBatchTransferRequest request) {
+        log.info("Received request to batch transfer inventory by user: {}", currentUser.getId());
+        var response = inventoryItemService.batchTransfer(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
+        return ResponseEntity.ok(response);
+    }
 }
