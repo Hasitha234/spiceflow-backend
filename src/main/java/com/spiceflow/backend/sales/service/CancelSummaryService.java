@@ -21,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.spiceflow.backend.inventory.entity.InventoryItem;
 import com.spiceflow.backend.inventory.entity.InventoryTransaction;
@@ -55,6 +56,21 @@ public class CancelSummaryService {
 
     @Transactional
     public CancelSummaryResponse createCancelSummary(Long tenantId, CancelSummaryRequest request) {
+        int maxRetries = 3;
+        for (int attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                return doCreateCancelSummary(tenantId, request);
+            } catch (DataIntegrityViolationException e) {
+                if (attempt == maxRetries - 1) {
+                    throw e; // Exhausted retries
+                }
+                // Sequence collision — retry with next number
+            }
+        }
+        throw new IllegalStateException("Unreachable");
+    }
+
+    private CancelSummaryResponse doCreateCancelSummary(Long tenantId, CancelSummaryRequest request) {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
@@ -96,6 +112,7 @@ public class CancelSummaryService {
         CancelSummary savedSummary = cancelSummaryRepository.save(cancelSummary);
         return cancelSummaryMapper.toResponse(savedSummary);
     }
+
     @Transactional
     public CancelSummaryResponse updateCancelSummary(Long tenantId, Long id, CancelSummaryRequest request) {
         if (!tenantRepository.existsById(tenantId)) {
