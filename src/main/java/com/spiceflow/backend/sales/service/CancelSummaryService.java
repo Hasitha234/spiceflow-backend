@@ -53,6 +53,7 @@ public class CancelSummaryService {
     private final InventoryTransactionRepository inventoryTransactionRepository;
     private final WarehouseRepository warehouseRepository;
     private final InventoryLedgerService inventoryLedgerService;
+    private final jakarta.persistence.EntityManager entityManager;
 
     @Transactional
     public CancelSummaryResponse createCancelSummary(Long tenantId, CancelSummaryRequest request) {
@@ -103,16 +104,21 @@ public class CancelSummaryService {
             Product product = productRepository.findByIdAndTenantId(itemRequest.productId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + itemRequest.productId()));
 
+            BigDecimal unitPrice = product.getRatePerSoldUnit() != null
+                    ? product.getRatePerSoldUnit()
+                    : (product.getBasePrice() != null ? product.getBasePrice() : BigDecimal.ZERO);
+            BigDecimal estimateValue = unitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
+
             CancelSummaryItem item = CancelSummaryItem.builder()
                     .cancelSummary(cancelSummary)
                     .product(product)
                     .quantity(itemRequest.quantity())
-                    .unitPrice(itemRequest.unitPrice())
-                    .estimateValue(itemRequest.estimateValue())
+                    .unitPrice(unitPrice)
+                    .estimateValue(estimateValue)
                     .build();
 
             cancelSummary.addItem(item);
-            finalEstimateValue = finalEstimateValue.add(itemRequest.estimateValue());
+            finalEstimateValue = finalEstimateValue.add(estimateValue);
         }
 
         cancelSummary.setFinalEstimateValue(finalEstimateValue);
@@ -142,6 +148,11 @@ public class CancelSummaryService {
             throw new BusinessRuleViolationException("Only PENDING cancel summaries can be updated.");
         }
 
+        if (!request.summaryDate().equals(cancelSummary.getSummaryDate())) {
+            throw new BusinessRuleViolationException(
+                "Cannot change the summary date. Please delete this summary and create a new one.");
+        }
+
         Rep rep = repRepository.findByIdAndTenantId(request.repId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Rep not found"));
 
@@ -150,9 +161,9 @@ public class CancelSummaryService {
 
         cancelSummary.setRep(rep);
         cancelSummary.setDriver(driver);
-        cancelSummary.setSummaryDate(request.summaryDate());
 
         cancelSummary.getItems().clear();
+        entityManager.flush();
 
         BigDecimal finalEstimateValue = BigDecimal.ZERO;
 
@@ -160,16 +171,21 @@ public class CancelSummaryService {
             Product product = productRepository.findByIdAndTenantId(itemRequest.productId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + itemRequest.productId()));
 
+            BigDecimal unitPrice = product.getRatePerSoldUnit() != null
+                    ? product.getRatePerSoldUnit()
+                    : (product.getBasePrice() != null ? product.getBasePrice() : BigDecimal.ZERO);
+            BigDecimal estimateValue = unitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
+
             CancelSummaryItem item = CancelSummaryItem.builder()
                     .cancelSummary(cancelSummary)
                     .product(product)
                     .quantity(itemRequest.quantity())
-                    .unitPrice(itemRequest.unitPrice())
-                    .estimateValue(itemRequest.estimateValue())
+                    .unitPrice(unitPrice)
+                    .estimateValue(estimateValue)
                     .build();
 
             cancelSummary.addItem(item);
-            finalEstimateValue = finalEstimateValue.add(itemRequest.estimateValue());
+            finalEstimateValue = finalEstimateValue.add(estimateValue);
         }
 
         cancelSummary.setFinalEstimateValue(finalEstimateValue);
