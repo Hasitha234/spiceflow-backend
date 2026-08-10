@@ -214,6 +214,13 @@ public class MorningSummaryService {
 
     private MorningSummaryResponse mapToResponse(MorningSummary summary) {
         List<MorningSummaryResponse.MorningSummaryItemResponse> itemResponses = summary.getItems().stream()
+                .filter(item -> {
+                    try {
+                        return item.getProduct() != null && item.getProduct().getId() != null;
+                    } catch (jakarta.persistence.EntityNotFoundException e) {
+                        return false; // Skip items whose product has been soft-deleted
+                    }
+                })
                 .map(item -> MorningSummaryResponse.MorningSummaryItemResponse.builder()
                         .id(item.getId())
                         .productId(item.getProduct().getId())
@@ -253,6 +260,14 @@ public class MorningSummaryService {
         boolean canDeduct = true;
 
         for (MorningSummaryItem item : summary.getItems()) {
+            try {
+                if (item.getProduct() == null || item.getProduct().getId() == null) {
+                    continue; // Skip items with deleted products
+                }
+            } catch (jakarta.persistence.EntityNotFoundException e) {
+                continue; // Skip items whose product has been soft-deleted
+            }
+
             int required = item.getQuantity();
             int available = inventoryItemRepository
                     .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), warehouseId, tenantId)
@@ -303,6 +318,14 @@ public class MorningSummaryService {
         }
 
         for (MorningSummaryItem item : summary.getItems()) {
+            try {
+                if (item.getProduct() == null || item.getProduct().getId() == null) {
+                    continue;
+                }
+            } catch (jakarta.persistence.EntityNotFoundException e) {
+                continue;
+            }
+
             if (item.getQuantity() > 0) {
                 InventoryItem inventoryItem = inventoryItemRepository
                         .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), warehouseId, tenantId)
@@ -406,6 +429,14 @@ public class MorningSummaryService {
         Long returnWarehouseId = summary.getReturnWarehouse().getId();
 
         for (MorningSummaryItem item : summary.getItems()) {
+            try {
+                if (item.getProduct() == null || item.getProduct().getId() == null) {
+                    continue;
+                }
+            } catch (jakarta.persistence.EntityNotFoundException e) {
+                continue;
+            }
+
             if (item.getQuantity() > 0) {
                 InventoryItem inventoryItem = inventoryItemRepository
                         .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), warehouseId, tenantId)
