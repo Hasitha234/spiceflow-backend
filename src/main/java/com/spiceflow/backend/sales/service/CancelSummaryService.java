@@ -104,9 +104,7 @@ public class CancelSummaryService {
             Product product = productRepository.findByIdAndTenantId(itemRequest.productId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + itemRequest.productId()));
 
-            BigDecimal unitPrice = product.getRatePerSoldUnit() != null
-                    ? product.getRatePerSoldUnit()
-                    : (product.getBasePrice() != null ? product.getBasePrice() : BigDecimal.ZERO);
+            BigDecimal unitPrice = resolveUnitPrice(product);
             BigDecimal estimateValue = unitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
 
             CancelSummaryItem item = CancelSummaryItem.builder()
@@ -171,9 +169,7 @@ public class CancelSummaryService {
             Product product = productRepository.findByIdAndTenantId(itemRequest.productId(), tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + itemRequest.productId()));
 
-            BigDecimal unitPrice = product.getRatePerSoldUnit() != null
-                    ? product.getRatePerSoldUnit()
-                    : (product.getBasePrice() != null ? product.getBasePrice() : BigDecimal.ZERO);
+            BigDecimal unitPrice = resolveUnitPrice(product);
             BigDecimal estimateValue = unitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
 
             CancelSummaryItem item = CancelSummaryItem.builder()
@@ -350,5 +346,20 @@ public class CancelSummaryService {
         int maxSeq = cancelSummaryRepository.findMaxSequenceNumberForDate(tenantId, date);
         String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         return String.format("CS-%s-%03d", dateStr, maxSeq + 1);
+    }
+
+    /**
+     * Resolves the unit price for a product, preferring ratePerSoldUnit over basePrice.
+     * Treats both null and zero as "not set" — mirrors the frontend's JavaScript falsy behavior
+     * where {@code 0 || fallback} skips zero values.
+     */
+    private BigDecimal resolveUnitPrice(Product product) {
+        if (product.getRatePerSoldUnit() != null && product.getRatePerSoldUnit().compareTo(BigDecimal.ZERO) > 0) {
+            return product.getRatePerSoldUnit();
+        }
+        if (product.getBasePrice() != null && product.getBasePrice().compareTo(BigDecimal.ZERO) > 0) {
+            return product.getBasePrice();
+        }
+        return BigDecimal.ZERO;
     }
 }
