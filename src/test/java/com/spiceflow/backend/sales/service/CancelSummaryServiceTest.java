@@ -119,6 +119,32 @@ class CancelSummaryServiceTest {
     }
 
     @Test
+    void createCancelSummary_DuplicateProducts_ThrowsException() {
+        // Arrange
+        CancelSummaryItemRequest itemRequest1 = new CancelSummaryItemRequest(1L, 10, BigDecimal.valueOf(100), BigDecimal.valueOf(1000));
+        CancelSummaryItemRequest itemRequest2 = new CancelSummaryItemRequest(1L, 5, BigDecimal.valueOf(100), BigDecimal.valueOf(500));
+        CancelSummaryRequest request = new CancelSummaryRequest(1L, 1L, LocalDate.now(), List.of(itemRequest1, itemRequest2));
+
+        // Act & Assert
+        assertThatThrownBy(() -> cancelSummaryService.createCancelSummary(1L, request))
+                .isInstanceOf(BusinessRuleViolationException.class)
+                .hasMessage("Duplicate products are not allowed in a cancel summary. Please merge quantities for the same product into a single line item.");
+    }
+
+    @Test
+    void updateCancelSummary_DuplicateProducts_ThrowsException() {
+        // Arrange
+        CancelSummaryItemRequest itemRequest1 = new CancelSummaryItemRequest(1L, 10, BigDecimal.valueOf(100), BigDecimal.valueOf(1000));
+        CancelSummaryItemRequest itemRequest2 = new CancelSummaryItemRequest(1L, 5, BigDecimal.valueOf(100), BigDecimal.valueOf(500));
+        CancelSummaryRequest request = new CancelSummaryRequest(1L, 1L, LocalDate.now(), List.of(itemRequest1, itemRequest2));
+
+        // Act & Assert
+        assertThatThrownBy(() -> cancelSummaryService.updateCancelSummary(1L, 1L, request))
+                .isInstanceOf(BusinessRuleViolationException.class)
+                .hasMessage("Duplicate products are not allowed in a cancel summary. Please merge quantities for the same product into a single line item.");
+    }
+
+    @Test
     void proceedCancelSummary_Success() {
         // Arrange
         CancelSummary summary = new CancelSummary();
