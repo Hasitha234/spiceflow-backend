@@ -94,7 +94,10 @@ class CancelSummaryServiceTest {
         product = new Product();
         product.setId(1L);
         product.setTenant(tenant);
-        product.setRatePerSoldUnit(BigDecimal.valueOf(100));
+        // Real-world scenario: ratePerSoldUnit is 0.00 (not null), basePrice has the actual value.
+        // resolveUnitPrice must skip zero and fall through to basePrice.
+        product.setRatePerSoldUnit(BigDecimal.ZERO);
+        product.setBasePrice(BigDecimal.valueOf(100));
 
         warehouse = new Warehouse();
         warehouse.setId(1L);
@@ -197,6 +200,34 @@ class CancelSummaryServiceTest {
         assertThatThrownBy(() -> cancelSummaryService.updateCancelSummary(1L, 1L, request))
                 .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessage("Cannot change the summary date. Please delete this summary and create a new one.");
+    }
+
+    @Test
+    void createCancelSummary_UsesRatePerSoldUnitWhenPositive() {
+        // Arrange — product with a positive ratePerSoldUnit
+        Product productWithRate = new Product();
+        productWithRate.setId(2L);
+        productWithRate.setTenant(tenant);
+        productWithRate.setRatePerSoldUnit(BigDecimal.valueOf(50));
+        productWithRate.setBasePrice(BigDecimal.valueOf(100));
+
+        CancelSummaryItemRequest itemRequest = new CancelSummaryItemRequest(2L, 10, BigDecimal.ZERO, BigDecimal.ZERO);
+        CancelSummaryRequest request = new CancelSummaryRequest(1L, 1L, LocalDate.now(), List.of(itemRequest));
+
+        when(tenantRepository.findById(1L)).thenReturn(Optional.of(tenant));
+        when(repRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(rep));
+        when(driverRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(driver));
+        when(cancelSummaryRepository.findMaxSequenceNumberForDate(eq(1L), any(LocalDate.class))).thenReturn(0);
+        when(productRepository.findByIdAndTenantId(2L, 1L)).thenReturn(Optional.of(productWithRate));
+        when(cancelSummaryRepository.save(any(CancelSummary.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        cancelSummaryService.createCancelSummary(1L, request);
+
+        // Assert — should use ratePerSoldUnit (50), not basePrice (100)
+        verify(cancelSummaryRepository).save(argThat(cs ->
+                cs.getFinalEstimateValue().compareTo(BigDecimal.valueOf(500)) == 0
+        ));
     }
 
     @Test
