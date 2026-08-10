@@ -94,6 +94,7 @@ class CancelSummaryServiceTest {
         product = new Product();
         product.setId(1L);
         product.setTenant(tenant);
+        product.setRatePerSoldUnit(BigDecimal.valueOf(100));
 
         warehouse = new Warehouse();
         warehouse.setId(1L);
@@ -116,8 +117,10 @@ class CancelSummaryServiceTest {
         // Act
         cancelSummaryService.createCancelSummary(1L, request);
 
-        // Assert
-        verify(cancelSummaryRepository).save(any(CancelSummary.class));
+        // Assert — verify server-side price was used
+        verify(cancelSummaryRepository).save(argThat(cs ->
+                cs.getFinalEstimateValue().compareTo(BigDecimal.valueOf(1000)) == 0
+        ));
     }
 
     @Test
@@ -170,7 +173,9 @@ class CancelSummaryServiceTest {
 
         // Assert
         verify(entityManager).flush();
-        verify(cancelSummaryRepository).save(summary);
+        verify(cancelSummaryRepository).save(argThat(cs ->
+                cs.getFinalEstimateValue().compareTo(BigDecimal.valueOf(1000)) == 0
+        ));
     }
 
     @Test
