@@ -22,7 +22,7 @@ public interface MorningSummaryRepository extends JpaRepository<MorningSummary, 
     boolean existsBySummaryNumberAndTenantId(String summaryNumber, Long tenantId);
     
     // For auto-generating numbers, get the latest
-    @Query(value = "SELECT summary_number FROM morning_summaries WHERE tenant_id = :tenantId ORDER BY created_at DESC LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT summary_number FROM morning_summaries WHERE tenant_id = :tenantId AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1", nativeQuery = true)
     Optional<String> findLatestSummaryNumberByTenantId(@Param("tenantId") Long tenantId);
     
     Optional<MorningSummary> findFirstByTenantIdOrderByCreatedAtDesc(Long tenantId);

@@ -71,6 +71,14 @@ public class CancelSummaryService {
     }
 
     private CancelSummaryResponse doCreateCancelSummary(Long tenantId, CancelSummaryRequest request) {
+        java.util.List<Long> productIds = request.items().stream()
+                .map(CancelSummaryItemRequest::productId)
+                .toList();
+        java.util.Set<Long> uniqueProductIds = new java.util.HashSet<>(productIds);
+        if (uniqueProductIds.size() != productIds.size()) {
+            throw new BusinessRuleViolationException("Duplicate products are not allowed in a cancel summary. Please merge quantities for the same product into a single line item.");
+        }
+
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
@@ -115,6 +123,14 @@ public class CancelSummaryService {
 
     @Transactional
     public CancelSummaryResponse updateCancelSummary(Long tenantId, Long id, CancelSummaryRequest request) {
+        java.util.List<Long> productIds = request.items().stream()
+                .map(CancelSummaryItemRequest::productId)
+                .toList();
+        java.util.Set<Long> uniqueProductIds = new java.util.HashSet<>(productIds);
+        if (uniqueProductIds.size() != productIds.size()) {
+            throw new BusinessRuleViolationException("Duplicate products are not allowed in a cancel summary. Please merge quantities for the same product into a single line item.");
+        }
+
         if (!tenantRepository.existsById(tenantId)) {
             throw new ResourceNotFoundException("Tenant not found");
         }

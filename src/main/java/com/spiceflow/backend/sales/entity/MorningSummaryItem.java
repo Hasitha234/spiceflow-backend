@@ -22,8 +22,6 @@ import org.hibernate.annotations.SQLRestriction;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@SQLDelete(sql = "UPDATE morning_summary_items SET deleted_at = NOW() WHERE id=?")
-@SQLRestriction("deleted_at IS NULL")
 public class MorningSummaryItem extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
