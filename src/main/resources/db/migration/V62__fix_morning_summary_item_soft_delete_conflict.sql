@@ -16,11 +16,7 @@ AND deleted_at = (
     WHERE msi2.morning_summary_id = morning_summary_items.morning_summary_id
 );
 
--- 2. Remove items that reference soft-deleted products (these would cause EntityNotFoundException)
-DELETE FROM morning_summary_items
-WHERE product_id IN (SELECT id FROM products WHERE deleted_at IS NOT NULL);
-
--- 3. Hard-delete all remaining soft-deleted item rows (since we are moving to hard deletes for child items)
+-- 2. Hard-delete all remaining soft-deleted item rows (since we are moving to hard deletes for child items)
 DELETE FROM morning_summary_items WHERE deleted_at IS NOT NULL;
 
 -- 3. Data recovery for cancel summaries (similar logic)
@@ -39,10 +35,6 @@ AND deleted_at = (
     FROM cancel_summary_items csi2 
     WHERE csi2.cancel_summary_id = cancel_summary_items.cancel_summary_id
 );
-
--- Remove cancel summary items that reference soft-deleted products
-DELETE FROM cancel_summary_items
-WHERE product_id IN (SELECT id FROM products WHERE deleted_at IS NOT NULL);
 
 DELETE FROM cancel_summary_items WHERE deleted_at IS NOT NULL;
 
