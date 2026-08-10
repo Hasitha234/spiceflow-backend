@@ -19,8 +19,6 @@ import org.hibernate.annotations.SQLRestriction;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@SQLDelete(sql = "UPDATE cancel_summary_items SET deleted_at = NOW() WHERE id=?")
-@SQLRestriction("deleted_at IS NULL")
 public class CancelSummaryItem extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

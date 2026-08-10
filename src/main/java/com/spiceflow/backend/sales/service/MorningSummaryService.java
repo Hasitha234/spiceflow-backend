@@ -56,6 +56,14 @@ public class MorningSummaryService {
 
     @Transactional
     public MorningSummaryResponse createMorningSummary(Long tenantId, MorningSummaryRequest request) {
+        List<Long> productIds = request.items().stream()
+                .map(MorningSummaryRequest.MorningSummaryItemRequest::productId)
+                .toList();
+        java.util.Set<Long> uniqueProductIds = new java.util.HashSet<>(productIds);
+        if (uniqueProductIds.size() != productIds.size()) {
+            throw new BusinessRuleViolationException("Duplicate products are not allowed in a morning summary. Please merge quantities for the same product into a single line item.");
+        }
+
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
@@ -107,6 +115,14 @@ public class MorningSummaryService {
     }
     @Transactional
     public MorningSummaryResponse updateMorningSummary(Long tenantId, Long summaryId, MorningSummaryRequest request) {
+        List<Long> productIds = request.items().stream()
+                .map(MorningSummaryRequest.MorningSummaryItemRequest::productId)
+                .toList();
+        java.util.Set<Long> uniqueProductIds = new java.util.HashSet<>(productIds);
+        if (uniqueProductIds.size() != productIds.size()) {
+            throw new BusinessRuleViolationException("Duplicate products are not allowed in a morning summary. Please merge quantities for the same product into a single line item.");
+        }
+
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
