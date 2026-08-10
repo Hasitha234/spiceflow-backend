@@ -6,7 +6,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-@Component
+// @Component  // Disabled: debug-only runner — must not run in production
 public class CheckDataRunner implements CommandLineRunner {
     private final MorningSummaryRepository repo;
     public CheckDataRunner(MorningSummaryRepository repo) { this.repo = repo; }
