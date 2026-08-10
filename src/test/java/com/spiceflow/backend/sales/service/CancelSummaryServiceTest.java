@@ -66,6 +66,8 @@ class CancelSummaryServiceTest {
     private WarehouseRepository warehouseRepository;
     @Mock
     private InventoryLedgerService inventoryLedgerService;
+    @Mock
+    private jakarta.persistence.EntityManager entityManager;
 
     @InjectMocks
     private CancelSummaryService cancelSummaryService;
@@ -142,6 +144,54 @@ class CancelSummaryServiceTest {
         assertThatThrownBy(() -> cancelSummaryService.updateCancelSummary(1L, 1L, request))
                 .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessage("Duplicate products are not allowed in a cancel summary. Please merge quantities for the same product into a single line item.");
+    }
+
+    @Test
+    void updateCancelSummary_Success() {
+        // Arrange
+        CancelSummary summary = new CancelSummary();
+        summary.setId(1L);
+        summary.setTenant(tenant);
+        summary.setStatus("PENDING");
+        summary.setSummaryDate(LocalDate.now());
+
+        CancelSummaryItemRequest itemRequest = new CancelSummaryItemRequest(1L, 10, BigDecimal.valueOf(100), BigDecimal.valueOf(1000));
+        CancelSummaryRequest request = new CancelSummaryRequest(1L, 1L, LocalDate.now(), List.of(itemRequest));
+
+        when(tenantRepository.existsById(1L)).thenReturn(true);
+        when(cancelSummaryRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(summary));
+        when(repRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(rep));
+        when(driverRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(driver));
+        when(productRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(product));
+        when(cancelSummaryRepository.save(any(CancelSummary.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        cancelSummaryService.updateCancelSummary(1L, 1L, request);
+
+        // Assert
+        verify(entityManager).flush();
+        verify(cancelSummaryRepository).save(summary);
+    }
+
+    @Test
+    void updateCancelSummary_DateChanged_ThrowsException() {
+        // Arrange
+        CancelSummary summary = new CancelSummary();
+        summary.setId(1L);
+        summary.setTenant(tenant);
+        summary.setStatus("PENDING");
+        summary.setSummaryDate(LocalDate.now().minusDays(1)); // Different date
+
+        CancelSummaryItemRequest itemRequest = new CancelSummaryItemRequest(1L, 10, BigDecimal.valueOf(100), BigDecimal.valueOf(1000));
+        CancelSummaryRequest request = new CancelSummaryRequest(1L, 1L, LocalDate.now(), List.of(itemRequest));
+
+        when(tenantRepository.existsById(1L)).thenReturn(true);
+        when(cancelSummaryRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(summary));
+
+        // Act & Assert
+        assertThatThrownBy(() -> cancelSummaryService.updateCancelSummary(1L, 1L, request))
+                .isInstanceOf(BusinessRuleViolationException.class)
+                .hasMessage("Cannot change the summary date. Please delete this summary and create a new one.");
     }
 
     @Test
