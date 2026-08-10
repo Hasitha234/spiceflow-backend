@@ -27,7 +27,6 @@ public class CancelSummaryItem extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
-    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private Product product;
 
     @Column(name = "quantity", nullable = false)
