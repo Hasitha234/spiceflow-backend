@@ -6,10 +6,12 @@ spring:
     hikari:
       minimum-idle: ${DB_MIN_IDLE:5}
       maximum-pool-size: ${DB_POOL_SIZE:20}
-      idle-timeout: 600000
-      max-lifetime: 1800000
+      idle-timeout: 300000
+      max-lifetime: 900000
       connection-timeout: 30000
       validation-timeout: 5000
+      keepalive-time: 120000
+      leak-detection-threshold: 30000
   jpa:
     hibernate:
       ddl-auto: validate
