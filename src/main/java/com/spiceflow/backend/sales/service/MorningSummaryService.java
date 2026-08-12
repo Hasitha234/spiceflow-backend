@@ -218,7 +218,10 @@ public class MorningSummaryService {
         List<MorningSummaryResponse.MorningSummaryItemResponse> itemResponses = summary.getItems().stream()
                 .filter(item -> {
                     try {
-                        return item.getProduct() != null && item.getProduct().getId() != null;
+                        // Must call getName() to trigger lazy initialization.
+                        // getId() on a Hibernate proxy does NOT initialize it,
+                        // so soft-deleted products would pass through undetected.
+                        return item.getProduct() != null && item.getProduct().getName() != null;
                     } catch (jakarta.persistence.EntityNotFoundException e) {
                         return false; // Skip items whose product has been soft-deleted
                     }
@@ -234,6 +237,7 @@ public class MorningSummaryService {
                         .expectedReturnPrice(item.getExpectedReturnPrice())
                         .build())
                 .collect(Collectors.toList());
+
 
         return MorningSummaryResponse.builder()
                 .id(summary.getId())
