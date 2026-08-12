@@ -36,6 +36,10 @@ import java.time.Instant;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.orm.jpa.JpaSystemException;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +59,11 @@ public class CancelSummaryService {
     private final jakarta.persistence.EntityManager entityManager;
 
     @Transactional
+    @Retryable(
+        retryFor = { DataAccessResourceFailureException.class, JpaSystemException.class },
+        maxAttempts = 2,
+        backoff = @Backoff(delay = 200)
+    )
     public CancelSummaryResponse createCancelSummary(Long tenantId, CancelSummaryRequest request) {
         java.util.List<Long> productIds = request.items().stream()
                 .map(CancelSummaryItemRequest::productId)
