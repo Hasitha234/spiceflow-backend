@@ -53,6 +53,7 @@ public class MorningSummaryService {
     private final InventoryTransactionRepository inventoryTransactionRepository;
     private final WarehouseRepository warehouseRepository;
     private final InventoryLedgerService inventoryLedgerService;
+    private final jakarta.persistence.EntityManager entityManager;
 
     @Transactional
     public MorningSummaryResponse createMorningSummary(Long tenantId, MorningSummaryRequest request) {
@@ -144,6 +145,7 @@ public class MorningSummaryService {
         morningSummary.setSummaryDate(request.summaryDate());
 
         morningSummary.getItems().clear();
+        entityManager.flush();
 
         BigDecimal finalEstimateValue = BigDecimal.ZERO;
 
