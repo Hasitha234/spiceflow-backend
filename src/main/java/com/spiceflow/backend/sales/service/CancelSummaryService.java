@@ -60,7 +60,7 @@ public class CancelSummaryService {
 
     @Transactional
     @Retryable(
-        retryFor = { DataAccessResourceFailureException.class, JpaSystemException.class },
+        retryFor = { DataAccessResourceFailureException.class, org.springframework.transaction.CannotCreateTransactionException.class },
         maxAttempts = 2,
         backoff = @Backoff(delay = 200)
     )
