@@ -39,13 +39,16 @@ public interface CancelSummaryRepository extends JpaRepository<CancelSummary, Lo
         Pageable pageable
     );
 
-    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(summary_number, 13) AS INTEGER)), 0) " +
-           "FROM cancel_summaries " +
-           "WHERE tenant_id = :tenantId " +
-           "AND summary_date = :date " +
-           "AND summary_number LIKE 'CS-%' " +
-           "AND deleted_at IS NULL " +
-           "FOR UPDATE", nativeQuery = true)
+    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(cs.summary_number, 13) AS INTEGER)), 0) " +
+           "FROM cancel_summaries cs " +
+           "WHERE cs.id IN (" +
+           "  SELECT id FROM cancel_summaries " +
+           "  WHERE tenant_id = :tenantId " +
+           "  AND summary_date = :date " +
+           "  AND summary_number LIKE 'CS-%' " +
+           "  AND deleted_at IS NULL " +
+           "  FOR UPDATE" +
+           ")", nativeQuery = true)
     int findMaxSequenceNumberForDate(@Param("tenantId") Long tenantId, @Param("date") LocalDate date);
 
     List<CancelSummary> findByTenantIdAndRepIdAndSummaryDate(Long tenantId, Long repId, LocalDate summaryDate);
