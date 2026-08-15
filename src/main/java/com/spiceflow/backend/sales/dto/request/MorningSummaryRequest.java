@@ -15,8 +15,9 @@ public record MorningSummaryRequest(
     @NotNull(message = "Summary Date is required")
     LocalDate summaryDate,
     
-    @NotNull(message = "Items are required")
-    List<MorningSummaryItemRequest> items
+    List<MorningSummaryItemRequest> items,
+    
+    BigDecimal finalEstimateValue
 ) {
     public record MorningSummaryItemRequest(
         @NotNull(message = "Product ID is required")
