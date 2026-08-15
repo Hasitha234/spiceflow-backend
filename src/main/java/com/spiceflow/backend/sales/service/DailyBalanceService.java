@@ -164,7 +164,7 @@ public class DailyBalanceService {
 
         List<CancelSummary> cancelSummaries = cancelSummaryRepository.findByTenantIdAndSummaryDate(tenantId, date);
         for (CancelSummary cs : cancelSummaries) {
-            if ("SETTLED".equals(cs.getStatus())) {
+            if ("SETTLED".equals(cs.getStatus()) && !cs.isInventoryProcessed()) {
                 cs.setStatus("PENDING");
                 cancelSummaryRepository.save(cs);
             }

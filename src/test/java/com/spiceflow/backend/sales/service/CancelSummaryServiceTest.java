@@ -57,6 +57,8 @@ class CancelSummaryServiceTest {
     private ProductRepository productRepository;
     @Mock
     private CancelSummaryMapper cancelSummaryMapper;
+    @Mock
+    private com.spiceflow.backend.sales.repository.DailyBalanceRepository dailyBalanceRepository;
     
     @Mock
     private InventoryItemRepository inventoryItemRepository;
@@ -237,6 +239,7 @@ class CancelSummaryServiceTest {
         summary.setId(1L);
         summary.setTenant(tenant);
         summary.setStatus("PENDING");
+        summary.setInventoryProcessed(false);
         summary.setSummaryNumber("CS-20231010-001");
         summary.setSummaryDate(LocalDate.of(2023, 10, 10));
         
@@ -259,6 +262,7 @@ class CancelSummaryServiceTest {
 
         // Assert
         assertThat(summary.getStatus()).isEqualTo("SETTLED");
+        assertThat(summary.isInventoryProcessed()).isTrue();
         assertThat(summary.getReturnWarehouse()).isEqualTo(warehouse);
         assertThat(inventoryItem.getQuantityAvailable()).isEqualTo(60);
         
@@ -273,17 +277,17 @@ class CancelSummaryServiceTest {
     }
 
     @Test
-    void proceedCancelSummary_NotPending_ThrowsException() {
+    void proceedCancelSummary_InventoryAlreadyProcessed_ThrowsException() {
         // Arrange
         CancelSummary summary = new CancelSummary();
-        summary.setStatus("SETTLED");
+        summary.setInventoryProcessed(true);
 
         when(cancelSummaryRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(summary));
 
         // Act & Assert
         assertThatThrownBy(() -> cancelSummaryService.proceedCancelSummary(1L, 1L, 1L))
                 .isInstanceOf(BusinessRuleViolationException.class)
-                .hasMessage("Only PENDING cancel summaries can be processed");
+                .hasMessage("Inventory has already been processed for this cancel summary");
     }
 
     @Test
@@ -293,6 +297,7 @@ class CancelSummaryServiceTest {
         summary.setId(1L);
         summary.setTenant(tenant);
         summary.setStatus("SETTLED");
+        summary.setInventoryProcessed(true);
         summary.setSummaryNumber("CS-20231010-001");
         summary.setSummaryDate(LocalDate.of(2023, 10, 10));
         summary.setReturnWarehouse(warehouse);
@@ -304,6 +309,7 @@ class CancelSummaryServiceTest {
         summary.addItem(item);
 
         when(cancelSummaryRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(summary));
+        when(dailyBalanceRepository.existsByTenantIdAndBalanceDate(1L, LocalDate.of(2023, 10, 10))).thenReturn(false);
         
         InventoryItem inventoryItem = new InventoryItem();
         inventoryItem.setQuantityAvailable(60);
@@ -315,6 +321,7 @@ class CancelSummaryServiceTest {
 
         // Assert
         assertThat(summary.getStatus()).isEqualTo("PENDING");
+        assertThat(summary.isInventoryProcessed()).isFalse();
         assertThat(summary.getReturnWarehouse()).isNull();
         assertThat(inventoryItem.getQuantityAvailable()).isEqualTo(50);
         
@@ -329,16 +336,16 @@ class CancelSummaryServiceTest {
     }
 
     @Test
-    void undoProceedCancelSummary_NotSettled_ThrowsException() {
+    void undoProceedCancelSummary_InventoryNotProcessed_ThrowsException() {
         // Arrange
         CancelSummary summary = new CancelSummary();
-        summary.setStatus("PENDING");
+        summary.setInventoryProcessed(false);
 
         when(cancelSummaryRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(summary));
 
         // Act & Assert
         assertThatThrownBy(() -> cancelSummaryService.undoProceedCancelSummary(1L, 1L))
                 .isInstanceOf(BusinessRuleViolationException.class)
-                .hasMessage("Only SETTLED cancel summaries can be undone");
+                .hasMessage("Cannot undo: inventory has not been processed for this cancel summary");
     }
 }

@@ -16,6 +16,7 @@ public record CancelSummaryResponse(
     String summaryNumber,
     BigDecimal finalEstimateValue,
     String status,
+    boolean inventoryProcessed,
     Long returnWarehouseId,
     String returnWarehouseName,
     List<CancelSummaryItemResponse> items,

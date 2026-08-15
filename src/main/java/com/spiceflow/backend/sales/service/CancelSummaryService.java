@@ -14,6 +14,7 @@ import com.spiceflow.backend.sales.entity.Driver;
 import com.spiceflow.backend.sales.entity.Rep;
 import com.spiceflow.backend.sales.mapper.CancelSummaryMapper;
 import com.spiceflow.backend.sales.repository.CancelSummaryRepository;
+import com.spiceflow.backend.sales.repository.DailyBalanceRepository;
 import com.spiceflow.backend.sales.repository.DriverRepository;
 import com.spiceflow.backend.sales.repository.RepRepository;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +57,7 @@ public class CancelSummaryService {
     private final InventoryTransactionRepository inventoryTransactionRepository;
     private final WarehouseRepository warehouseRepository;
     private final InventoryLedgerService inventoryLedgerService;
+    private final DailyBalanceRepository dailyBalanceRepository;
     private final jakarta.persistence.EntityManager entityManager;
 
     private static final LocalDate EVENING_SUMMARY_CUTOFF_DATE = LocalDate.of(2026, 8, 15);
@@ -214,8 +216,8 @@ public class CancelSummaryService {
         CancelSummary summary = cancelSummaryRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cancel Summary not found"));
 
-        if (!"PENDING".equals(summary.getStatus())) {
-            throw new BusinessRuleViolationException("Only PENDING cancel summaries can be processed");
+        if (summary.isInventoryProcessed()) {
+            throw new BusinessRuleViolationException("Inventory has already been processed for this cancel summary");
         }
 
         Warehouse deductionWarehouse = warehouseRepository.findByIdAndTenantId(returnWarehouseId, tenantId)
@@ -275,8 +277,8 @@ public class CancelSummaryService {
                 inventoryTransactionRepository.save(tx);
             }
         }
-
         summary.setStatus("SETTLED");
+        summary.setInventoryProcessed(true);
         summary.setReturnWarehouse(deductionWarehouse);
         cancelSummaryRepository.save(summary);
     }
@@ -287,8 +289,8 @@ public class CancelSummaryService {
         CancelSummary summary = cancelSummaryRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cancel Summary not found"));
 
-        if (!"SETTLED".equals(summary.getStatus())) {
-            throw new BusinessRuleViolationException("Only SETTLED cancel summaries can be undone");
+        if (!summary.isInventoryProcessed()) {
+            throw new BusinessRuleViolationException("Cannot undo: inventory has not been processed for this cancel summary");
         }
 
         if (summary.getReturnWarehouse() == null) {
@@ -337,8 +339,14 @@ public class CancelSummaryService {
             }
         }
 
-        summary.setStatus("PENDING");
+        summary.setInventoryProcessed(false);
         summary.setReturnWarehouse(null);
+
+        // Only reset to PENDING if the daily balance hasn't settled it
+        if (!dailyBalanceRepository.existsByTenantIdAndBalanceDate(tenantId, summary.getSummaryDate())) {
+            summary.setStatus("PENDING");
+        }
+
         cancelSummaryRepository.save(summary);
     }
 
