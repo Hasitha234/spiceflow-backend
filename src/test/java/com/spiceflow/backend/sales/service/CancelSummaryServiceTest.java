@@ -238,6 +238,7 @@ class CancelSummaryServiceTest {
         summary.setTenant(tenant);
         summary.setStatus("PENDING");
         summary.setSummaryNumber("CS-20231010-001");
+        summary.setSummaryDate(LocalDate.of(2023, 10, 10));
         
         CancelSummaryItem item = new CancelSummaryItem();
         item.setProduct(product);
@@ -293,6 +294,7 @@ class CancelSummaryServiceTest {
         summary.setTenant(tenant);
         summary.setStatus("SETTLED");
         summary.setSummaryNumber("CS-20231010-001");
+        summary.setSummaryDate(LocalDate.of(2023, 10, 10));
         summary.setReturnWarehouse(warehouse);
         
         CancelSummaryItem item = new CancelSummaryItem();

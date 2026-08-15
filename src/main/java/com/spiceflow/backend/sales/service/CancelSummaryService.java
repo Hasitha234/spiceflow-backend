@@ -58,6 +58,8 @@ public class CancelSummaryService {
     private final InventoryLedgerService inventoryLedgerService;
     private final jakarta.persistence.EntityManager entityManager;
 
+    private static final LocalDate EVENING_SUMMARY_CUTOFF_DATE = LocalDate.of(2026, 8, 15);
+
     @Transactional
     @Retryable(
         retryFor = { DataAccessResourceFailureException.class, org.springframework.transaction.CannotCreateTransactionException.class },
@@ -216,31 +218,43 @@ public class CancelSummaryService {
             throw new BusinessRuleViolationException("Only PENDING cancel summaries can be processed");
         }
 
-        Warehouse returnWarehouse = warehouseRepository.findByIdAndTenantId(returnWarehouseId, tenantId)
+        Warehouse deductionWarehouse = warehouseRepository.findByIdAndTenantId(returnWarehouseId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"));
+
+        boolean isOldLogic = summary.getSummaryDate().isBefore(EVENING_SUMMARY_CUTOFF_DATE);
 
         for (CancelSummaryItem item : summary.getItems()) {
             if (item.getQuantity() > 0) {
                 InventoryItem inventoryItem = inventoryItemRepository
                         .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), returnWarehouseId, tenantId)
                         .orElseGet(() -> {
+                            if (!isOldLogic) {
+                                throw new ResourceNotFoundException("No inventory found for product " + item.getProduct().getName() + " in selected warehouse");
+                            }
                             InventoryItem newItem = InventoryItem.builder()
                                     .tenant(summary.getTenant())
-                                    .warehouse(returnWarehouse)
+                                    .warehouse(deductionWarehouse)
                                     .product(item.getProduct())
                                     .quantityAvailable(0)
                                     .build();
                             return inventoryItemRepository.save(newItem);
                         });
 
-                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() + item.getQuantity());
+                if (isOldLogic) {
+                    inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() + item.getQuantity());
+                } else {
+                    if (inventoryItem.getQuantityAvailable() < item.getQuantity()) {
+                        throw new BusinessRuleViolationException("Insufficient stock for product " + item.getProduct().getName());
+                    }
+                    inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() - item.getQuantity());
+                }
                 inventoryItemRepository.save(inventoryItem);
 
                 inventoryLedgerService.recordMovement(
                         tenantId,
                         returnWarehouseId,
                         item.getProduct().getId(),
-                        InventoryMovementType.CANCEL_RETURN_RECEIPT,
+                        isOldLogic ? InventoryMovementType.CANCEL_RETURN_RECEIPT : InventoryMovementType.EVENING_SALE_DEDUCTION,
                         BigDecimal.valueOf(item.getQuantity()),
                         item.getUnitPrice(),
                         summary.getSummaryNumber(),
@@ -252,10 +266,10 @@ public class CancelSummaryService {
 
                 InventoryTransaction tx = InventoryTransaction.builder()
                         .inventoryItem(inventoryItem)
-                        .transactionType("CANCEL_RETURN_RECEIPT")
-                        .quantity(item.getQuantity())
+                        .transactionType(isOldLogic ? "CANCEL_RETURN_RECEIPT" : "EVENING_SALE_DEDUCTION")
+                        .quantity(isOldLogic ? item.getQuantity() : -item.getQuantity())
                         .referenceId(summary.getSummaryNumber())
-                        .notes("Added return for cancel summary")
+                        .notes(isOldLogic ? "Added return for cancel summary" : "Deducted sold items for evening summary")
                         .tenant(summary.getTenant())
                         .build();
                 inventoryTransactionRepository.save(tx);
@@ -263,7 +277,7 @@ public class CancelSummaryService {
         }
 
         summary.setStatus("SETTLED");
-        summary.setReturnWarehouse(returnWarehouse);
+        summary.setReturnWarehouse(deductionWarehouse);
         cancelSummaryRepository.save(summary);
     }
 
@@ -282,6 +296,7 @@ public class CancelSummaryService {
         }
 
         Long returnWarehouseId = summary.getReturnWarehouse().getId();
+        boolean isOldLogic = summary.getSummaryDate().isBefore(EVENING_SUMMARY_CUTOFF_DATE);
 
         for (CancelSummaryItem item : summary.getItems()) {
             if (item.getQuantity() > 0) {
@@ -289,14 +304,18 @@ public class CancelSummaryService {
                         .findByProductIdAndWarehouseIdAndTenantId(item.getProduct().getId(), returnWarehouseId, tenantId)
                         .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
 
-                inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() - item.getQuantity());
+                if (isOldLogic) {
+                    inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() - item.getQuantity());
+                } else {
+                    inventoryItem.setQuantityAvailable(inventoryItem.getQuantityAvailable() + item.getQuantity());
+                }
                 inventoryItemRepository.save(inventoryItem);
 
                 inventoryLedgerService.recordMovement(
                         tenantId,
                         returnWarehouseId,
                         item.getProduct().getId(),
-                        InventoryMovementType.CANCEL_RETURN_REVERSAL,
+                        isOldLogic ? InventoryMovementType.CANCEL_RETURN_REVERSAL : InventoryMovementType.EVENING_SALE_REVERSAL,
                         BigDecimal.valueOf(item.getQuantity()),
                         item.getUnitPrice(),
                         summary.getSummaryNumber() + "-REVERSAL",
@@ -308,10 +327,10 @@ public class CancelSummaryService {
 
                 InventoryTransaction tx = InventoryTransaction.builder()
                         .inventoryItem(inventoryItem)
-                        .transactionType("CANCEL_RETURN_REVERSAL")
-                        .quantity(-item.getQuantity())
+                        .transactionType(isOldLogic ? "CANCEL_RETURN_REVERSAL" : "EVENING_SALE_REVERSAL")
+                        .quantity(isOldLogic ? -item.getQuantity() : item.getQuantity())
                         .referenceId(summary.getSummaryNumber() + "-REVERSAL")
-                        .notes("Undone cancel summary return")
+                        .notes(isOldLogic ? "Undone cancel summary return" : "Reversed evening summary deduction")
                         .tenant(summary.getTenant())
                         .build();
                 inventoryTransactionRepository.save(tx);

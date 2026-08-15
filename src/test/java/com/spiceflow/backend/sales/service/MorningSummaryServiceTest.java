@@ -60,7 +60,7 @@ class MorningSummaryServiceTest {
         MorningSummaryRequest.MorningSummaryItemRequest item1 = new MorningSummaryRequest.MorningSummaryItemRequest(1L, 10, null, null);
         MorningSummaryRequest.MorningSummaryItemRequest item2 = new MorningSummaryRequest.MorningSummaryItemRequest(1L, 5, null, null);
 
-        MorningSummaryRequest request = new MorningSummaryRequest(1L, 1L, java.time.LocalDate.now(), List.of(item1, item2));
+        MorningSummaryRequest request = new MorningSummaryRequest(1L, 1L, java.time.LocalDate.now(), List.of(item1, item2), null);
 
         assertThrows(BusinessRuleViolationException.class, () -> morningSummaryService.createMorningSummary(1L, request));
     }
@@ -70,7 +70,7 @@ class MorningSummaryServiceTest {
         MorningSummaryRequest.MorningSummaryItemRequest item1 = new MorningSummaryRequest.MorningSummaryItemRequest(1L, 10, null, null);
         MorningSummaryRequest.MorningSummaryItemRequest item2 = new MorningSummaryRequest.MorningSummaryItemRequest(1L, 5, null, null);
 
-        MorningSummaryRequest request = new MorningSummaryRequest(1L, 1L, java.time.LocalDate.now(), List.of(item1, item2));
+        MorningSummaryRequest request = new MorningSummaryRequest(1L, 1L, java.time.LocalDate.now(), List.of(item1, item2), null);
 
         assertThrows(BusinessRuleViolationException.class, () -> morningSummaryService.updateMorningSummary(1L, 1L, request));
     }

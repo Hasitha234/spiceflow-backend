@@ -57,12 +57,15 @@ public class MorningSummaryService {
 
     @Transactional
     public MorningSummaryResponse createMorningSummary(Long tenantId, MorningSummaryRequest request) {
-        List<Long> productIds = request.items().stream()
-                .map(MorningSummaryRequest.MorningSummaryItemRequest::productId)
-                .toList();
-        java.util.Set<Long> uniqueProductIds = new java.util.HashSet<>(productIds);
-        if (uniqueProductIds.size() != productIds.size()) {
-            throw new BusinessRuleViolationException("Duplicate products are not allowed in a morning summary. Please merge quantities for the same product into a single line item.");
+        List<MorningSummaryRequest.MorningSummaryItemRequest> items = request.items() != null ? request.items() : List.of();
+        if (!items.isEmpty()) {
+            List<Long> productIds = items.stream()
+                    .map(MorningSummaryRequest.MorningSummaryItemRequest::productId)
+                    .toList();
+            java.util.Set<Long> uniqueProductIds = new java.util.HashSet<>(productIds);
+            if (uniqueProductIds.size() != productIds.size()) {
+                throw new BusinessRuleViolationException("Duplicate products are not allowed in a morning summary. Please merge quantities for the same product into a single line item.");
+            }
         }
 
         Tenant tenant = tenantRepository.findById(tenantId)
@@ -85,7 +88,11 @@ public class MorningSummaryService {
 
         BigDecimal finalEstimateValue = BigDecimal.ZERO;
 
-        for (MorningSummaryRequest.MorningSummaryItemRequest itemRequest : request.items()) {
+        if (items.isEmpty() && request.finalEstimateValue() != null) {
+            finalEstimateValue = request.finalEstimateValue();
+        }
+
+        for (MorningSummaryRequest.MorningSummaryItemRequest itemRequest : items) {
             Product product = productRepository.findByIdAndTenantId(itemRequest.productId(), tenantId)
                     .orElseThrow(() -> new InvalidReferenceException("Product not found: " + itemRequest.productId()));
 
@@ -116,12 +123,15 @@ public class MorningSummaryService {
     }
     @Transactional
     public MorningSummaryResponse updateMorningSummary(Long tenantId, Long summaryId, MorningSummaryRequest request) {
-        List<Long> productIds = request.items().stream()
-                .map(MorningSummaryRequest.MorningSummaryItemRequest::productId)
-                .toList();
-        java.util.Set<Long> uniqueProductIds = new java.util.HashSet<>(productIds);
-        if (uniqueProductIds.size() != productIds.size()) {
-            throw new BusinessRuleViolationException("Duplicate products are not allowed in a morning summary. Please merge quantities for the same product into a single line item.");
+        List<MorningSummaryRequest.MorningSummaryItemRequest> items = request.items() != null ? request.items() : List.of();
+        if (!items.isEmpty()) {
+            List<Long> productIds = items.stream()
+                    .map(MorningSummaryRequest.MorningSummaryItemRequest::productId)
+                    .toList();
+            java.util.Set<Long> uniqueProductIds = new java.util.HashSet<>(productIds);
+            if (uniqueProductIds.size() != productIds.size()) {
+                throw new BusinessRuleViolationException("Duplicate products are not allowed in a morning summary. Please merge quantities for the same product into a single line item.");
+            }
         }
 
         Tenant tenant = tenantRepository.findById(tenantId)
@@ -149,7 +159,11 @@ public class MorningSummaryService {
 
         BigDecimal finalEstimateValue = BigDecimal.ZERO;
 
-        for (MorningSummaryRequest.MorningSummaryItemRequest itemRequest : request.items()) {
+        if (items.isEmpty() && request.finalEstimateValue() != null) {
+            finalEstimateValue = request.finalEstimateValue();
+        }
+
+        for (MorningSummaryRequest.MorningSummaryItemRequest itemRequest : items) {
             Product product = productRepository.findByIdAndTenantId(itemRequest.productId(), tenantId)
                     .orElseThrow(() -> new InvalidReferenceException("Product not found: " + itemRequest.productId()));
 
