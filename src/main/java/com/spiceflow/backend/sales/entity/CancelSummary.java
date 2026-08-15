@@ -57,6 +57,10 @@ public class CancelSummary extends BaseEntity {
     @Builder.Default
     private String status = "PENDING";
 
+    @Column(name = "inventory_processed", nullable = false)
+    @Builder.Default
+    private boolean inventoryProcessed = false;
+
     @OneToMany(mappedBy = "cancelSummary", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<CancelSummaryItem> items = new ArrayList<>();
