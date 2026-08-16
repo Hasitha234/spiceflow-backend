@@ -114,7 +114,10 @@ public class InventoryItemController {
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @Valid @RequestBody com.spiceflow.backend.inventory.dto.request.InventoryBatchTransferRequest request) {
         log.info("Received request to batch transfer inventory by user: {}", currentUser.getId());
-        var response = inventoryItemService.batchTransfer(java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"), request);
+        var response = inventoryItemService.batchTransfer(
+                java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null"),
+                currentUser.getUsername(),
+                request);
         return ResponseEntity.ok(response);
     }
 }

@@ -235,7 +235,7 @@ class InventoryItemServiceTest {
         when(inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(1L, 2L, 1L))
             .thenReturn(Optional.of(destItem));
 
-        InventoryBatchTransferResponse result = inventoryItemService.batchTransfer(1L, request);
+        InventoryBatchTransferResponse result = inventoryItemService.batchTransfer(1L, "test_user", request);
 
         assertNotNull(result);
         assertEquals(1, result.transferredItems().size());
@@ -251,7 +251,7 @@ class InventoryItemServiceTest {
         );
 
         assertThrows(BusinessRuleViolationException.class, () -> {
-            inventoryItemService.batchTransfer(1L, request);
+            inventoryItemService.batchTransfer(1L, "test_user", request);
         });
     }
 }
