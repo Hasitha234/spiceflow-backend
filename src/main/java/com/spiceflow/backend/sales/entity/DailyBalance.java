@@ -39,9 +39,13 @@ public class DailyBalance extends BaseEntity {
     @Builder.Default
     private BigDecimal morningSummaryTotal = BigDecimal.ZERO;
 
-    @Column(name = "cancel_summary_total", nullable = false, precision = 15, scale = 2)
+    @Column(name = "cancel_summary_total", nullable = false, precision = 12, scale = 2)
     @Builder.Default
     private BigDecimal cancelSummaryTotal = BigDecimal.ZERO;
+
+    @Column(name = "evening_summary_total", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal eveningSummaryTotal = BigDecimal.ZERO;
 
     @Column(name = "net_dispatch_total", nullable = false, precision = 15, scale = 2)
     @Builder.Default

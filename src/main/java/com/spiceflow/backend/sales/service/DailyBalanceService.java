@@ -4,10 +4,12 @@ import com.spiceflow.backend.common.exception.ResourceNotFoundException;
 import com.spiceflow.backend.sales.dto.response.DailyBalanceResponse;
 import com.spiceflow.backend.sales.entity.Bill;
 import com.spiceflow.backend.sales.entity.CancelSummary;
+import com.spiceflow.backend.sales.entity.EveningSummary;
 import com.spiceflow.backend.sales.entity.DailyBalance;
 import com.spiceflow.backend.sales.entity.MorningSummary;
 import com.spiceflow.backend.sales.repository.BillRepository;
 import com.spiceflow.backend.sales.repository.CancelSummaryRepository;
+import com.spiceflow.backend.sales.repository.EveningSummaryRepository;
 import com.spiceflow.backend.sales.repository.DailyBalanceRepository;
 import com.spiceflow.backend.sales.repository.MorningSummaryRepository;
 import com.spiceflow.backend.auth.repository.TenantRepository;
@@ -29,6 +31,7 @@ public class DailyBalanceService {
     private final DailyBalanceRepository dailyBalanceRepository;
     private final MorningSummaryRepository morningSummaryRepository;
     private final CancelSummaryRepository cancelSummaryRepository;
+    private final EveningSummaryRepository eveningSummaryRepository;
     private final BillRepository billRepository;
     private final TenantRepository tenantRepository;
 
@@ -37,6 +40,7 @@ public class DailyBalanceService {
 
         List<MorningSummary> morningSummaries = morningSummaryRepository.findByTenantIdAndSummaryDate(tenantId, date);
         List<CancelSummary> cancelSummaries = cancelSummaryRepository.findByTenantIdAndSummaryDate(tenantId, date);
+        List<EveningSummary> eveningSummaries = eveningSummaryRepository.findByTenantIdAndSummaryDate(tenantId, date);
         List<Bill> bills = billRepository.findByTenantIdAndBillDate(tenantId, date);
 
         BigDecimal morningTotal = morningSummaries.stream()
@@ -47,7 +51,11 @@ public class DailyBalanceService {
                 .map(CancelSummary::getFinalEstimateValue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal netDispatch = morningTotal.subtract(cancelTotal);
+        BigDecimal eveningTotal = eveningSummaries.stream()
+                .map(EveningSummary::getFinalEstimateValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal netDispatch = morningTotal.subtract(cancelTotal).subtract(eveningTotal);
 
         BigDecimal billsTotal = bills.stream()
                 .filter(b -> "CANCELLED".equals(b.getStatus()))
@@ -61,6 +69,7 @@ public class DailyBalanceService {
                         .date(balance.getBalanceDate())
                         .morningSummaryTotal(balance.getMorningSummaryTotal())
                         .cancelSummaryTotal(balance.getCancelSummaryTotal())
+                        .eveningSummaryTotal(balance.getEveningSummaryTotal())
                         .netDispatchTotal(balance.getNetDispatchTotal())
                         .billsTotal(balance.getBillsTotal())
                         .isBalanced(true)
@@ -70,6 +79,7 @@ public class DailyBalanceService {
                         .date(date)
                         .morningSummaryTotal(morningTotal)
                         .cancelSummaryTotal(cancelTotal)
+                        .eveningSummaryTotal(eveningTotal)
                         .netDispatchTotal(netDispatch)
                         .billsTotal(billsTotal)
                         .isBalanced(isBalanced)
@@ -87,6 +97,7 @@ public class DailyBalanceService {
 
         List<MorningSummary> morningSummaries = morningSummaryRepository.findByTenantIdAndSummaryDate(tenantId, date);
         List<CancelSummary> cancelSummaries = cancelSummaryRepository.findByTenantIdAndSummaryDate(tenantId, date);
+        List<EveningSummary> eveningSummaries = eveningSummaryRepository.findByTenantIdAndSummaryDate(tenantId, date);
         List<Bill> bills = billRepository.findByTenantIdAndBillDate(tenantId, date);
 
         BigDecimal morningTotal = morningSummaries.stream()
@@ -97,7 +108,11 @@ public class DailyBalanceService {
                 .map(CancelSummary::getFinalEstimateValue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal netDispatch = morningTotal.subtract(cancelTotal);
+        BigDecimal eveningTotal = eveningSummaries.stream()
+                .map(EveningSummary::getFinalEstimateValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal netDispatch = morningTotal.subtract(cancelTotal).subtract(eveningTotal);
 
         BigDecimal billsTotal = bills.stream()
                 .filter(b -> "CANCELLED".equals(b.getStatus()))
@@ -121,12 +136,19 @@ public class DailyBalanceService {
                 cancelSummaryRepository.save(cs);
             }
         }
+        for (EveningSummary es : eveningSummaries) {
+            if ("PENDING".equals(es.getStatus())) {
+                es.setStatus("SETTLED");
+                eveningSummaryRepository.save(es);
+            }
+        }
 
         DailyBalance newBalance = DailyBalance.builder()
                 .tenant(tenantRepository.getReferenceById(tenantId))
                 .balanceDate(date)
                 .morningSummaryTotal(morningTotal)
                 .cancelSummaryTotal(cancelTotal)
+                .eveningSummaryTotal(eveningTotal)
                 .netDispatchTotal(netDispatch)
                 .billsTotal(billsTotal)
                 .status("BALANCED")
@@ -138,6 +160,7 @@ public class DailyBalanceService {
                 .date(date)
                 .morningSummaryTotal(morningTotal)
                 .cancelSummaryTotal(cancelTotal)
+                .eveningSummaryTotal(eveningTotal)
                 .netDispatchTotal(netDispatch)
                 .billsTotal(billsTotal)
                 .isBalanced(true)
@@ -170,6 +193,15 @@ public class DailyBalanceService {
             }
         }
 
+        List<EveningSummary> eveningSummaries = eveningSummaryRepository.findByTenantIdAndSummaryDate(tenantId, date);
+        for (EveningSummary es : eveningSummaries) {
+            if ("SETTLED".equals(es.getStatus()) && !es.isInventoryProcessed()) {
+                es.setStatus("PENDING");
+                eveningSummaryRepository.save(es);
+            }
+        }
+
         return getDailyBalance(tenantId, date);
     }
 }
+

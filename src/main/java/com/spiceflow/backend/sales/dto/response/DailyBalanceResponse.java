@@ -16,6 +16,7 @@ public class DailyBalanceResponse {
     private LocalDate date;
     private BigDecimal morningSummaryTotal;
     private BigDecimal cancelSummaryTotal;
+    private BigDecimal eveningSummaryTotal;
     private BigDecimal netDispatchTotal;
     private BigDecimal billsTotal;
     @JsonProperty("isBalanced")
