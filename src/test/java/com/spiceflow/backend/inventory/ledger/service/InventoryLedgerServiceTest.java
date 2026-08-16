@@ -25,17 +25,26 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.spiceflow.backend.inventory.repository.ProductRepository;
+import com.spiceflow.backend.inventory.repository.WarehouseRepository;
+
 @ExtendWith(MockitoExtension.class)
 class InventoryLedgerServiceTest {
 
     @Mock
     private InventoryLedgerRepository repository;
 
+    @Mock
+    private ProductRepository productRepository;
+
+    @Mock
+    private WarehouseRepository warehouseRepository;
+
     private InventoryLedgerService service;
 
     @BeforeEach
     void setUp() {
-        service = new InventoryLedgerService(repository);
+        service = new InventoryLedgerService(repository, productRepository, warehouseRepository);
     }
 
     @Test
