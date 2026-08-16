@@ -282,7 +282,7 @@ public class InventoryItemService {
     }
     
     @Transactional(rollbackFor = Exception.class)
-    public InventoryBatchTransferResponse batchTransfer(Long tenantId, InventoryBatchTransferRequest request) {
+    public InventoryBatchTransferResponse batchTransfer(Long tenantId, String performedBy, InventoryBatchTransferRequest request) {
         log.info("Batch transferring inventory from warehouse {} to warehouse {}", request.fromWarehouseId(), request.toWarehouseId());
         
         if (request.fromWarehouseId().equals(request.toWarehouseId())) {
@@ -331,6 +331,14 @@ public class InventoryItemService {
                 .build();
             inventoryTransactionRepository.save(outTx);
             
+            // Ledger OUT
+            inventoryLedgerService.recordMovement(
+                tenantId, request.fromWarehouseId(), lineItem.productId(),
+                InventoryMovementType.TRANSFER_OUT,
+                new BigDecimal(-lineItem.quantity()), BigDecimal.ZERO,
+                referenceNumber, "", null, Instant.now(), performedBy
+            );
+            
             // Add to dest
             Optional<InventoryItem> destItemOpt = inventoryItemRepository.findByProductIdAndWarehouseIdAndTenantId(
                 lineItem.productId(), request.toWarehouseId(), tenantId);
@@ -359,6 +367,14 @@ public class InventoryItemService {
                 .tenant(tenant)
                 .build();
             inventoryTransactionRepository.save(inTx);
+
+            // Ledger IN
+            inventoryLedgerService.recordMovement(
+                tenantId, request.toWarehouseId(), lineItem.productId(),
+                InventoryMovementType.TRANSFER_IN,
+                new BigDecimal(lineItem.quantity()), BigDecimal.ZERO,
+                referenceNumber, "", null, Instant.now(), performedBy
+            );
 
             transferredItems.add(new InventoryBatchTransferResponse.TransferItemDetail(
                 product.getId(),

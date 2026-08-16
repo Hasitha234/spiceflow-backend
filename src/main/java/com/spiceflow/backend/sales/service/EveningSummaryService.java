@@ -266,7 +266,7 @@ public class EveningSummaryService {
                         warehouseId,
                         item.getProduct().getId(),
                         InventoryMovementType.EVENING_SALE_DEDUCTION,
-                        BigDecimal.valueOf(item.getQuantity()),
+                        BigDecimal.valueOf(-item.getQuantity()),
                         item.getUnitPrice(),
                         summary.getSummaryNumber(),
                         "",
