@@ -229,7 +229,7 @@ public class ReportService {
             .toList();
 
         BigDecimal totalCash = validBills.stream()
-            .map(Bill::getFinalTotal)
+            .map(Bill::getCashCollected)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal totalCheque = validBills.stream()
@@ -262,7 +262,7 @@ public class ReportService {
                     .toList();
 
                 BigDecimal dCash = validDriverBills.stream()
-                    .map(Bill::getFinalTotal)
+                    .map(Bill::getCashCollected)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 BigDecimal dCheque = validDriverBills.stream()
