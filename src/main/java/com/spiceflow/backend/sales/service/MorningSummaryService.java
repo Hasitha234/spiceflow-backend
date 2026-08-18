@@ -529,4 +529,16 @@ public class MorningSummaryService {
         summary.setReturnWarehouse(null);
         morningSummaryRepository.save(summary);
     }
+
+    @Transactional
+    public void deleteMorningSummary(Long tenantId, Long summaryId) {
+        MorningSummary summary = morningSummaryRepository.findByIdAndTenantId(summaryId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Morning Summary not found"));
+
+        if (!"PENDING".equals(summary.getStatus())) {
+            throw new BusinessRuleViolationException("Only PENDING morning summaries can be deleted");
+        }
+
+        morningSummaryRepository.delete(summary);
+    }
 }

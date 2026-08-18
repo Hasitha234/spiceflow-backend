@@ -84,4 +84,13 @@ public class MorningSummaryController {
         morningSummaryService.undoDeduction(tenantId, id);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMorningSummary(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable Long id) {
+        Long tenantId = java.util.Objects.requireNonNull(currentUser.getTenantId(), "Tenant ID cannot be null");
+        morningSummaryService.deleteMorningSummary(tenantId, id);
+        return ResponseEntity.noContent().build();
+    }
 }
