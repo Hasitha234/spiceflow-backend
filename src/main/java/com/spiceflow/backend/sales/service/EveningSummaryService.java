@@ -146,16 +146,17 @@ public class EveningSummaryService {
             throw new BusinessRuleViolationException("Only PENDING and unprocessed evening summaries can be updated.");
         }
 
-        if (!request.summaryDate().equals(eveningSummary.getSummaryDate())) {
-            throw new BusinessRuleViolationException(
-                "Cannot change the summary date. Please delete this summary and create a new one.");
-        }
-
         Rep rep = repRepository.findByIdAndTenantId(request.repId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Rep not found"));
 
         Driver driver = driverRepository.findByIdAndTenantId(request.driverId(), tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found"));
+
+        // Update date and regenerate summary number if the date changed
+        if (!request.summaryDate().equals(eveningSummary.getSummaryDate())) {
+            eveningSummary.setSummaryDate(request.summaryDate());
+            eveningSummary.setSummaryNumber(generateSummaryNumber(tenantId, request.summaryDate()));
+        }
 
         eveningSummary.setRep(rep);
         eveningSummary.setDriver(driver);
